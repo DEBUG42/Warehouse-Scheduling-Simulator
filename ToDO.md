@@ -61,6 +61,7 @@ f_{\text{moving}} =
 p_i + v_i\Delta t + \frac{1}{2}a_i(\Delta t)^2 \\
 \text{clip}(v_i + a_i\Delta t, 0, v_{\text{max}}(r_i)) \\
 \text{clip}(a_{\text{cmd}}, -0.5, 0.5) \\
+r_i \\
 \tau_i \\
 T_{\text{idle}}^i + \Delta t \cdot \delta(\tau_i=0) \\
 D^i + v_i\Delta t
@@ -68,6 +69,7 @@ D^i + v_i\Delta t
 f_{\text{loading}} = 
 \begin{bmatrix}
 p_i \\
+0 \\
 0 \\
 0 \\
 \tau_i \\
