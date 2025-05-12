@@ -1,5 +1,5 @@
 #include <SFML/Graphics.hpp>
-
+#include "Vehicle.hpp"
 class VehicleRenderer {
 private:
     // 车辆模型参数
@@ -19,7 +19,7 @@ public:
      * @param rotation 车辆朝向角度
      */
     void renderVehicle(sf::RenderTarget& target,
-                      const VehicleState& vehicle,
+                      const MotionState& vehicle,
                       const sf::Vector2f& position,
                       float rotation);
 };

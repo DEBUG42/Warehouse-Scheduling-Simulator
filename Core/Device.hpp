@@ -13,6 +13,7 @@ enum class DeviceType {
 enum class DeviceStatus {
     working,        // 工作中
     idle,           // 空闲中
+    preparing,      // 准备中
 };
 
 // 设备基类

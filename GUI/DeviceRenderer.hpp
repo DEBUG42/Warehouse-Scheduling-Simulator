@@ -1,12 +1,12 @@
 #include <SFML/Graphics.hpp>
 #include <map>
-
+#include "Device.hpp"
 
 
 class DeviceRenderer {
 private:
     // 设备类型图标映射
-    std::map<DeviceType, sf::Texture> m_iconTextures;
+    std::map<DeviceStatus, sf::Texture> m_iconTextures;
     
     // 状态颜色编码
     const sf::Color COLOR_IDLE {75, 185, 85};    // 空闲状态
@@ -21,7 +21,7 @@ public:
      * @param position 设备世界坐标
      */
     void renderDevice(sf::RenderTarget& target, 
-                     const DeviceState& device,
+                     const DeviceStatus& device,
                      const sf::Vector2f& position);
 
     /**

@@ -1,6 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
-
+#include "Task.hpp"
 class StatusPanel {
 private:
     // 布局参数
@@ -8,7 +8,7 @@ private:
     const sf::Color m_backgroundColor {35, 40, 45}; // 背景色
     
     // 内容元素
-    std::unique_ptr<TaskListView> m_taskList;  // 任务队列视图
+    std::unique_ptr<TaskList> m_taskList;  // 任务队列视图
     std::unique_ptr<ObjectInspector> m_inspector; // 对象详细信息
     
 public:
