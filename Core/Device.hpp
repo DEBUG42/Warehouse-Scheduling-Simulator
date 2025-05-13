@@ -38,7 +38,7 @@ public:
      * @brief 添加新任务到队列
      * @param task 任务对象
      */
-    // void enqueueTask(const Task& task);
+     void enqueueTask(const Task& task);
     
     // 其他公共接口...
 };

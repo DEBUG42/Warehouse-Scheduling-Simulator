@@ -60,7 +60,7 @@ public:
      * @param vehicleId 车辆索引（非ID）
      * @return 包含位置、速度等信息的结构体
      */
-    VehicleState getVehicleStatus(size_t vehicleId) const;
+    Vehicle getVehicleStatus(size_t vehicleId) const;
     
     /**
      * @brief 获取设备当前状态
