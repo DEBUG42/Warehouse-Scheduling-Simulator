@@ -1,0 +1,26 @@
+{
+  "simulation": {
+    "trackLength": 200.0,
+    "curveRadius": 50.0,
+    "initialTimeScale": 1.0,
+    "maxTimeScale": 5.0,
+    "vehicleCount": 5
+  },
+  "display": {
+    "windowWidth": 1280,
+    "windowHeight": 720,
+    "toolbarHeight": 30,
+    "statusPanelWidth": 300,
+    "framerate": 60
+  },
+  "devices": {
+    "storageInCount": 6,
+    "storageOutCount": 6,
+    "workstationInCount": 3,
+    "workstationOutCount": 3
+  },
+  "resources": {
+    "fontPath": "resources/fonts/arial.ttf",
+    "iconBasePath": "resources/icons/"
+  }
+}

@@ -1,6 +1,9 @@
+#pragma once
 #include <SFML/Graphics.hpp>
 #include <map>
-#include "Device.hpp"
+
+// 前向声明
+class DeviceBase;
 
 enum class TaskType {
     output,
