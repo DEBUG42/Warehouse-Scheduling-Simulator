@@ -38,7 +38,7 @@ public:
      * @param trackInfo 当前轨道段信息（直轨/弯轨）
      * @return 是否发生状态变更（用于触发UI更新）
      */
-    bool updatePhysics(float deltaTime, const Vehicle* leadingVehicle, const TrackSegment& trackInfo);
+//    bool updatePhysics(float deltaTime, const Vehicle* leadingVehicle, const TrackSegment& trackInfo);
     
     // 任务操作
     /**
@@ -66,5 +66,5 @@ public:
      * @brief 获取当前载货状态
      * @return 货物信息结构体（包含物料编号等）
      */
-    CargoInfo getCargoInfo() const;
+//    CargoInfo getCargoInfo() const;
 };

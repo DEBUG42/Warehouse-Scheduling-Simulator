@@ -1,19 +1,20 @@
+//可编译通过但是纹理和图标没有制作 暂时不能渲染
+
 #include <SFML/Graphics.hpp>
 #include <map>
-#include "Device.hpp"
-
-
+#include "../Core/Device.hpp"
+   
 class DeviceRenderer {
 private:
-    // 设备类型图标映射
-    std::map<DeviceStatus, sf::Texture> m_iconTextures;
-    
-    // 状态颜色编码
+// 状态颜色编码 
     const sf::Color COLOR_IDLE {75, 185, 85};    // 空闲状态
     const sf::Color COLOR_BUSY {215, 60, 60};    // 忙碌状态
     const sf::Color COLOR_PENDING {230, 170, 50};// 准备中状态
+    // 设备类型图标映射    
+    std::map<DeviceStatus, sf::Texture> m_iconTextures;
 
 public:
+
     /**
      * @brief 绘制单个设备
      * @param target 渲染目标
