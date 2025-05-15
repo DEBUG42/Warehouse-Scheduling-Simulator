@@ -48,15 +48,15 @@ private:
      * @param y2 终点Y坐标
      * @param color 线段颜色
      */
-    void addLineSegment(float x1, float y1, float x2, float y2, const sf::Color &color);    /**
-     * @brief 添加圆弧段到顶点数组
-     * @param centerX 圆心X坐标
-     * @param centerY 圆心Y坐标
-     * @param radius 圆弧半径
-     * @param startAngle 起始角度(弧度)
-     * @param endAngle 结束角度(弧度)
-     * @param segments 圆弧分段数
-     */
+    void addLineSegment(float x1, float y1, float x2, float y2, const sf::Color &color); /**
+                                                                                          * @brief 添加圆弧段到顶点数组
+                                                                                          * @param centerX 圆心X坐标
+                                                                                          * @param centerY 圆心Y坐标
+                                                                                          * @param radius 圆弧半径
+                                                                                          * @param startAngle 起始角度(弧度)
+                                                                                          * @param endAngle 结束角度(弧度)
+                                                                                          * @param segments 圆弧分段数
+                                                                                          */
     void addArcSegment(float centerX, float centerY, float radius,
                        float startAngle, float endAngle, int segments);
 };

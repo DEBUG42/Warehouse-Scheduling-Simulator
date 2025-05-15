@@ -32,18 +32,18 @@ private:
     // 交互状态
     bool m_isDragging = false;   // 正在拖拽视图标志
     sf::Vector2f m_lastMousePos; // 上一次鼠标位置（屏幕坐标）
-    
+
     // 仿真引擎引用
     TestSimulationEngine *m_engine;
 
     // 选择系统
     std::shared_ptr<SimObject> m_selectedObject;
 
-public:    /**
-     * @brief 初始化仿真视图
-     * @param font 字体引用
-     * @param engine 仿真引擎引用
-     */
+public: /**
+         * @brief 初始化仿真视图
+         * @param font 字体引用
+         * @param engine 仿真引擎引用
+         */
     void initialize(sf::Font &font, TestSimulationEngine &engine);
 
     /**

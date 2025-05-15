@@ -6,7 +6,7 @@
 
 /**
  * @brief 任务列表显示类
- * 
+ *
  * 状态面板的组成部分，显示系统中的任务队列
  * 支持任务状态（待处理、进行中、已完成）的不同样式显示
  * 可显示任务类型、来源、目标和状态等信息
@@ -17,7 +17,7 @@ private:
     sf::Font &m_font;
     float m_width;
     std::vector<Task> m_tasks;
-    
+
     // 样式参数
     const float m_itemHeight = 30.0f;
     const sf::Color m_backgroundColor{45, 48, 50};
@@ -50,8 +50,10 @@ private:
     ObjectType m_currentType = ObjectType::None;
 
     // 存储当前选中对象的数据
-    union {
-        struct {
+    union
+    {
+        struct
+        {
             int id;
             float position;
             float speed;
@@ -59,7 +61,8 @@ private:
             int taskId;
         } vehicle;
 
-        struct {
+        struct
+        {
             int id;
             DeviceType type;
             DeviceStatus status;

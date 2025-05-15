@@ -5,13 +5,13 @@
 
 /**
  * @brief 绘制单个车辆
- * 
+ *
  * 根据车辆状态、位置和朝向绘制车辆图形。图形包括:
  * - 矩形车身，颜色根据载货状态变化
  * - 三角形方向指示器显示车头朝向
  * - 车辆ID标签
  * - 速度指示条（随速度变化）
- * 
+ *
  * @param target 渲染目标
  * @param vehicle 车辆数据引用
  * @param position 车辆世界坐标
@@ -49,32 +49,43 @@ void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
     arrow.setPoint(2, sf::Vector2f(m_baseSize.x / 4, m_baseSize.y / 4));
 
     // 设置箭头变换
-    arrow.setOrigin(m_baseSize.x / 4, 0);    arrow.setPosition(position);
-    arrow.setRotation(rotation);  // 角度已经转换好
+    arrow.setOrigin(m_baseSize.x / 4, 0);
+    arrow.setPosition(position);
+    arrow.setRotation(rotation);                  // 角度已经转换好
     arrow.setFillColor(sf::Color(220, 220, 220)); // 浅灰色箭头
 
     // 绘制方向指示器
-    target.draw(arrow);    // 显示车辆ID
+    target.draw(arrow); // 显示车辆ID
     // 注意：在实际应用中，应将字体加载放到构造函数中而不是每次渲染时加载
     static sf::Font font;
     static bool fontLoaded = false;
-    
-    if (!fontLoaded) {
-        try {
+
+    if (!fontLoaded)
+    {
+        try
+        {
             // 尝试多个可能的路径
-            if (font.loadFromFile("resources/fonts/arial.ttf")) {
-                fontLoaded = true;
-            } else if (font.loadFromFile("GUI/resources/fonts/arial.ttf")) {
-                fontLoaded = true;
-            } else if (font.loadFromFile("fonts/arial.ttf")) {
+            if (font.loadFromFile("resources/fonts/arial.ttf"))
+            {
                 fontLoaded = true;
             }
-        } catch (const std::exception& e) {
+            else if (font.loadFromFile("GUI/resources/fonts/arial.ttf"))
+            {
+                fontLoaded = true;
+            }
+            else if (font.loadFromFile("fonts/arial.ttf"))
+            {
+                fontLoaded = true;
+            }
+        }
+        catch (const std::exception &e)
+        {
             std::cerr << "无法加载字体: " << e.what() << std::endl;
         }
     }
-    
-    if (fontLoaded) {
+
+    if (fontLoaded)
+    {
         sf::Text idText;
         idText.setFont(font);
         idText.setString(std::to_string(vehicle.id));

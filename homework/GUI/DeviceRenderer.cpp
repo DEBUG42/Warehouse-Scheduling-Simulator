@@ -4,10 +4,10 @@
 
 /**
  * @brief 加载设备图标资源
- * 
+ *
  * 从指定路径加载四种类型设备图标（入库接口、出库接口、入库作业口、出库作业口）
  * 如果无法找到图标文件，会创建默认的白色方块作为替代
- * 
+ *
  * @param basePath 图标文件基础路径
  */
 void DeviceRenderer::loadResources(const std::string &basePath)
@@ -67,10 +67,10 @@ void DeviceRenderer::loadResources(const std::string &basePath)
 
 /**
  * @brief 绘制单个设备
- * 
+ *
  * 根据设备类型、状态和位置在目标渲染表面上绘制设备图形
  * 包括设备图标、底座、ID标签以及任务队列指示器
- * 
+ *
  * @param target 渲染目标
  * @param device 设备数据引用
  * @param position 设备世界坐标
@@ -122,27 +122,37 @@ void DeviceRenderer::renderDevice(sf::RenderTarget &target,
 
     // 绘制底座和图标
     target.draw(baseShape);
-    target.draw(iconSprite);    // 绘制设备ID标签
+    target.draw(iconSprite); // 绘制设备ID标签
     // 注意：在实际应用中，应将字体加载放到构造函数中而不是每次渲染时加载
     static sf::Font font;
     static bool fontLoaded = false;
-    
-    if (!fontLoaded) {
-        try {
+
+    if (!fontLoaded)
+    {
+        try
+        {
             // 尝试多个可能的路径
-            if (font.loadFromFile("resources/fonts/arial.ttf")) {
-                fontLoaded = true;
-            } else if (font.loadFromFile("GUI/resources/fonts/arial.ttf")) {
-                fontLoaded = true;
-            } else if (font.loadFromFile("fonts/arial.ttf")) {
+            if (font.loadFromFile("resources/fonts/arial.ttf"))
+            {
                 fontLoaded = true;
             }
-        } catch (const std::exception& e) {
+            else if (font.loadFromFile("GUI/resources/fonts/arial.ttf"))
+            {
+                fontLoaded = true;
+            }
+            else if (font.loadFromFile("fonts/arial.ttf"))
+            {
+                fontLoaded = true;
+            }
+        }
+        catch (const std::exception &e)
+        {
             std::cerr << "无法加载字体: " << e.what() << std::endl;
         }
     }
-    
-    if (fontLoaded) {
+
+    if (fontLoaded)
+    {
         sf::Text idText;
         idText.setFont(font);
         idText.setString(std::to_string(device.id));
@@ -166,7 +176,8 @@ void DeviceRenderer::renderDevice(sf::RenderTarget &target,
         taskCountBg.setPosition(position.x + 20.0f, position.y - 20.0f);
 
         sf::Text taskCountText;
-        if (fontLoaded) {
+        if (fontLoaded)
+        {
             taskCountText.setFont(font);
             taskCountText.setString(std::to_string(device.queuedTaskCount));
             taskCountText.setCharacterSize(14);
