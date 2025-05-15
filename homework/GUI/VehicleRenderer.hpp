@@ -2,11 +2,17 @@
 #include <SFML/Graphics.hpp>
 #include "SimObject.hpp"
 
+/**
+ * @brief 车辆渲染器类
+ *
+ * 负责根据车辆状态信息在屏幕上绘制车辆图形
+ * 包括车身、方向指示器、ID标签以及速度指示器
+ * 根据车辆状态(空载/载货/分配任务)显示不同颜色
+ */
 class VehicleRenderer
 {
-private:
-    // 车辆模型参数
-    const sf::Vector2f m_baseSize{16.0f, 8.0f}; // 基础尺寸（像素）
+private:                                         // 车辆模型参数
+    const sf::Vector2f m_baseSize{40.0f, 16.0f}; // 基础尺寸（2000mm车长、800mm车宽对应的像素）
 
     // 状态样式
     sf::Color m_colorEmpty{80, 130, 200};    // 空载状态

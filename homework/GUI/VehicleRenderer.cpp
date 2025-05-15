@@ -3,6 +3,20 @@
 #include <iostream>
 #include <cmath>
 
+/**
+ * @brief 绘制单个车辆
+ * 
+ * 根据车辆状态、位置和朝向绘制车辆图形。图形包括:
+ * - 矩形车身，颜色根据载货状态变化
+ * - 三角形方向指示器显示车头朝向
+ * - 车辆ID标签
+ * - 速度指示条（随速度变化）
+ * 
+ * @param target 渲染目标
+ * @param vehicle 车辆数据引用
+ * @param position 车辆世界坐标
+ * @param rotation 车辆朝向角度
+ */
 void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
                                     const VehicleState &vehicle,
                                     const sf::Vector2f &position,
