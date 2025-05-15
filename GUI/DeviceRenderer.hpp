@@ -1,9 +1,9 @@
 //可编译通过但是纹理和图标没有制作 暂时不能渲染
-
+#pragma once
 #include <SFML/Graphics.hpp>
 #include <map>
 #include "../Core/Device.hpp"
-   
+  
 class DeviceRenderer {
 private:
 // 状态颜色编码 
