@@ -1,7 +1,7 @@
 {
   "simulation": {
-    "trackLength": 200.0,
-    "curveRadius": 50.0,
+    "trackLength": 95000.0,
+    "curveRadius": 2500.0,
     "initialTimeScale": 1.0,
     "maxTimeScale": 5.0,
     "vehicleCount": 5

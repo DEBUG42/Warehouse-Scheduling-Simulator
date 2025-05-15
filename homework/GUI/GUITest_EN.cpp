@@ -69,36 +69,111 @@ struct Task
 class TrackRenderer
 {
 private:
-    sf::VertexArray m_trackLines;
-    sf::Color m_trackColor;
-    float m_radius;
+    sf::VertexArray m_straightSegments; // 直线段顶点
+    sf::VertexArray m_curveSegments;    // 弯道段顶点
+    sf::Color m_straightColor;          // 直线颜色
+    sf::Color m_curveColor;             // 弯道颜色
+    float m_radius;                     // 弯道半径（像素）
+    float m_straightLength;             // 直道长度（像素）
+    float m_trackWidth;                 // 轨道宽度（像素）
 
 public:
-    TrackRenderer() : m_trackLines(sf::LinesStrip), m_trackColor(sf::Color(180, 180, 180)), m_radius(100.0f)
+    TrackRenderer() : m_straightSegments(sf::Lines),
+                      m_curveSegments(sf::Lines),
+                      m_straightColor(sf::Color(180, 180, 180)),
+                      m_curveColor(sf::Color(160, 160, 160)),
+                      m_radius(250.0f),         // 弯道半径2500mm对应250像素
+                      m_straightLength(800.0f), // 直道长度40000mm对应800像素
+                      m_trackWidth(12.0f)       // 轨道宽度1200mm对应12像素
     {
         generateTrack();
     }
 
     void generateTrack()
     {
-        // Clear existing vertices
-        m_trackLines.clear();
+        // 清除现有顶点
+        m_straightSegments.clear();
+        m_curveSegments.clear();
 
-        // Create an elliptical track
-        const int segments = 60; // Number of segments
-        for (int i = 0; i <= segments; ++i)
+        // 计算几何参数
+        float halfWidth = m_straightLength / 2.0f; // 半个直道长度
+
+        // 添加直线段（上、右、下、左四条直线）
+        // 上边直线
+        addLineSegment(-halfWidth, -m_trackWidth,
+                       halfWidth, -m_trackWidth,
+                       m_straightColor);
+
+        // 下边直线
+        addLineSegment(-halfWidth, m_trackWidth,
+                       halfWidth, m_trackWidth,
+                       m_straightColor);
+
+        // 左边直线（两点间连线）
+        addLineSegment(-halfWidth - m_radius, -m_trackWidth,
+                       -halfWidth - m_radius, m_trackWidth,
+                       m_straightColor);
+
+        // 右边直线（两点间连线）
+        addLineSegment(halfWidth + m_radius, -m_trackWidth,
+                       halfWidth + m_radius, m_trackWidth,
+                       m_straightColor);
+
+        // 添加四个弯道（每个90度弧线）
+        const int arcSegments = 20; // 每个弧线的分段数
+
+        // 右上弯道
+        addArcSegment(halfWidth, -m_trackWidth, m_radius,
+                      0, M_PI / 2, arcSegments);
+
+        // 右下弯道
+        addArcSegment(halfWidth, m_trackWidth, m_radius,
+                      -M_PI / 2, 0, arcSegments);
+
+        // 左上弯道
+        addArcSegment(-halfWidth, -m_trackWidth, m_radius,
+                      M_PI / 2, M_PI, arcSegments);
+
+        // 左下弯道
+        addArcSegment(-halfWidth, m_trackWidth, m_radius,
+                      -M_PI, -M_PI / 2, arcSegments);
+    }
+
+    // 添加直线段到顶点数组
+    void addLineSegment(float x1, float y1, float x2, float y2, const sf::Color &color)
+    {
+        m_straightSegments.append(sf::Vertex(sf::Vector2f(x1, y1), color));
+        m_straightSegments.append(sf::Vertex(sf::Vector2f(x2, y2), color));
+    }
+
+    // 添加圆弧段到顶点数组
+    void addArcSegment(float centerX, float centerY, float radius,
+                       float startAngle, float endAngle, int segments)
+    {
+        float angleStep = (endAngle - startAngle) / segments;
+
+        for (int i = 0; i < segments; ++i)
         {
-            float angle = 2.0f * M_PI * i / segments;
-            float x = m_radius * std::cos(angle);
-            float y = m_radius * std::sin(angle) * 0.7f; // Elliptical shape
+            float angle1 = startAngle + i * angleStep;
+            float angle2 = startAngle + (i + 1) * angleStep;
 
-            m_trackLines.append(sf::Vertex(sf::Vector2f(x, y), m_trackColor));
+            float x1 = centerX + radius * std::cos(angle1);
+            float y1 = centerY + radius * std::sin(angle1);
+            float x2 = centerX + radius * std::cos(angle2);
+            float y2 = centerY + radius * std::sin(angle2);
+
+            m_curveSegments.append(sf::Vertex(sf::Vector2f(x1, y1), m_curveColor));
+            m_curveSegments.append(sf::Vertex(sf::Vector2f(x2, y2), m_curveColor));
         }
     }
 
     void draw(sf::RenderTarget &target, sf::RenderStates states) const
     {
-        target.draw(m_trackLines, states);
+        // 绘制直线部分
+        target.draw(m_straightSegments, states);
+
+        // 绘制弯道部分
+        target.draw(m_curveSegments, states);
     }
 };
 
@@ -113,21 +188,96 @@ private:
 public:
     VehicleRenderer() : m_emptyColor(sf::Color(80, 130, 200)),
                         m_loadedColor(sf::Color(200, 90, 40)),
-                        m_vehicleSize(10.0f)
+                        m_vehicleSize(10.0f) // 车辆基础尺寸，与m_baseSize{40.0f, 16.0f}相对应
     {
     }
-
-    void draw(sf::RenderTarget &target, const VehicleState &vehicle, float radius)
+    void draw(sf::RenderTarget &target, const VehicleState &vehicle, float trackRadius)
     {
-        float angle = vehicle.position * 2.0f * M_PI;
-        float x = radius * std::cos(angle);
-        float y = radius * std::sin(angle) * 0.7f;
+        // 计算操场轨道上的位置
+        float position = vehicle.position; // 0.0到1.0之间的归一化位置
+        float x, y, rotation;
+        const float straightLength = 800.0f; // 与TrackRenderer中一致，表示直道长度
+        const float radius = 250.0f;         // 与TrackRenderer中一致，表示弯道半径
+        const float trackWidth = 12.0f;      // 轨道宽度
 
-        // Create vehicle shape
+        // 计算轨道周长
+        const float straightTotal = straightLength * 2; // 两条直线
+        const float curveTotal = M_PI * radius * 2;     // 两个半圆
+        const float perimeter = straightTotal + curveTotal;
+
+        // 归一化位置转换为实际距离
+        float distance = position * perimeter;
+
+        // 确定车辆在轨道上的位置
+        if (distance < straightLength)
+        {
+            // 上方直线段
+            x = -straightLength / 2 + distance;
+            y = -trackWidth;
+            rotation = 0; // 朝右
+        }
+        else if (distance < straightLength + curveTotal / 4)
+        {
+            // 右上弯道
+            float angle = (distance - straightLength) / (curveTotal / 4) * (M_PI / 2);
+            x = straightLength / 2 + radius * cos(angle);
+            y = -trackWidth + radius * sin(angle);
+            rotation = angle * 180.0f / M_PI; // 弧度转角度
+        }
+        else if (distance < 2 * straightLength + curveTotal / 4)
+        {
+            // 右边直线段
+            float segment = distance - (straightLength + curveTotal / 4);
+            x = straightLength / 2 + radius;
+            y = -trackWidth + radius + segment;
+            rotation = 90; // 朝下
+        }
+        else if (distance < 2 * straightLength + curveTotal / 2)
+        {
+            // 右下弯道
+            float angle = (distance - (2 * straightLength + curveTotal / 4)) / (curveTotal / 4) * (M_PI / 2);
+            x = straightLength / 2 + radius * cos(angle + M_PI / 2);
+            y = trackWidth + radius * sin(angle + M_PI / 2);
+            rotation = (angle + M_PI / 2) * 180.0f / M_PI; // 弧度转角度
+        }
+        else if (distance < 3 * straightLength + curveTotal / 2)
+        {
+            // 下方直线段
+            float segment = distance - (2 * straightLength + curveTotal / 2);
+            x = straightLength / 2 - segment;
+            y = trackWidth;
+            rotation = 180; // 朝左
+        }
+        else if (distance < 3 * straightLength + 3 * curveTotal / 4)
+        {
+            // 左下弯道
+            float angle = (distance - (3 * straightLength + curveTotal / 2)) / (curveTotal / 4) * (M_PI / 2);
+            x = -straightLength / 2 + radius * cos(angle + M_PI);
+            y = trackWidth + radius * sin(angle + M_PI);
+            rotation = (angle + M_PI) * 180.0f / M_PI; // 弧度转角度
+        }
+        else if (distance < 4 * straightLength + 3 * curveTotal / 4)
+        {
+            // 左边直线段
+            float segment = distance - (3 * straightLength + 3 * curveTotal / 4);
+            x = -straightLength / 2 - radius;
+            y = trackWidth - segment;
+            rotation = 270; // 朝上
+        }
+        else
+        {
+            // 左上弯道
+            float angle = (distance - (4 * straightLength + 3 * curveTotal / 4)) / (curveTotal / 4) * (M_PI / 2);
+            x = -straightLength / 2 + radius * cos(angle + 3 * M_PI / 2);
+            y = -trackWidth + radius * sin(angle + 3 * M_PI / 2);
+            rotation = (angle + 3 * M_PI / 2) * 180.0f / M_PI; // 弧度转角度
+        }
+
+        // 创建车辆形状
         sf::RectangleShape vehicleShape(sf::Vector2f(m_vehicleSize * 1.5f, m_vehicleSize));
         vehicleShape.setOrigin(m_vehicleSize * 0.75f, m_vehicleSize * 0.5f);
         vehicleShape.setPosition(x, y);
-        vehicleShape.setRotation(angle * 180.0f / M_PI + 90.0f);
+        vehicleShape.setRotation(rotation);
 
         // Set color based on load status
         vehicleShape.setFillColor(vehicle.isLoaded ? m_loadedColor : m_emptyColor);
@@ -871,10 +1021,10 @@ int main()
     DeviceRenderer deviceRenderer;
     ControlPanel controlPanel;
     TaskPanel taskPanel;
-    ObjectInfoPanel infoPanel;
-
-    // Create view (for zooming and panning)
+    ObjectInfoPanel infoPanel; // Create view (for zooming and panning)
     sf::View worldView = window.getDefaultView();
+    // 将视图居中显示 - 设置世界坐标系原点在窗口中心
+    worldView.setCenter(0, 0);
 
     // Create simulated data
     std::vector<VehicleState> vehicles;
@@ -925,12 +1075,10 @@ int main()
         device.type = DeviceType::WorkstationIn;
         device.status = (i % 2 == 1) ? DeviceStatus::working : DeviceStatus::idle;
         devices.push_back(device);
-    }
-
-    // Calculate device positions
+    } // Calculate device positions
     std::map<int, sf::Vector2f> devicePositions;
-    float radius = 100.0f;
-    float outerRadius = radius + 50.0f;
+    float radius = 250.0f;              // 与轨道大小匹配
+    float outerRadius = radius + 80.0f; // 根据轨道和设备比例调整
 
     // Storage input device positions
     for (int i = 0; i < 6; ++i)
@@ -1009,15 +1157,37 @@ int main()
             if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
             {
                 // Get mouse position in world coordinates
-                sf::Vector2f worldPos = window.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y), worldView);
-
-                // Try to select a vehicle
+                sf::Vector2f worldPos = window.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y), worldView); // 尝试选择一个车辆
                 bool vehicleSelected = false;
                 for (const auto &vehicle : vehicles)
                 {
-                    float angle = vehicle.position * 2.0f * M_PI;
-                    float x = radius * std::cos(angle);
-                    float y = radius * std::sin(angle) * 0.7f;
+                    // 使用与绘制相同的位置计算逻辑
+                    float position = vehicle.position; // 0.0到1.0之间的归一化位置
+                    float x, y;
+                    const float straightLength = 800.0f;
+                    const float trackRadius = 250.0f;
+                    const float trackWidth = 12.0f;
+
+                    // 计算轨道周长
+                    const float straightTotal = straightLength * 2;
+                    const float curveTotal = M_PI * trackRadius * 2;
+                    const float perimeter = straightTotal + curveTotal;
+
+                    float distance = position * perimeter;
+
+                    // 根据位置计算x,y坐标（简化版，仅用于选择）
+                    if (distance < straightLength)
+                    {
+                        x = -straightLength / 2 + distance;
+                        y = -trackWidth;
+                    }
+                    else
+                    {
+                        // 如果不在直线上，使用近似位置
+                        float angle = (distance / perimeter) * 2.0f * M_PI;
+                        x = trackRadius * std::cos(angle);
+                        y = trackRadius * std::sin(angle);
+                    }
 
                     sf::Vector2f vehiclePos(x, y);
                     if (std::sqrt(std::pow(worldPos.x - vehiclePos.x, 2) + std::pow(worldPos.y - vehiclePos.y, 2)) < 15.0f)

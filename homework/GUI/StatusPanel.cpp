@@ -22,6 +22,15 @@ void StatusPanel::refreshContent(const SimObject *selectedObject,
     m_taskList->updateTasks(pendingTasks);
 }
 
+/**
+ * @brief 渲染面板界面
+ * 
+ * 绘制状态面板的背景和所有UI组件
+ * 包括对象信息区域和任务列表区域
+ * 
+ * @param target 渲染目标
+ * @param position 面板左上角位置
+ */
 void StatusPanel::render(sf::RenderTarget &target, const sf::Vector2f &position)
 {
     // 绘制面板背景

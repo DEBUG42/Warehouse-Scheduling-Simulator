@@ -8,6 +8,13 @@
 
 class TestSimulationEngine;
 
+/**
+ * @brief 仿真场景视图类
+ *
+ * 负责管理和渲染整个仿真场景，包括轨道、设备和车辆
+ * 实现视图变换控制（平移、缩放）和对象选择功能
+ * 作为GUI系统中负责场景显示的核心组件与仿真引擎交互
+ */
 class SimulationView
 {
 private:

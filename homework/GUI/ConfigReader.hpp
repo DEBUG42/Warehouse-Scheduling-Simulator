@@ -3,7 +3,13 @@
 #include <fstream>
 #include <iostream>
 
-// 简单的JSON配置读取类
+/**
+ * @brief 仿真系统JSON配置文件读取类
+ * 
+ * 该类负责从JSON格式配置文件中读取系统的各项参数设置，
+ * 包括轨道尺寸、车辆数量、显示窗口大小、设备数量等配置。
+ * 采用简化的JSON解析逐行读取方式，可以处理标准格式的JSON文件。
+ */
 class ConfigReader {
 private:
     std::string m_configPath;
@@ -35,10 +41,18 @@ private:
     } m_config;
     
 public:
+    /**
+     * @brief 构造函数
+     * @param configPath 配置文件路径，默认为"config.json"
+     */
     ConfigReader(const std::string& configPath = "config.json") 
         : m_configPath(configPath) 
     {}
     
+    /**
+     * @brief 加载配置文件
+     * @return 是否成功加载配置文件
+     */
     bool loadConfig() {
         // 实际应用中应使用完整的JSON解析库
         // 这里使用简化版本，仅读取预定义键值
@@ -119,25 +133,99 @@ public:
         file.close();
         return true;
     }
-    
-    // 获取配置参数
+      // 获取配置参数
+    /**
+     * @brief 获取轨道总长度
+     * @return 轨道总长度(mm)
+     */
     float getTrackLength() const { return m_config.trackLength; }
-    float getCurveRadius() const { return m_config.curveRadius; }
-    float getInitialTimeScale() const { return m_config.initialTimeScale; }
-    float getMaxTimeScale() const { return m_config.maxTimeScale; }
-    int getVehicleCount() const { return m_config.vehicleCount; }
     
+    /**
+     * @brief 获取轨道弯道半径
+     * @return 弯道半径(mm)
+     */
+    float getCurveRadius() const { return m_config.curveRadius; }
+    
+    /**
+     * @brief 获取初始仿真时间缩放比例
+     * @return 初始时间缩放比例，默认为1.0
+     */
+    float getInitialTimeScale() const { return m_config.initialTimeScale; }
+    
+    /**
+     * @brief 获取最大仿真时间缩放比例
+     * @return 最大时间缩放比例
+     */
+    float getMaxTimeScale() const { return m_config.maxTimeScale; }
+    
+    /**
+     * @brief 获取车辆数量
+     * @return 仿真中的车辆数量
+     */
+    int getVehicleCount() const { return m_config.vehicleCount; }
+      /**
+     * @brief 获取窗口宽度
+     * @return 窗口宽度(像素)
+     */
     int getWindowWidth() const { return m_config.windowWidth; }
+    
+    /**
+     * @brief 获取窗口高度
+     * @return 窗口高度(像素)
+     */
     int getWindowHeight() const { return m_config.windowHeight; }
+    
+    /**
+     * @brief 获取工具栏高度
+     * @return 工具栏高度(像素)
+     */
     float getToolbarHeight() const { return m_config.toolbarHeight; }
+    
+    /**
+     * @brief 获取状态面板宽度
+     * @return 状态面板宽度(像素)
+     */
     float getStatusPanelWidth() const { return m_config.statusPanelWidth; }
+    
+    /**
+     * @brief 获取帧率
+     * @return 目标帧率
+     */
     int getFramerate() const { return m_config.framerate; }
     
+    /**
+     * @brief 获取入库接口设备数量
+     * @return 入库接口设备数量
+     */
     int getStorageInCount() const { return m_config.storageInCount; }
+    
+    /**
+     * @brief 获取出库接口设备数量
+     * @return 出库接口设备数量
+     */
     int getStorageOutCount() const { return m_config.storageOutCount; }
+    
+    /**
+     * @brief 获取入库作业口数量
+     * @return 入库作业口数量
+     */
     int getWorkstationInCount() const { return m_config.workstationInCount; }
+    
+    /**
+     * @brief 获取出库作业口数量
+     * @return 出库作业口数量
+     */
     int getWorkstationOutCount() const { return m_config.workstationOutCount; }
     
+    /**
+     * @brief 获取字体路径
+     * @return 字体文件路径
+     */
     std::string getFontPath() const { return m_config.fontPath; }
+    
+    /**
+     * @brief 获取图标基础路径
+     * @return 图标文件基础目录路径
+     */
     std::string getIconBasePath() const { return m_config.iconBasePath; }
 };

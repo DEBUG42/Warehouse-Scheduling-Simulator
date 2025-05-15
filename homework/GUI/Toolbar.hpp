@@ -8,6 +8,13 @@ class Button;
 class TimeDisplay;
 class SpeedControl;
 
+/**
+ * @brief 工具栏类
+ *
+ * 位于界面顶部，提供仿真控制功能
+ * 包括播放/暂停按钮、时间显示、速度调节滑块等组件
+ * 处理用户交互并发送控制命令到仿真引擎
+ */
 class Toolbar
 {
 private:

@@ -2,6 +2,14 @@
 #include "../Core/Device.hpp"
 #include <iostream>
 
+/**
+ * @brief 加载设备图标资源
+ * 
+ * 从指定路径加载四种类型设备图标（入库接口、出库接口、入库作业口、出库作业口）
+ * 如果无法找到图标文件，会创建默认的白色方块作为替代
+ * 
+ * @param basePath 图标文件基础路径
+ */
 void DeviceRenderer::loadResources(const std::string &basePath)
 {
     // 加载设备图标纹理
@@ -57,6 +65,16 @@ void DeviceRenderer::loadResources(const std::string &basePath)
     m_iconTextures[DeviceType::WorkstationOut] = workOutTexture;
 }
 
+/**
+ * @brief 绘制单个设备
+ * 
+ * 根据设备类型、状态和位置在目标渲染表面上绘制设备图形
+ * 包括设备图标、底座、ID标签以及任务队列指示器
+ * 
+ * @param target 渲染目标
+ * @param device 设备数据引用
+ * @param position 设备世界坐标
+ */
 void DeviceRenderer::renderDevice(sf::RenderTarget &target,
                                   const DeviceState &device,
                                   const sf::Vector2f &position)

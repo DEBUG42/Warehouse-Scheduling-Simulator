@@ -4,7 +4,13 @@
 #include <string>
 #include "../Core/Task.hpp"
 
-// 任务列表显示类
+/**
+ * @brief 任务列表显示类
+ * 
+ * 状态面板的组成部分，显示系统中的任务队列
+ * 支持任务状态（待处理、进行中、已完成）的不同样式显示
+ * 可显示任务类型、来源、目标和状态等信息
+ */
 class TaskListView
 {
 private:

@@ -18,7 +18,7 @@ set WARNINGS=-Wall -Wextra
 set SFML_LIBS=-lsfml-graphics -lsfml-window -lsfml-system
 
 REM 源文件
-set SRC_GUI=GUITest.cpp
+set SRC_GUI=GUITest_EN.cpp
 REM set SRC_CORE=..\Core\SimulationEngine.cpp ..\Core\Vehicle.cpp ..\Core\Device.cpp
 REM set SRC_PHYSICS=..\Physics\MotionController.cpp
 
