@@ -14,61 +14,63 @@ void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
     m_curveSegments.clear();
 
     // 计算轨道参数
-    // 假设轨道是一个矩形带圆角的形状
-    // 轨道的直线部分总长度 = 轨道总长 - (4 * 90度弧长)
-    // 一个90度弧的长度 = 0.5 * PI * 弯道半径
-    float arcLength = 0.5f * M_PI * curveRadius;
-    float totalArcLength = 4 * arcLength;
+    // 赛道形状 = 两条平行直线 + 两个半圆
+    // 直线部分长度 = 轨道总长 - (2 * 半圆弧长)
+    // 半圆弧长 = PI * 弯道半径
+    float arcLength = M_PI * curveRadius;
+    float totalArcLength = 2 * arcLength;
     float straightLength = trackLength - totalArcLength;
 
-    // 每边的直线长度（平均分配）
-    float sideLength = straightLength / 4;
+    // 轨道的直线部分长度（两侧各一半）
+    float sideLength = straightLength / 2;
 
-    // 轨道矩形的尺寸
-    float width = 2 * curveRadius + sideLength;
-    float height = 2 * curveRadius + sideLength;
+    // 赛道总尺寸
+    float width = sideLength;
+    float height = 2 * curveRadius;
 
     // 轨道中心
     float centerX = 0.0f;
     float centerY = 0.0f;
 
-    // 生成直线部分（四边形的四条边）
-    // 上边
-    addLineSegment(centerX - width / 2 + curveRadius, centerY - height / 2,
-                   centerX + width / 2 - curveRadius, centerY - height / 2,
+    // 轨道内外边轨，考虑轨道宽度
+    float innerOffset = m_trackWidth / 2;
+    float outerOffset = m_trackWidth / 2;
+
+    // 生成直线部分（上下两条平行线）
+    // 上边 - 两条平行线（内外轨）
+    // 上部外轨
+    addLineSegment(centerX - width / 2, centerY - height / 2 + innerOffset,
+                   centerX + width / 2, centerY - height / 2 + innerOffset,
+                   m_straightColor);
+    // 上部内轨
+    addLineSegment(centerX - width / 2, centerY - height / 2 + outerOffset + m_trackWidth,
+                   centerX + width / 2, centerY - height / 2 + outerOffset + m_trackWidth,
                    m_straightColor);
 
-    // 右边
-    addLineSegment(centerX + width / 2, centerY - height / 2 + curveRadius,
-                   centerX + width / 2, centerY + height / 2 - curveRadius,
+    // 下边 - 两条平行线（内外轨）
+    // 下部外轨
+    addLineSegment(centerX + width / 2, centerY + height / 2 - innerOffset,
+                   centerX - width / 2, centerY + height / 2 - innerOffset,
+                   m_straightColor);
+    // 下部内轨
+    addLineSegment(centerX + width / 2, centerY + height / 2 - outerOffset - m_trackWidth,
+                   centerX - width / 2, centerY + height / 2 - outerOffset - m_trackWidth,
                    m_straightColor);
 
-    // 下边
-    addLineSegment(centerX + width / 2 - curveRadius, centerY + height / 2,
-                   centerX - width / 2 + curveRadius, centerY + height / 2,
-                   m_straightColor);
+    // 生成两侧半圆弯道
+    // 左侧半圆 - 外轨
+    addArcSegment(centerX - width / 2, centerY,
+                  height / 2 - innerOffset, M_PI * 1.5f, M_PI * 0.5f, 30);
+    // 左侧半圆 - 内轨
+    addArcSegment(centerX - width / 2, centerY,
+                  height / 2 - outerOffset - m_trackWidth, M_PI * 1.5f, M_PI * 0.5f, 30);
 
-    // 左边
-    addLineSegment(centerX - width / 2, centerY + height / 2 - curveRadius,
-                   centerX - width / 2, centerY - height / 2 + curveRadius,
-                   m_straightColor);
-
-    // 生成四个弯道（圆弧）
-    // 左上角弯道
-    addArcSegment(centerX - width / 2 + curveRadius, centerY - height / 2 + curveRadius,
-                  curveRadius, M_PI, 1.5f * M_PI, 20);
-
-    // 右上角弯道
-    addArcSegment(centerX + width / 2 - curveRadius, centerY - height / 2 + curveRadius,
-                  curveRadius, 1.5f * M_PI, 2.0f * M_PI, 20);
-
-    // 右下角弯道
-    addArcSegment(centerX + width / 2 - curveRadius, centerY + height / 2 - curveRadius,
-                  curveRadius, 0, 0.5f * M_PI, 20);
-
-    // 左下角弯道
-    addArcSegment(centerX - width / 2 + curveRadius, centerY + height / 2 - curveRadius,
-                  curveRadius, 0.5f * M_PI, M_PI, 20);
+    // 右侧半圆 - 外轨
+    addArcSegment(centerX + width / 2, centerY,
+                  height / 2 - innerOffset, M_PI * 0.5f, M_PI * 1.5f, 30);
+    // 右侧半圆 - 内轨
+    addArcSegment(centerX + width / 2, centerY,
+                  height / 2 - outerOffset - m_trackWidth, M_PI * 0.5f, M_PI * 1.5f, 30);
 }
 
 void TrackRenderer::addLineSegment(float x1, float y1, float x2, float y2, const sf::Color &color)
