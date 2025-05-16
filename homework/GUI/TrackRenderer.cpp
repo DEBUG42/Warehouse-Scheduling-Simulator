@@ -20,6 +20,7 @@ void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
     m_straightSegments.clear();
     m_curveSegments.clear();
 
+<<<<<<< HEAD
     // =====================
     // 轨道参数（全部以mm为单位，中心线为基准）
     // =====================
@@ -42,12 +43,29 @@ void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
 
     // 右半圆弯道（圆心在(L/2,0)，从上到下，角度270°到90°）
     addArcSegment(L_px / 2, 0, R_px, 1.5f * M_PI, 0.5f * M_PI, 40);
+=======
+    // 计算轨道参数
+    // 假设轨道是一个矩形带圆角的形状
+    // 轨道的直线部分总长度 = 轨道总长 - (4 * 90度弧长)
+    // 一个90度弧的长度 = 0.5 * PI * 弯道半径
+    float arcLength = 0.5f * M_PI * curveRadius;
+    float totalArcLength = 4 * arcLength;
+    float straightLength = trackLength - totalArcLength;
+
+    // 每边的直线长度（平均分配）
+    float sideLength = straightLength / 4;
+
+    // 轨道矩形的尺寸
+    float width = 2 * curveRadius + sideLength;
+    float height = 2 * curveRadius + sideLength;
+>>>>>>> parent of c074cf8 (将轨道渲染修改为赛道形状（两条平行直线连接两个半圆）)
 
     // 左半圆弯道（圆心在(-L/2,0)，从下到上，角度90°到270°）
     addArcSegment(-L_px / 2, 0, R_px, 0.5f * M_PI, 1.5f * M_PI, 40); // =====================
     // 绘制内外轨道（在半径上加减一半轨道宽度）
     float halfWidth = trackWidth_px / 2.0f;
 
+<<<<<<< HEAD
     // 上直道内轨（内侧）- Y坐标更小的一侧
     addLineSegment(-L_px / 2, -R_px - halfWidth, L_px / 2, -R_px - halfWidth, m_straightColor);
     // 上直道外轨（外侧）- Y坐标更大的一侧
@@ -76,6 +94,45 @@ void TrackRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) cons
 
     // 然后绘制弯道段
     target.draw(m_curveSegments, states);
+=======
+    // 生成直线部分（四边形的四条边）
+    // 上边
+    addLineSegment(centerX - width / 2 + curveRadius, centerY - height / 2,
+                   centerX + width / 2 - curveRadius, centerY - height / 2,
+                   m_straightColor);
+
+    // 右边
+    addLineSegment(centerX + width / 2, centerY - height / 2 + curveRadius,
+                   centerX + width / 2, centerY + height / 2 - curveRadius,
+                   m_straightColor);
+
+    // 下边
+    addLineSegment(centerX + width / 2 - curveRadius, centerY + height / 2,
+                   centerX - width / 2 + curveRadius, centerY + height / 2,
+                   m_straightColor);
+
+    // 左边
+    addLineSegment(centerX - width / 2, centerY + height / 2 - curveRadius,
+                   centerX - width / 2, centerY - height / 2 + curveRadius,
+                   m_straightColor);
+
+    // 生成四个弯道（圆弧）
+    // 左上角弯道
+    addArcSegment(centerX - width / 2 + curveRadius, centerY - height / 2 + curveRadius,
+                  curveRadius, M_PI, 1.5f * M_PI, 20);
+
+    // 右上角弯道
+    addArcSegment(centerX + width / 2 - curveRadius, centerY - height / 2 + curveRadius,
+                  curveRadius, 1.5f * M_PI, 2.0f * M_PI, 20);
+
+    // 右下角弯道
+    addArcSegment(centerX + width / 2 - curveRadius, centerY + height / 2 - curveRadius,
+                  curveRadius, 0, 0.5f * M_PI, 20);
+
+    // 左下角弯道
+    addArcSegment(centerX - width / 2 + curveRadius, centerY + height / 2 - curveRadius,
+                  curveRadius, 0.5f * M_PI, M_PI, 20);
+>>>>>>> parent of c074cf8 (将轨道渲染修改为赛道形状（两条平行直线连接两个半圆）)
 }
 
 void TrackRenderer::addLineSegment(float x1, float y1, float x2, float y2, const sf::Color &color)
