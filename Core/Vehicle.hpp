@@ -1,3 +1,4 @@
+#pragma once
 #include <SFML/Graphics.hpp>
 #include <map>
 #include "Task.hpp"
@@ -12,14 +13,20 @@ public:
         Decelerating,  // 减速阶段
         Stopped        // 静止状态
     };
-
-private:
-    // 固有属性
-    const float m_length;            // 车辆长度（米）
-    const float m_maxStraightSpeed;   // 直轨最大速度（米/秒）
-    const float m_maxCurveSpeed;     // 弯轨最大速度（米/秒）
-    const float m_acceleration;       // 加减速度（米/秒²）
     
+Vehicle(int id, float length, float maxStraightSpeed, float maxCurveSpeed, float acceleration)
+        : m_length(length), m_maxStraightSpeed(maxStraightSpeed), m_maxCurveSpeed(maxCurveSpeed), m_acceleration(acceleration) {}
+
+public:
+    // 固有属性
+    float m_length=0.02;            // 车辆长度（米）
+    float m_maxStraightSpeed=(8/3)*TimeScale();   // 直轨最大速度（米/秒）
+    float m_maxCurveSpeed=(2/3)*TimeScale();     // 弯轨最大速度（米/秒）
+    float m_acceleration=0.5*TimeScale()*TimeScale();       // 加减速度（米/秒²）
+	float m_loadTime=7.5/TimeScale(); // 装卸货时间（秒）
+	float m_storageIn =30.0/TimeScale(); // 入库时间（秒）
+    float m_storageOut =25.0/TimeScale(); // 出库时间（秒）
+
     // 动态状态
     struct {
         float position;               // 轨道位置（0~trackLength）
