@@ -11,8 +11,15 @@
  */
 class VehicleRenderer
 {
-private:                                         // 车辆模型参数
-    const sf::Vector2f m_baseSize{40.0f, 16.0f}; // 基础尺寸（2000mm车长、800mm车宽对应的像素）
+private:
+    // 单位转换常量
+    static constexpr float MM_TO_PIXEL = 0.05f; // 毫米到像素的转换因子 (1mm = 0.05px)
+
+    // 车辆模型参数
+    const sf::Vector2f m_baseSize{
+        2000.0f * MM_TO_PIXEL, // 车长：2000mm = 100像素
+        800.0f * MM_TO_PIXEL   // 车宽：800mm = 40像素
+    };
 
     // 状态样式
     sf::Color m_colorEmpty{80, 130, 200};    // 空载状态
@@ -24,11 +31,24 @@ public:
      * @brief 绘制单个车辆
      * @param target 渲染目标
      * @param vehicle 车辆数据引用
-     * @param position 车辆世界坐标
-     * @param rotation 车辆朝向角度
+     * @param position 车辆世界坐标（像素）
+     * @param rotation 车辆朝向角度（度）
      */
     void renderVehicle(sf::RenderTarget &target,
                        const VehicleState &vehicle,
                        const sf::Vector2f &position,
                        float rotation);
+
+    /**
+     * @brief 毫米转换为像素
+     * @param mm 毫米值
+     * @return 对应的像素值
+     */
+    static float mmToPixel(float mm) { return mm * MM_TO_PIXEL; }
+
+    /**
+     * @brief 获取车辆渲染尺寸
+     * @return 车辆尺寸（像素）
+     */
+    sf::Vector2f getVehicleSize() const { return m_baseSize; }
 };

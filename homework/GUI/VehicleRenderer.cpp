@@ -14,27 +14,34 @@
  *
  * @param target 渲染目标
  * @param vehicle 车辆数据引用
- * @param position 车辆世界坐标
- * @param rotation 车辆朝向角度
+ * @param position 车辆世界坐标（像素）
+ * @param rotation 车辆朝向角度（度）
  */
 void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
                                     const VehicleState &vehicle,
                                     const sf::Vector2f &position,
                                     float rotation)
 {
-    // 创建车辆主体形状
+    // 创建车辆主体形状 - 尺寸已通过 MM_TO_PIXEL 转换为像素单位
+    // m_baseSize = {100px, 40px} 对应 {2000mm, 800mm}
     sf::RectangleShape vehicleBody(m_baseSize);
-    vehicleBody.setOrigin(m_baseSize.x / 2, m_baseSize.y / 2);
+    vehicleBody.setOrigin(m_baseSize.x / 2, m_baseSize.y / 2); // 设置原点为中心
     vehicleBody.setPosition(position);
-    vehicleBody.setRotation(rotation); // 角度已经转换好    // 根据车辆状态设置颜色
+    vehicleBody.setRotation(rotation); // 设置旋转角度（度）
+
+    // 根据车辆状态设置颜色
     sf::Color bodyColor;
-    if (vehicle.isLoaded)
+    if (vehicle.currentTaskId >= 0)
+    {
+        bodyColor = m_colorAssigned; // 已分配任务状态
+    }
+    else if (vehicle.isLoaded)
     {
         bodyColor = m_colorLoaded; // 载货状态
     }
     else
     {
-        bodyColor = m_colorEmpty; // 空闲状态
+        bodyColor = m_colorEmpty; // 空载状态
     }
     vehicleBody.setFillColor(bodyColor);
 
@@ -51,11 +58,13 @@ void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
     // 设置箭头变换
     arrow.setOrigin(m_baseSize.x / 4, 0);
     arrow.setPosition(position);
-    arrow.setRotation(rotation);                  // 角度已经转换好
+    arrow.setRotation(rotation);
     arrow.setFillColor(sf::Color(220, 220, 220)); // 浅灰色箭头
 
     // 绘制方向指示器
-    target.draw(arrow); // 显示车辆ID
+    target.draw(arrow);
+
+    // 显示车辆ID
     // 注意：在实际应用中，应将字体加载放到构造函数中而不是每次渲染时加载
     static sf::Font font;
     static bool fontLoaded = false;
@@ -77,6 +86,10 @@ void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
             {
                 fontLoaded = true;
             }
+            else if (font.loadFromFile("C:/Windows/Fonts/arial.ttf"))
+            {
+                fontLoaded = true;
+            }
         }
         catch (const std::exception &e)
         {
@@ -93,26 +106,19 @@ void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
         idText.setFillColor(sf::Color::White);
 
         // 计算文本位置（使其跟随车辆旋转）
-        sf::Vector2f textOffset(0, -m_baseSize.y);
-        float sinRot = std::sin(rotation);
-        float cosRot = std::cos(rotation);
-        sf::Vector2f rotatedOffset(
-            textOffset.x * cosRot - textOffset.y * sinRot,
-            textOffset.x * sinRot + textOffset.y * cosRot);
-
-        // 设置文本位置和居中
         sf::FloatRect textBounds = idText.getLocalBounds();
         idText.setOrigin(textBounds.width / 2, textBounds.height / 2);
-        idText.setPosition(position + rotatedOffset);
+        idText.setPosition(position);
+        idText.setRotation(rotation);
 
         target.draw(idText);
     }
 
-    // 如果车辆已分配任务，显示速度指示器
+    // 如果车辆正在移动，显示速度指示器
     if (vehicle.speed > 0.1f)
     {
         // 速度指示器（根据速度显示不同数量的条纹）
-        float maxSpeed = 10.0f; // 假设的最大速度
+        float maxSpeed = 10.0f; // 假设的最大速度（米/秒）
         int barCount = static_cast<int>(std::ceil(vehicle.speed / maxSpeed * 3.0f));
         barCount = std::min(barCount, 3); // 最多3条速度条
 
@@ -121,16 +127,17 @@ void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
             sf::RectangleShape speedBar(sf::Vector2f(3.0f, 5.0f));
             speedBar.setOrigin(1.5f, 2.5f);
 
-            // 计算速度条位置
+            // 计算速度条位置（在车辆左侧）
             sf::Vector2f barOffset(-m_baseSize.x / 2 - 5.0f - (i * 5.0f), 0.0f);
-            float sinRot = std::sin(rotation);
-            float cosRot = std::cos(rotation);
+
+            // 根据车辆旋转角度调整速度条位置
+            float angle = rotation * M_PI / 180.0f; // 角度转弧度
             sf::Vector2f rotatedBarOffset(
-                barOffset.x * cosRot - barOffset.y * sinRot,
-                barOffset.x * sinRot + barOffset.y * cosRot);
+                barOffset.x * cos(angle) - barOffset.y * sin(angle),
+                barOffset.x * sin(angle) + barOffset.y * cos(angle));
 
             speedBar.setPosition(position + rotatedBarOffset);
-            speedBar.setRotation(rotation * 180.0f / M_PI);  // 弧度转角度
+            speedBar.setRotation(rotation);
             speedBar.setFillColor(sf::Color(100, 200, 255)); // 蓝色速度条
 
             target.draw(speedBar);

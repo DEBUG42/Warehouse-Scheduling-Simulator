@@ -1,0 +1,13 @@
+# Ignore everything
+*
+
+# Don't ignore these specific files
+!.gitignore
+!homework/GUI/TrackRenderer.cpp
+!homework/GUI/TrackRenderer.hpp
+!homework/GUI/VehicleRenderer.cpp
+!homework/GUI/VehicleRenderer.hpp
+
+# Don't ignore directories needed to reach our files
+!homework/
+!homework/GUI/
