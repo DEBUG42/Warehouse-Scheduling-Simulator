@@ -46,10 +46,10 @@ private:
     float m_curveRadius = 2500.0f;  // 弯道半径(mm)
 
     // 选择系统
-    std::shared_ptr<SimObject> m_selectedObject;    // 存储的状态数据
-    std::vector<VehicleState> m_vehicles;     // 车辆状态
-    std::vector<DeviceState> m_devices;       // 设备状态（旧接口）
-    std::vector<WarehouseState> m_warehouses; // 仓库状态（新接口）
+    std::shared_ptr<SimObject> m_selectedObject; // 存储的状态数据
+    std::vector<VehicleState> m_vehicles;        // 车辆状态
+    std::vector<DeviceState> m_devices;          // 设备状态（旧接口）
+    std::vector<WarehouseState> m_warehouses;    // 仓库状态（新接口）
 
 public:
     /**

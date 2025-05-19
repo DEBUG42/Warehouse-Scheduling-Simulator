@@ -5,6 +5,7 @@
 ## 主要目录
 
 - `Core/`: 核心仿真引擎和业务逻辑
+
   - `Device.hpp/cpp`: 设备模型实现
   - `SimulationEngine.hpp/cpp`: 仿真引擎实现
   - `Task.hpp`: 任务模型定义
@@ -12,6 +13,7 @@
   - `Vehicle.hpp/cpp`: 车辆模型实现
 
 - `GUI/`: 前端图形界面实现
+
   - `main.cpp`: 主程序入口点
   - `main_simplified.cpp`: 简化版入口点
   - `MainWindow.hpp/cpp`: 主窗口实现
@@ -26,10 +28,10 @@
     - `SimulationInterface.hpp`: 前后端接口定义
     - `MockSimulationInterface.hpp`: 模拟接口实现
     - `DeviceState.hpp`: 设备状态定义
-  - UI组件:
+  - UI 组件:
     - `StatusPanel.hpp/cpp`: 状态面板
     - `Toolbar.hpp/cpp`: 工具栏
-    - `UIControls.hpp/cpp`: UI控件库
+    - `UIControls.hpp/cpp`: UI 控件库
     - `TaskList.hpp/cpp`: 任务列表
   - `docs/`: 文档目录
   - `legacy/`: 不再使用的旧版文件
@@ -37,6 +39,7 @@
   - `Test/`: 测试文件
 
 - `Physics/`: 物理模拟组件
+
   - `MotionController.hpp/cpp`: 运动控制器
   - `TrackSegment.hpp`: 轨道段定义
 
@@ -71,6 +74,7 @@ cmake --build build
 ## 历史文件
 
 所有不再使用的文件都已移动到 legacy 目录中，包括：
+
 - 旧版 homework 目录下的实现
 - 旧版和实验性的轨道渲染器
 - 临时功能实现

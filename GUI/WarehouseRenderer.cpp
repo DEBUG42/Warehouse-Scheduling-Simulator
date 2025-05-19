@@ -274,7 +274,7 @@ void WarehouseRenderer::updateWarehouseStates(const std::vector<WarehouseState> 
 {
     // 将WarehouseState转换为DeviceState
     std::vector<DeviceState> deviceStates;
-    
+
     for (const auto &warehouse : warehouseStates)
     {
         // 转换为设备状态 - 默认isInput为true，但实际应根据仓库角色判断
@@ -282,7 +282,7 @@ void WarehouseRenderer::updateWarehouseStates(const std::vector<WarehouseState> 
         DeviceState device = warehouseToDeviceState(warehouse, isInput);
         deviceStates.push_back(device);
     }
-    
+
     // 调用现有方法更新设备状态
     updateDeviceStates(deviceStates);
 }

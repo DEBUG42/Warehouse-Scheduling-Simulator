@@ -44,18 +44,18 @@ public:
                            float trackLength,
                            float curveRadius,
                            sf::Vector2f &position,
-                           float &rotation);    /**
-     * @brief 绘制单个车辆
-     * @param target 渲染目标
-     * @param vehicle 车辆数据引用
-     * @param position 车辆世界坐标
-     * @param rotation 车辆朝向角度
-     */
+                           float &rotation); /**
+                                              * @brief 绘制单个车辆
+                                              * @param target 渲染目标
+                                              * @param vehicle 车辆数据引用
+                                              * @param position 车辆世界坐标
+                                              * @param rotation 车辆朝向角度
+                                              */
     void renderVehicle(sf::RenderTarget &target,
                        const VehicleState &vehicle,
                        const sf::Vector2f &position,
                        float rotation);
-                       
+
     /**
      * @brief 渲染车辆阴影以增强3D效果
      * @param target 渲染目标

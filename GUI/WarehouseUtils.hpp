@@ -8,10 +8,14 @@
  * @param isInput 是否为输入设备
  * @return 设备类型枚举
  */
-inline DeviceType warehouseTypeToDeviceType(bool isInterface, bool isInput) {
-    if (isInterface) {
+inline DeviceType warehouseTypeToDeviceType(bool isInterface, bool isInput)
+{
+    if (isInterface)
+    {
         return isInput ? DeviceType::INPUT_STATION : DeviceType::OUTPUT_STATION;
-    } else {
+    }
+    else
+    {
         return isInput ? DeviceType::STORAGE_STATION : DeviceType::WORK_STATION;
     }
 }
@@ -22,15 +26,15 @@ inline DeviceType warehouseTypeToDeviceType(bool isInterface, bool isInput) {
  * @param isInput 是否为输入设备
  * @return 设备状态
  */
-inline DeviceState warehouseToDeviceState(const WarehouseState& warehouse, bool isInput) {
+inline DeviceState warehouseToDeviceState(const WarehouseState &warehouse, bool isInput)
+{
     DeviceState device;
     device.id = warehouse.id;
     device.trackPosition = warehouse.trackPosition;
     device.type = warehouseTypeToDeviceType(warehouse.isInterface, isInput);
-    device.status = (warehouse.currentLoad < warehouse.capacity) ? 
-                    DeviceStatus::IDLE : DeviceStatus::BUSY;
+    device.status = (warehouse.currentLoad < warehouse.capacity) ? DeviceStatus::IDLE : DeviceStatus::BUSY;
     device.capacity = warehouse.capacity;
     device.currentLoad = warehouse.currentLoad;
-    device.materialId = (device.currentLoad > 0) ? 1 : -1;  // 简单处理，实际中应有具体物料ID
+    device.materialId = (device.currentLoad > 0) ? 1 : -1; // 简单处理，实际中应有具体物料ID
     return device;
 }

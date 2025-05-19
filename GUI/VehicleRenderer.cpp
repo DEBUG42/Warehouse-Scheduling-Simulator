@@ -247,20 +247,20 @@ void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
  * @param rotation 车辆朝向角度
  */
 void VehicleRenderer::renderShadow(sf::RenderTarget &target,
-                                  const sf::Vector2f &position,
-                                  float rotation)
+                                   const sf::Vector2f &position,
+                                   float rotation)
 {
     // 创建阴影的椭圆形状
     sf::CircleShape shadow(m_baseSize.x / 2.0f);
     shadow.setScale(1.0f, 0.3f); // 扁平的椭圆
     shadow.setOrigin(shadow.getRadius(), shadow.getRadius());
     shadow.setFillColor(sf::Color(20, 20, 20, 60)); // 更淡的阴影
-    
+
     // 计算阴影偏移（随角度变化）
     float offsetX = 4.0f * std::cos((rotation - 90) * M_PI / 180.0f);
     float offsetY = 4.0f * std::sin((rotation - 90) * M_PI / 180.0f);
     shadow.setPosition(position.x + offsetX, position.y + offsetY + 5.0f);
-    
+
     // 绘制阴影
     target.draw(shadow);
 }

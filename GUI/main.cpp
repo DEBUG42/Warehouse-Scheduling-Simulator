@@ -19,24 +19,24 @@ int main()
     try
     {
         std::cout << "物流仓库仿真系统启动中..." << std::endl;
-        
+
         // 创建模拟仿真接口（用于GUI测试，不需连接实际后端）
         // 参数为模拟的小车数量
         std::shared_ptr<SimulationInterface> simInterface = std::make_shared<MockSimulationInterface>(5);
-        
+
         // 创建并初始化主窗口
         MainWindow mainWindow;
         mainWindow.initialize(simInterface);
-        
+
         std::cout << "初始化完成，开始运行..." << std::endl;
-        
+
         // 运行事件循环
         mainWindow.runEventLoop();
-        
+
         std::cout << "程序正常退出" << std::endl;
         return 0;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "错误：" << e.what() << std::endl;
         return -1;
