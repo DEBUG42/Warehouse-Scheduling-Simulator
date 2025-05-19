@@ -4,7 +4,7 @@
 
 ### 已完成的修复
 
-1. **TaskList.hpp 与 CoreModule 兼容性修复**：
+1. **TaskList.hpp 与 Core Module 兼容性修复**：
 
    - 添加了必要的 Core 目录头文件包含
    - 确保了 DeviceType 和 DeviceStatus 枚举类型在 GUI 类中正确使用

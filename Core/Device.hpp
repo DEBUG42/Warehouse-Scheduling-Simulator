@@ -1,5 +1,7 @@
+#pragma once
 #include <SFML/Graphics.hpp>
 #include <map>
+#include <queue>
 #include "Task.hpp"
 
 // 设备类型枚举

@@ -1,7 +1,9 @@
+#pragma once
 #include <SFML/Graphics.hpp>
 #include <map>
 #include "Task.hpp"
 #include "Device.hpp"
+#include "../Physics/TrackSegment.hpp"
 
 class Vehicle {
 public:

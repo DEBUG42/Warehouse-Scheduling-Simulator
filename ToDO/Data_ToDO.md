@@ -95,7 +95,7 @@ public:
     // 文件操作方法与TaskLogger类似
 };
 ```
-
+# # <!-- 我不需要 -->
 ### 4. StatisticsAggregator 统计聚合器（Data/StatisticsAggregator.hpp）
 ```cpp
 class StatisticsAggregator {
@@ -130,7 +130,7 @@ private:
     std::map<int, DeviceHistory> m_deviceHistories;
 };
 ```
-
+# # <!-- 提前定义 -->
 ### 数据结构定义（Data/DataTypes.hpp）
 ```cpp
 // 配置数据结构
@@ -177,6 +177,7 @@ sequenceDiagram
 
 ## 关键实现细节
 
+# # <!-- 我不需要 -->
 ### 1. 异步日志写入  
 ```cpp
 // TaskLogger的日志线程函数
@@ -201,6 +202,7 @@ void TaskLogger::loggingThread() {
 }
 ```
 
+# # <!-- 我不需要，读取他们的数据就行 -->
 ### 2. 设备状态跟踪  
 ```cpp
 void StatisticsAggregator::recordStateChange(int deviceId, 
