@@ -1,0 +1,149 @@
+#pragma once
+#include <SFML/Graphics.hpp>
+#include <memory>
+#include "TrackRenderer.hpp"
+#include "DeviceRenderer.hpp"
+#include "VehicleRenderer.hpp"
+#include "WarehouseRenderer.hpp"
+#include "SimObject.hpp"
+#include "DeviceState.hpp"
+#include "SimulationInterface.hpp"
+
+class TestSimulationEngine;
+
+/**
+ * @brief 仿真场景视图类
+ *
+ * 负责管理和渲染整个仿真场景，包括轨道、设备和车辆
+ * 实现视图变换控制（平移、缩放）和对象选择功能
+ * 作为GUI系统中负责场景显示的核心组件与仿真引擎交互
+ */
+class SimulationView
+{
+private:
+    // 视图变换参数
+    sf::View m_worldView;      // 世界坐标系视图
+    sf::View m_uiView;         // UI叠加层视图
+    sf::Vector2f m_viewCenter; // 当前视图中心（世界坐标）
+    float m_zoomLevel = 1.0f;  // 当前缩放级别
+
+    // 对象渲染器
+    TrackRenderer m_trackRenderer;         // 轨道绘制组件
+    DeviceRenderer m_deviceRenderer;       // 设备绘制组件（旧版）
+    VehicleRenderer m_vehicleRenderer;     // 车辆绘制组件
+    WarehouseRenderer m_warehouseRenderer; // 仓库绘制组件（新版）
+
+    // 交互状态
+    bool m_isDragging = false;   // 正在拖拽视图标志
+    sf::Vector2f m_lastMousePos; // 上一次鼠标位置（屏幕坐标）
+
+    // 仿真引擎引用
+    TestSimulationEngine *m_engine = nullptr;            // 旧版接口
+    std::shared_ptr<SimulationInterface> m_simInterface; // 新版接口
+
+    // 轨道参数
+    float m_trackLength = 90000.0f; // 轨道总长度(mm)
+    float m_curveRadius = 2500.0f;  // 弯道半径(mm)
+
+    // 选择系统
+    std::shared_ptr<SimObject> m_selectedObject;    // 存储的状态数据
+    std::vector<VehicleState> m_vehicles;     // 车辆状态
+    std::vector<DeviceState> m_devices;       // 设备状态（旧接口）
+    std::vector<WarehouseState> m_warehouses; // 仓库状态（新接口）
+
+public:
+    /**
+     * @brief 初始化仿真视图（使用新版接口）
+     * @param font 字体引用
+     * @param simInterface 仿真接口
+     */
+    void initialize(sf::Font &font, std::shared_ptr<SimulationInterface> simInterface);
+
+    /**
+     * @brief 初始化仿真视图（兼容旧版接口）
+     * @param font 字体引用
+     * @param engine 仿真引擎引用
+     */
+    void initialize(sf::Font &font, TestSimulationEngine &engine);
+
+    /**
+     * @brief 更新视图变换参数
+     * @param deltaTime 帧时间
+     */
+    void updateViewTransforms(float deltaTime);
+
+    /**
+     * @brief 渲染世界场景
+     * @param target SFML渲染目标
+     */
+    void renderWorld(sf::RenderTarget &target);
+
+    /**
+     * @brief 处理视图相关输入事件
+     * @param event SFML事件对象
+     * @param mousePos 鼠标当前位置（屏幕坐标）
+     */
+    void handleViewEvent(const sf::Event &event, const sf::Vector2f &mousePos);
+
+    /**
+     * @brief 更新视口
+     * @param viewport 视口矩形
+     */
+    void updateViewport(const sf::FloatRect &viewport);
+
+    /**
+     * @brief 将屏幕坐标转换为世界坐标
+     * @param screenPos 屏幕坐标
+     * @return 世界坐标
+     */
+    sf::Vector2f screenToWorld(const sf::Vector2f &screenPos) const;
+
+    /**
+     * @brief 选择指定位置的对象
+     * @param worldPos 世界坐标位置
+     */
+    void selectObjectAt(const sf::Vector2f &worldPos);
+
+    /**
+     * @brief 获取当前选中的对象
+     * @return 选中对象指针（可能为nullptr）
+     */
+    std::shared_ptr<SimObject> getSelectedObject() const;
+
+    /**
+     * @brief 更新车辆状态
+     * @param vehicles 车辆状态列表
+     */
+    void updateVehicles(const std::vector<VehicleState> &vehicles);
+
+    /**
+     * @brief 更新设备状态
+     * @param devices 设备状态列表
+     */
+    void updateDevices(const std::vector<DeviceState> &devices);
+
+private:
+    /**
+     * @brief 渲染轨道
+     * @param target SFML渲染目标
+     */
+    void renderTrack(sf::RenderTarget &target);
+
+    /**
+     * @brief 渲染仓库/接口设备
+     * @param target SFML渲染目标
+     */
+    void renderWarehouses(sf::RenderTarget &target);
+
+    /**
+     * @brief 渲染车辆
+     * @param target SFML渲染目标
+     */
+    void renderVehicles(sf::RenderTarget &target);
+
+    /**
+     * @brief 渲染UI层
+     * @param target SFML渲染目标
+     */
+    void renderUI(sf::RenderTarget &target);
+};
