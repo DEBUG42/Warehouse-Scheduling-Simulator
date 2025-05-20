@@ -13,9 +13,21 @@ public:
         Decelerating,  // 减速阶段
         Stopped        // 静止状态
     };
-    
-Vehicle(int id, float length, float maxStraightSpeed, float maxCurveSpeed, float acceleration)
-        : m_length(length), m_maxStraightSpeed(maxStraightSpeed), m_maxCurveSpeed(maxCurveSpeed), m_acceleration(acceleration) {}
+	
+    // 构造函数
+	/**
+	 * @brief 构造函数
+	 * @param position
+	 * @param currentSpeed
+	 * @param motionState
+	 **/		
+	InitVehicle(float position, float currentSpeed, MotionState motionStateposition){
+		Vehicle.m_state.position = position;
+		Vehicle.m_state.currentSpeed = currentSpeed;
+		Vehicle.m_state.motionState = motionState;
+		Vehicle.m_state.currentTask = nullptr;
+		Vehicle.m_state.operationTimer.restart();
+	}
 
 public:
     // 固有属性
@@ -39,14 +51,28 @@ public:
 public:
     // 运动控制
     /**
-     * @brief 更新车辆物理状态
+     * @brief 根据是否会发生碰撞，更新车辆物理状态
      * @param deltaTime 仿真时间增量（秒）
      * @param leadingVehicle 前车对象（可为nullptr）
      * @param trackInfo 当前轨道段信息（直轨/弯轨）
-     * @return 是否发生状态变更（用于触发UI更新）
+     * @return 状态（用于触发UI更新）
      */
-//    bool updatePhysics(float deltaTime, const Vehicle* leadingVehicle, const TrackSegment& trackInfo);
-    
+	MotionState updatePhysics(float deltaTime, const Vehicle* leadingVehicle, const Vehicle* nowVehicle){
+		if (motionState == MotionState::Accelerating) {
+		currentSpeed += acceleration * deltaTime;
+		if (currentSpeed > maxStraightSpeed) {
+			currentSpeed = maxStraightSpeed;
+			motionState = MotionState::Cruising;
+		}
+	}
+	else if (motionState == MotionState::Decelerating) {
+		currentSpeed -= acceleration * deltaTime;
+		if (currentSpeed < 0.0) {
+			currentSpeed = 0.0;
+			motionState = MotionState::Stopped;
+		}	
+	}
+}
     // 任务操作
     /**
      * @brief 开始执行任务
