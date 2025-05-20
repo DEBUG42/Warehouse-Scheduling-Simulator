@@ -1,0 +1,69 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "WarehouseSimulation",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "WarehouseSimulation::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-WarehouseSimulation-Debug-fe415a6548c320fd01b4.json",
+					"name" : "WarehouseSimulation",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "WarehouseSimulationSimple::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-WarehouseSimulationSimple-Debug-8ae5bb8ccda768b7f2e7.json",
+					"name" : "WarehouseSimulationSimple",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "D:/CodeMaster/GitHub/C++SFML/Warehouse-sch/build",
+		"source" : "D:/CodeMaster/GitHub/C++SFML/Warehouse-sch/GUI"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 8
+	}
+}

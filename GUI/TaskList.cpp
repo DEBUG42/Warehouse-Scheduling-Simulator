@@ -266,7 +266,8 @@ void ObjectInspector::renderDeviceDetails(sf::RenderTarget &target, const sf::Ve
     // 设置文本内容
     idText.setString("ID: " + std::to_string(m_data.device.id));
 
-    // 设备类型    std::string typeStr;
+    // 设备类型
+    std::string typeStr;
     switch (m_data.device.type)
     {
     case DeviceType::StorageIn:
@@ -287,8 +288,8 @@ void ObjectInspector::renderDeviceDetails(sf::RenderTarget &target, const sf::Ve
     typeText.setString("类型: " + typeStr);
 
     // 设备状态
-    std::string statusStr = (m_data.device.status == DeviceStatus::idle) ? "空闲" : "工作中";
-    statusText.setString("状态: " + statusStr);    // 队列任务数量
+    std::string statusStr = (m_data.device.status == DeviceStatus::IDLE) ? "空闲" : "工作中";
+    statusText.setString("状态: " + statusStr); // 队列任务数量
     queueText.setString("队列任务数: " + std::to_string(m_data.device.queueCount));
 
     // 设置文本样式

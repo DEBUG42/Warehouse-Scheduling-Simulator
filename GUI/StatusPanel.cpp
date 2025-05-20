@@ -79,3 +79,8 @@ void StatusPanel::resize(float height)
 {
     m_panelHeight = height;
 }
+
+void StatusPanel::setSimulationTime(float time) {}
+void StatusPanel::setVehicleCount(size_t count) {}
+void StatusPanel::setCompletedTaskCount(size_t count) {}
+void StatusPanel::setPendingTaskCount(size_t count) {}

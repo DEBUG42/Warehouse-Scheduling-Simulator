@@ -5,6 +5,7 @@
 #include "../Core/Task.hpp"
 #include "TaskList.hpp"
 #include "SimObject.hpp"
+#include "DeviceState.hpp"
 
 class SimObject;
 
@@ -71,4 +72,28 @@ public:
      * @param height 新的高度值
      */
     void resize(float height);
+
+    /**
+     * @brief 设置仿真时间
+     * @param time 仿真时间（秒）
+     */
+    void setSimulationTime(float time);
+
+    /**
+     * @brief 设置车辆数量
+     * @param count 车辆数量
+     */
+    void setVehicleCount(size_t count);
+
+    /**
+     * @brief 设置已完成任务数量
+     * @param count 已完成任务数量
+     */
+    void setCompletedTaskCount(size_t count);
+
+    /**
+     * @brief 设置待处理任务数量
+     * @param count 待处理任务数量
+     */
+    void setPendingTaskCount(size_t count);
 };

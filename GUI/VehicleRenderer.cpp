@@ -47,16 +47,15 @@ void VehicleRenderer::calculatePosition(const VehicleState &vehicle,
                                         sf::Vector2f &position,
                                         float &rotation)
 {
-    // 计算轨道各段长度
-    float straightLength = 40000.0f;                                             // 直道长度固定为40000mm
-    float leftCurveLength = M_PI * curveRadius;                                  // 左弯道长度
-    float rightCurveLength = M_PI * curveRadius;                                 // 右弯道长度
-    float totalLength = 2 * straightLength + leftCurveLength + rightCurveLength; // 轨道总长度
-
-    // 标准化位置：确保位置在轨道总长度内
-    float position_mm = fmod(vehicle.position, totalLength);
+    float totalLength = trackLength + 2 * M_PI * curveRadius;
+    float position_mm = fmod(vehicle.trackPosition, totalLength);
     if (position_mm < 0)
         position_mm += totalLength;
+
+    // 计算轨道各段长度
+    float straightLength = 40000.0f;             // 直道长度固定为40000mm
+    float leftCurveLength = M_PI * curveRadius;  // 左弯道长度
+    float rightCurveLength = M_PI * curveRadius; // 右弯道长度
 
     // 确定车辆在轨道哪一段
     // 段1: 下方直道 (0 ~ straightLength)
@@ -263,4 +262,10 @@ void VehicleRenderer::renderShadow(sf::RenderTarget &target,
 
     // 绘制阴影
     target.draw(shadow);
+}
+
+void VehicleRenderer::updateVehicleStates(const std::vector<VehicleState> &vehicles)
+{
+    m_vehicles = vehicles;
+    // 如果需要计算世界坐标，可在渲染时调用calculatePosition
 }

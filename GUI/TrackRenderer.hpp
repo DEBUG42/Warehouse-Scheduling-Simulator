@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <vector>
 
 /**
  * @brief 轨道渲染器类
@@ -12,11 +13,12 @@ class TrackRenderer : public sf::Drawable
 {
 private:
     // 轨道几何数据
-    sf::VertexArray m_straightSegments;       // 直轨顶点数组
-    sf::VertexArray m_curveSegments;          // 弯轨顶点数组    // 样式参数
-    const float m_trackWidth = 24.0f;         // 轨道线宽（对应实际1200mm宽度）
-    sf::Color m_straightColor{180, 180, 180}; // 直轨颜色
-    sf::Color m_curveColor{160, 160, 160};    // 弯轨颜色
+    sf::VertexArray m_straightSegments;         // 直轨顶点数组
+    sf::VertexArray m_curveSegments;            // 弯轨顶点数组    // 样式参数
+    float m_trackWidth = 24.0f;                 // 轨道线宽（对应实际1200mm宽度）
+    sf::Color m_straightColor{180, 180, 180};   // 直轨颜色
+    sf::Color m_curveColor{160, 160, 160};      // 弯轨颜色
+    sf::Color m_centerLineColor{200, 200, 200}; // 中心线颜色
 
 public:
     /**
@@ -30,6 +32,17 @@ public:
      * @param curveRadius 弯道半径
      */
     void generateGeometry(float trackLength, float curveRadius);
+
+    // 设置轨道宽度
+    void setTrackWidth(float width) { m_trackWidth = width; }
+
+    // 设置轨道颜色
+    void setStraightColor(const sf::Color &color) { m_straightColor = color; }
+    void setCurveColor(const sf::Color &color) { m_curveColor = color; }
+    void setCenterLineColor(const sf::Color &color) { m_centerLineColor = color; }
+
+    // 渲染轨道
+    void render(sf::RenderTarget &target, const sf::Vector2f &position);
 
 protected:
     /**

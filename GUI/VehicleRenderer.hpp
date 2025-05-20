@@ -26,6 +26,21 @@ private:
     // 字体
     sf::Font m_font; // 文本字体
 
+    // 渲染参数
+    float m_vehicleLength = 2000.0f; // 车辆长度(mm)
+    float m_vehicleWidth = 800.0f;   // 车辆宽度(mm)
+    float m_trackWidth = 1000.0f;    // 轨道宽度(mm)
+    float m_curveRadius = 2500.0f;   // 弯道半径(mm)
+
+    // 颜色设置
+    sf::Color m_emptyColor{60, 120, 200};   // 空载颜色
+    sf::Color m_loadedColor{230, 85, 40};   // 载货颜色
+    sf::Color m_selectedColor{255, 255, 0}; // 选中颜色
+    sf::Color m_borderColor{100, 100, 100}; // 边框颜色
+
+    // 车辆状态
+    std::vector<VehicleState> m_vehicles; // 车辆状态列表
+
 public:
     /**
      * @brief 构造函数，加载资源
@@ -65,4 +80,10 @@ public:
     void renderShadow(sf::RenderTarget &target,
                       const sf::Vector2f &position,
                       float rotation);
+
+    /**
+     * @brief 更新车辆状态
+     * @param vehicles 车辆状态列表
+     */
+    void updateVehicleStates(const std::vector<VehicleState> &vehicles);
 };

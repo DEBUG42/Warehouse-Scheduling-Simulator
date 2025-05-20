@@ -76,8 +76,13 @@ bool Button::handleEvent(const sf::Event &event, const sf::Vector2f &mousePos)
     return wasActive != m_isActive;
 }
 
-void Button::render(sf::RenderTarget &target)
+void Button::render(sf::RenderTarget &target, const sf::Vector2f &position)
 {
+    // 设置按钮位置
+    m_background.setPosition(position);
+    m_text.setPosition(position + sf::Vector2f(10.f, 5.f));
+
+    // 绘制按钮
     target.draw(m_background);
     target.draw(m_text);
 }
@@ -137,8 +142,13 @@ bool TimeDisplay::handleEvent(const sf::Event &event, const sf::Vector2f &mouseP
     return false;
 }
 
-void TimeDisplay::render(sf::RenderTarget &target)
+void TimeDisplay::render(sf::RenderTarget &target, const sf::Vector2f &position)
 {
+    // 设置时间显示位置
+    m_simTimeText.setPosition(position);
+    m_realTimeText.setPosition(position + sf::Vector2f(0.f, 14.f));
+
+    // 绘制时间显示
     target.draw(m_simTimeText);
     target.draw(m_realTimeText);
 }
@@ -172,11 +182,6 @@ SpeedControl::SpeedControl(const sf::FloatRect &bounds, const sf::Font &font)
     m_valueText.setFillColor(sf::Color::White);
     updateValueText();
     m_valueText.setPosition(bounds.left + 40, bounds.top);
-}
-
-void SpeedControl::setCallback(std::function<void(float)> callback)
-{
-    m_onValueChanged = callback;
 }
 
 void SpeedControl::setValue(float value)
@@ -237,8 +242,15 @@ bool SpeedControl::handleEvent(const sf::Event &event, const sf::Vector2f &mouse
     return false;
 }
 
-void SpeedControl::render(sf::RenderTarget &target)
+void SpeedControl::render(sf::RenderTarget &target, const sf::Vector2f &position)
 {
+    // 设置速度控制位置
+    m_track.setPosition(position);
+    m_handle.setPosition(position + sf::Vector2f(10.f, position.y + 2.f));
+    m_labelText.setPosition(position + sf::Vector2f(0.f, -20.f));
+    m_valueText.setPosition(position + sf::Vector2f(m_track.getSize().x + 10.f, 0.f));
+
+    // 绘制速度控制
     target.draw(m_track);
     target.draw(m_handle);
     target.draw(m_labelText);

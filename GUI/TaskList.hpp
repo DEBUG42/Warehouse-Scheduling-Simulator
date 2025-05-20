@@ -2,7 +2,10 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <string>
+#include <memory>
 #include "../Core/Task.hpp"
+#include "DeviceState.hpp"
+#include "SimObject.hpp"
 
 /**
  * @brief 任务列表显示类

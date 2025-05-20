@@ -7,6 +7,7 @@
 #include "SimObject.hpp"
 #include "DeviceState.hpp"
 #include "WarehouseUtils.hpp"
+#include "WarehouseState.hpp"
 
 /**
  * @class WarehouseRenderer
@@ -63,12 +64,6 @@ public:
     void updateDeviceStates(const std::vector<DeviceState> &deviceStates);
 
     /**
-     * @brief 更新仓库状态（新接口）
-     * @param warehouseStates 仓库状态数组引用
-     */
-    void updateWarehouseStates(const std::vector<WarehouseState> &warehouseStates);
-
-    /**
      * @brief 设置入库口颜色
      * @param color 入库口颜色
      */
@@ -86,6 +81,11 @@ public:
      * @return 仓库接口指针，如果没有则返回nullptr
      */
     const WarehouseInterface *getInterfaceAt(const sf::Vector2f &position) const;
+
+    /**
+     * @brief 兼容旧接口：更新仓库状态（自动转换为设备状态）
+     */
+    void updateWarehouseStates(const std::vector<WarehouseState> &warehouseStates);
 
 protected:
     /// 绘制接口设备

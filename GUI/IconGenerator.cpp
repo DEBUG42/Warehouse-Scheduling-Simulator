@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <cstdint>
 
 // 创建简单的BMP图像文件（32x32，24位色）
 void createSimpleBMP(const std::string &filename, uint8_t r, uint8_t g, uint8_t b)

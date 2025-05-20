@@ -2,6 +2,8 @@
 #define MOCK_SIMULATION_INTERFACE_HPP
 
 #include "SimulationInterface.hpp"
+#include "DeviceState.hpp"
+#include "SimObject.hpp"
 #include <random>
 #include <chrono>
 #include <thread>
@@ -213,8 +215,8 @@ private:
         {
             VehicleState vehicle;
             vehicle.id = i;
-            vehicle.position = m_posDist(m_rng); // 随机位置
-            vehicle.speed = m_speedDist(m_rng);  // 随机速度
+            vehicle.trackPosition = m_posDist(m_rng); // 随机位置
+            vehicle.speed = m_speedDist(m_rng);       // 随机速度
             vehicle.motionState = Vehicle::MotionState::MOVING;
             vehicle.isLoaded = (i % 3 == 0);               // 部分车辆载货
             vehicle.currentTaskId = (i % 4 == 0) ? i : -1; // 部分车辆有任务
@@ -254,9 +256,15 @@ private:
                 device.type = DeviceType::INPUT_STATION; // 下方入库口
             }
 
+            // 初始化所有字段
             device.status = DeviceStatus::IDLE;
-            device.queuedTaskCount = 0;
+            device.trackPosition = 0.0f;
+            device.capacity = 1;
+            device.currentLoad = 0;
+            device.materialId = -1;
             device.processingProgress = 0.0f;
+            device.queuedTaskCount = 0;
+            device.position = sf::Vector2f(0.0f, 0.0f);
 
             m_devices.push_back(device);
         }
@@ -352,12 +360,12 @@ private:
             if (vehicle.motionState == Vehicle::MotionState::MOVING)
             {
                 // 更新位置
-                vehicle.position += vehicle.speed * 1000.0f * deltaTime; // 速度m/s转换为mm/s
+                vehicle.trackPosition += vehicle.speed * 1000.0f * deltaTime; // 速度m/s转换为mm/s
 
                 // 标准化位置（确保在轨道范围内）
-                while (vehicle.position >= trackLength)
+                while (vehicle.trackPosition >= trackLength)
                 {
-                    vehicle.position -= trackLength;
+                    vehicle.trackPosition -= trackLength;
                 }
 
                 // 随机变化速度（小幅度）
@@ -394,29 +402,40 @@ private:
             { // 0.2%概率改变设备状态
                 if (device.status == DeviceStatus::IDLE)
                 {
-                    device.status = DeviceStatus::BUSY;
+                    device.status = DeviceStatus::WORKING;
                     device.processingProgress = 0.0f;
+                    device.currentLoad = 1;
+                    device.materialId = rand() % 1000; // 随机物料ID
                 }
                 else
                 {
                     device.status = DeviceStatus::IDLE;
                     device.processingProgress = 0.0f;
+                    device.currentLoad = 0;
+                    device.materialId = -1;
                 }
             }
 
             // 如果设备忙碌，更新处理进度
-            if (device.status == DeviceStatus::BUSY)
+            if (device.status == DeviceStatus::WORKING)
             {
                 device.processingProgress += deltaTime * 0.1f; // 10秒完成一个任务
 
                 if (device.processingProgress >= 1.0f)
                 {
                     device.processingProgress = 0.0f;
+                    device.currentLoad = 0;
+                    device.materialId = -1;
 
                     // 50%概率继续处理下一个任务，50%概率变为空闲
                     if (rand() % 2 == 0)
                     {
                         device.status = DeviceStatus::IDLE;
+                    }
+                    else
+                    {
+                        device.currentLoad = 1;
+                        device.materialId = rand() % 1000; // 随机物料ID
                     }
                 }
             }

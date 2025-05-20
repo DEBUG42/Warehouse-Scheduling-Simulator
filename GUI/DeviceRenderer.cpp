@@ -108,14 +108,17 @@ void DeviceRenderer::renderDevice(sf::RenderTarget &target,
     sf::Color baseColor;
     switch (device.status)
     {
-    case DeviceStatus::idle:
+    case DeviceStatus::IDLE:
         baseColor = COLOR_IDLE;
         break;
-    case DeviceStatus::working:
-        baseColor = COLOR_BUSY;
+    case DeviceStatus::WORKING:
+        baseColor = COLOR_WORKING;
         break;
-    default:
-        baseColor = COLOR_PENDING;
+    case DeviceStatus::FAULT:
+        baseColor = COLOR_FAULT;
+        break;
+    case DeviceStatus::OFFLINE:
+        baseColor = COLOR_OFFLINE;
         break;
     }
     baseShape.setFillColor(baseColor);

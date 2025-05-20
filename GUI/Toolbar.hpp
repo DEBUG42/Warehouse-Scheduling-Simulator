@@ -3,8 +3,8 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include "UIControls.hpp"
 
-class Button;
 class TimeDisplay;
 class SpeedControl;
 
@@ -108,4 +108,16 @@ public:
      * @param callback 回调函数
      */
     void setSwitchModeCallback(std::function<void()> callback);
+
+    /**
+     * @brief 更新时间缩放值
+     * @param scale 新的时间缩放值
+     */
+    void updateTimeScale(float scale);
+
+    /**
+     * @brief 更新播放/暂停状态
+     * @param isPlaying 是否正在播放
+     */
+    void updatePlayPauseState(bool isPlaying);
 };

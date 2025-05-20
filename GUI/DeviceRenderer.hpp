@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include "SimObject.hpp"
+#include "DeviceState.hpp"
 
 class DeviceRenderer
 {
@@ -11,9 +12,10 @@ private:
     std::map<DeviceType, sf::Texture> m_iconTextures;
 
     // 状态颜色编码
-    const sf::Color COLOR_IDLE{75, 185, 85};     // 空闲状态
-    const sf::Color COLOR_BUSY{215, 60, 60};     // 忙碌状态
-    const sf::Color COLOR_PENDING{230, 170, 50}; // 准备中状态
+    const sf::Color COLOR_IDLE{75, 185, 85};      // 空闲状态
+    const sf::Color COLOR_WORKING{215, 60, 60};   // 工作中状态
+    const sf::Color COLOR_FAULT{230, 170, 50};    // 故障状态
+    const sf::Color COLOR_OFFLINE{150, 150, 150}; // 离线状态
 
 public:
     /**

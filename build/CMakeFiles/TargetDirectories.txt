@@ -1,0 +1,4 @@
+D:/CodeMaster/GitHub/C++SFML/Warehouse-sch/build/CMakeFiles/WarehouseSimulation.dir
+D:/CodeMaster/GitHub/C++SFML/Warehouse-sch/build/CMakeFiles/WarehouseSimulationSimple.dir
+D:/CodeMaster/GitHub/C++SFML/Warehouse-sch/build/CMakeFiles/edit_cache.dir
+D:/CodeMaster/GitHub/C++SFML/Warehouse-sch/build/CMakeFiles/rebuild_cache.dir

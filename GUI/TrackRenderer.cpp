@@ -13,62 +13,52 @@ void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
     m_straightSegments.clear();
     m_curveSegments.clear();
 
-    // 计算轨道参数
-    // 假设轨道是一个矩形带圆角的形状
-    // 轨道的直线部分总长度 = 轨道总长 - (4 * 90度弧长)
-    // 一个90度弧的长度 = 0.5 * PI * 弯道半径
-    float arcLength = 0.5f * M_PI * curveRadius;
-    float totalArcLength = 4 * arcLength;
-    float straightLength = trackLength - totalArcLength;
+    // 根据开发界面信息设置轨道参数
+    // 直轨长度：40000mm
+    // 弯轨半径：2500mm
+    float straightLength = 40000.0f;
 
-    // 每边的直线长度（平均分配）
-    float sideLength = straightLength / 4;
+    // 轨道中心点（左下角弯道中心）
+    float centerX = curveRadius;
+    float centerY = curveRadius;
 
-    // 轨道矩形的尺寸
-    float width = 2 * curveRadius + sideLength;
-    float height = 2 * curveRadius + sideLength;
-
-    // 轨道中心
-    float centerX = 0.0f;
-    float centerY = 0.0f;
-
-    // 生成直线部分（四边形的四条边）
-    // 上边
-    addLineSegment(centerX - width / 2 + curveRadius, centerY - height / 2,
-                   centerX + width / 2 - curveRadius, centerY - height / 2,
+    // 生成直线部分
+    // 下方直轨
+    addLineSegment(centerX, centerY - curveRadius,
+                   centerX + straightLength, centerY - curveRadius,
                    m_straightColor);
 
-    // 右边
-    addLineSegment(centerX + width / 2, centerY - height / 2 + curveRadius,
-                   centerX + width / 2, centerY + height / 2 - curveRadius,
+    // 右侧直轨
+    addLineSegment(centerX + straightLength + curveRadius, centerY,
+                   centerX + straightLength + curveRadius, centerY + straightLength,
                    m_straightColor);
 
-    // 下边
-    addLineSegment(centerX + width / 2 - curveRadius, centerY + height / 2,
-                   centerX - width / 2 + curveRadius, centerY + height / 2,
+    // 上方直轨
+    addLineSegment(centerX + straightLength, centerY + straightLength + curveRadius,
+                   centerX, centerY + straightLength + curveRadius,
                    m_straightColor);
 
-    // 左边
-    addLineSegment(centerX - width / 2, centerY + height / 2 - curveRadius,
-                   centerX - width / 2, centerY - height / 2 + curveRadius,
+    // 左侧直轨
+    addLineSegment(centerX - curveRadius, centerY + straightLength,
+                   centerX - curveRadius, centerY,
                    m_straightColor);
 
     // 生成四个弯道（圆弧）
-    // 左上角弯道
-    addArcSegment(centerX - width / 2 + curveRadius, centerY - height / 2 + curveRadius,
-                  curveRadius, M_PI, 1.5f * M_PI, 20);
-
-    // 右上角弯道
-    addArcSegment(centerX + width / 2 - curveRadius, centerY - height / 2 + curveRadius,
-                  curveRadius, 1.5f * M_PI, 2.0f * M_PI, 20);
+    // 左下角弯道（原点）
+    addArcSegment(centerX, centerY,
+                  curveRadius, 0.5f * M_PI, M_PI, 20);
 
     // 右下角弯道
-    addArcSegment(centerX + width / 2 - curveRadius, centerY + height / 2 - curveRadius,
+    addArcSegment(centerX + straightLength, centerY,
                   curveRadius, 0, 0.5f * M_PI, 20);
 
-    // 左下角弯道
-    addArcSegment(centerX - width / 2 + curveRadius, centerY + height / 2 - curveRadius,
-                  curveRadius, 0.5f * M_PI, M_PI, 20);
+    // 右上角弯道
+    addArcSegment(centerX + straightLength, centerY + straightLength,
+                  curveRadius, 1.5f * M_PI, 2.0f * M_PI, 20);
+
+    // 左上角弯道
+    addArcSegment(centerX, centerY + straightLength,
+                  curveRadius, M_PI, 1.5f * M_PI, 20);
 }
 
 void TrackRenderer::addLineSegment(float x1, float y1, float x2, float y2, const sf::Color &color)

@@ -140,24 +140,39 @@ void WarehouseRenderer::drawInterface(sf::RenderTarget &target, sf::RenderStates
     target.draw(shadow, states);
 }
 
-void WarehouseRenderer::createTopInterfaces(float trackRadius)
+// 添加辅助函数
+DeviceState warehouseToDeviceState(const WarehouseState &warehouse, bool isInput)
+{
+    DeviceState device;
+    device.id = warehouse.id;
+    device.type = isInput ? DeviceType::StorageIn : DeviceType::StorageOut;
+    device.status = DeviceStatus::IDLE;
+    device.capacity = 100;
+    device.currentLoad = 0;
+    device.materialId = -1;
+    device.processingProgress = 0.0f;
+    device.queuedTaskCount = 0;
+    return device;
+}
+
+void WarehouseRenderer::createTopInterfaces(float /* trackRadius */)
 {
     // 上方自动化库仓储区的12个接口设备
-    // 根据题目要求计算每个接口的位置
+    // 根据开发界面信息计算每个接口的位置
 
     // 轨道顶部Y坐标 (mm)
-    float topY = trackRadius;
+    float topY = 2500.0f; // 上方直轨的Y坐标
     // 仓库深度 (mm)
     float warehouseDepth = 1200.0f;
     // 仓库Y坐标 = 轨道Y + 间隙 + 仓库深度/2
     float warehouseY = topY + 500.0f + warehouseDepth / 2.0f;
 
-    // 定义宽度数组 (mm)，按照题目给定的间距
+    // 定义宽度数组 (mm)，按照开发界面信息给定的间距
     float widths[] = {1250.0f, 1250.0f, 2500.0f, 2500.0f, 2500.0f, 2500.0f,
-                      2500.0f, 2500.0f, 7450.0f, 7450.0f, 7450.0f, 7450.0f};
+                      2500.0f, 2500.0f, 2500.0f, 2500.0f, 2500.0f, 2500.0f};
 
     // 计算累积X坐标
-    float currentX = 0.0f;
+    float currentX = 2500.0f; // 从左侧弯道开始
 
     // 创建1-12号接口
     for (int i = 0; i < 12; ++i)
@@ -203,19 +218,19 @@ void WarehouseRenderer::createTopInterfaces(float trackRadius)
     }
 }
 
-void WarehouseRenderer::createBottomInterfaces(float trackRadius)
+void WarehouseRenderer::createBottomInterfaces(float /* trackRadius */)
 {
     // 下方出入库作业区的6个接口设备
-    // 根据题目要求计算每个接口的位置
+    // 根据开发界面信息计算每个接口的位置
 
     // 轨道底部Y坐标 (mm)
-    float bottomY = -trackRadius;
+    float bottomY = -2500.0f; // 下方直轨的Y坐标
     // 仓库深度 (mm)
     float warehouseDepth = 1500.0f;
     // 仓库Y坐标 = 轨道Y - 间隙 - 仓库深度/2
     float warehouseY = bottomY - 500.0f - warehouseDepth / 2.0f;
 
-    // 定义宽度和起始X坐标数组 (mm)，按照题目给定的间距
+    // 定义宽度和起始X坐标数组 (mm)，按照开发界面信息给定的间距
     struct InterfaceInfo
     {
         float startX;
@@ -265,7 +280,7 @@ void WarehouseRenderer::createBottomInterfaces(float trackRadius)
                                 ((interface.type == InterfaceType::INPUT) ? "入库口" : "出库口");
         createLabel(label, m_font, labelText,
                     interface.centerX * MM_TO_PIXEL,
-                    (interface.centerY + interface.depth / 2.0f) * MM_TO_PIXEL + 15.0f);
+                    (interface.centerY + interface.depth / 2.0f) * MM_TO_PIXEL + 5.0f);
         m_labels.push_back(label);
     }
 }

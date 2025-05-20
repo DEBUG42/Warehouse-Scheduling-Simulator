@@ -2,6 +2,8 @@
 #include "SimObject.hpp"
 #include "TestSimulationEngine.hpp"
 #include "MockSimulationInterface.hpp"
+#include "Toolbar.hpp"
+#include "StatusPanel.hpp"
 #include <iostream>
 
 /**

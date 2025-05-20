@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include "DeviceState.hpp"
+#include "WarehouseState.hpp"
 
 /**
  * @brief 初始化仿真视图（使用新版接口）
@@ -200,12 +201,13 @@ void SimulationView::renderUI(sf::RenderTarget &target)
                     m_vehicleRenderer.calculatePosition(vehicle, m_trackLength, m_curveRadius, position, rotation);
 
                     // 将世界坐标转换为屏幕坐标
-                    sf::Vector2f screenPos = target.mapCoordsToPixel(position, m_worldView);
+                    sf::Vector2i screenPos = target.mapCoordsToPixel(position, m_worldView);
+                    sf::Vector2f screenPosF(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
 
                     // 绘制选择框
                     sf::RectangleShape selectionRect(sf::Vector2f(50, 25));
                     selectionRect.setOrigin(25, 12.5f);
-                    selectionRect.setPosition(screenPos);
+                    selectionRect.setPosition(screenPosF);
                     selectionRect.setFillColor(sf::Color::Transparent);
                     selectionRect.setOutlineColor(sf::Color::Yellow);
                     selectionRect.setOutlineThickness(2.0f);
@@ -386,22 +388,16 @@ void SimulationView::updateDevices(const std::vector<DeviceState> &devices)
 {
     m_devices = devices;
     m_warehouseRenderer.updateDeviceStates(devices);
+}
 
-    // 转换为WarehouseState并存储（以支持新接口）
-    std::vector<WarehouseState> warehouses;
-    for (const auto &device : devices)
-    {
-        WarehouseState warehouse;
-        warehouse.id = device.id;
-        warehouse.trackPosition = device.trackPosition;
-        warehouse.isInterface = (device.type == DeviceType::INPUT_STATION ||
-                                 device.type == DeviceType::OUTPUT_STATION);
-        warehouse.capacity = device.capacity;
-        warehouse.currentLoad = device.currentLoad;
+void SimulationView::resize(unsigned int width, unsigned int height)
+{
+    // 更新UI视图
+    m_uiView.setSize(width, height);
+    m_uiView.setCenter(width / 2.f, height / 2.f);
 
-        warehouses.push_back(warehouse);
-    }
-
-    // 存储转换后的仓库状态
-    m_warehouses = warehouses;
+    // 更新世界视图
+    float aspectRatio = static_cast<float>(width) / height;
+    m_worldView.setSize(m_trackLength * aspectRatio, m_trackLength);
+    m_worldView.setCenter(0.f, 0.f);
 }

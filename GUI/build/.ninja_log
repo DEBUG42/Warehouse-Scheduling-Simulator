@@ -1,0 +1,21 @@
+# ninja log v5
+612	4544	7694412342243822	CMakeFiles/WarehouseSimulation.dir/TaskList.cpp.obj	cb35e33dfb12e751
+115	4238	7694469936595348	CMakeFiles/WarehouseSimulation.dir/UIControls.cpp.obj	8d679a5e42598c3
+11	5348	7694469947951638	CMakeFiles/WarehouseSimulation.dir/main.cpp.obj	34f3c08b0a0fb926
+28	5493	7694469949495277	CMakeFiles/WarehouseSimulation.dir/MainWindow.cpp.obj	53cfae3003b9d11
+893	4051	7694412336663854	CMakeFiles/WarehouseSimulationSimple.dir/TrackRenderer.cpp.obj	aa5c82d1c1e77278
+271	4323	7694469937430672	CMakeFiles/WarehouseSimulationSimple.dir/WarehouseRenderer.cpp.obj	13d986d96505469a
+1070	4168	7694413279644946	CMakeFiles/WarehouseSimulationSimple.dir/DeviceRenderer.cpp.obj	a4c1af6ba6300398
+2807	3912	7694471134930656	bin/WarehouseSimulation.exe	1114bc0623f5776c
+16	2359	7694471122009627	CMakeFiles/WarehouseSimulation.dir/StatusPanel.cpp.obj	9cc32252a10d9a69
+135	5242	7694469946966035	CMakeFiles/WarehouseSimulationSimple.dir/main_simplified.cpp.obj	5b892f950ba26d00
+143	4989	7694408238016831	CMakeFiles/WarehouseSimulation.dir/DeviceRenderer.cpp.obj	59fc883990de2a54
+2149	3499	7694470596206770	bin/WarehouseSimulationSimple.exe	97b08df437849d2c
+15	2086	7694470585785372	CMakeFiles/WarehouseSimulation.dir/VehicleRenderer.cpp.obj	5375e8e6d289e1f2
+89	4008	7694469933790107	CMakeFiles/WarehouseSimulation.dir/WarehouseRenderer.cpp.obj	6276ce5e6bab30b
+160	4980	7694469944119903	CMakeFiles/WarehouseSimulationSimple.dir/SimulationView.cpp.obj	fc9347cfb3cf2d0b
+430	3972	7694408227291161	CMakeFiles/WarehouseSimulation.dir/IconGenerator.cpp.obj	9fa89d81a9e77eeb
+43	5104	7694469945485252	CMakeFiles/WarehouseSimulation.dir/SimulationView.cpp.obj	1410ab42b9b1a239
+35	2805	7694471127510874	CMakeFiles/WarehouseSimulation.dir/Toolbar.cpp.obj	740c06d8a2aee1a7
+78	3399	7694412329996405	CMakeFiles/WarehouseSimulation.dir/TrackRenderer.cpp.obj	be03894fd5abfa63
+34	2148	7694470586154267	CMakeFiles/WarehouseSimulationSimple.dir/VehicleRenderer.cpp.obj	7a5726f45d030e6c

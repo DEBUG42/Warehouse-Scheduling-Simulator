@@ -107,18 +107,20 @@ void Toolbar::render(sf::RenderTarget &target, const sf::Vector2f &position)
     target.draw(m_background);
 
     // 绘制播放/暂停按钮
-    m_playPauseButton->render(target);
+    m_playPauseButton->render(target, position + sf::Vector2f(10.f, 5.f));
 
     // 绘制时间显示
-    m_timeDisplay->render(target);
+    m_timeDisplay->render(target, position + sf::Vector2f(120.f, 5.f));
 
-    // 绘制速度控制滑块
-    m_speedControl->render(target);
+    // 绘制速度控制
+    m_speedControl->render(target, position + sf::Vector2f(300.f, 5.f));
 
     // 绘制其他按钮
+    float buttonX = position.x + 500.f;
     for (auto &button : m_buttons)
     {
-        button->render(target);
+        button->render(target, sf::Vector2f(buttonX, position.y + 5.f));
+        buttonX += button->getSize().x + 10.f;
     }
 
     // 绘制分隔线
@@ -160,3 +162,6 @@ void Toolbar::setSwitchModeCallback(std::function<void()> callback)
 {
     m_onSwitchMode = callback;
 }
+
+void Toolbar::updateTimeScale(float scale) {}
+void Toolbar::updatePlayPauseState(bool isPlaying) {}

@@ -21,7 +21,6 @@ set(SOURCES
     StatusPanel.cpp
     Toolbar.cpp
     UIControls.cpp
-    IconGenerator.cpp
     TaskList.cpp
 )
 
@@ -38,21 +37,18 @@ set(HEADERS
     StatusPanel.hpp
     Toolbar.hpp
     UIControls.hpp
-    UIControlsHeader.hpp
     SimObject.hpp
     SimulationInterface.hpp
     MockSimulationInterface.hpp
     TestSimulationEngine.hpp
     ConfigReader.hpp
     TaskList.hpp
-    TaskListHeader.hpp
 )
 
 # 创建可执行文件
 
 # 创建主可执行文件
 add_executable(WarehouseSimulation ${SOURCES} ${HEADERS})
-target_link_libraries(WarehouseSimulation sfml-graphics sfml-window sfml-system)
 
 # 创建简化版可执行文件（使用main_simplified.cpp）
 add_executable(WarehouseSimulationSimple main_simplified.cpp ${HEADERS} 
@@ -62,29 +58,46 @@ add_executable(WarehouseSimulationSimple main_simplified.cpp ${HEADERS}
     WarehouseRenderer.cpp
     DeviceRenderer.cpp
 )
-target_link_libraries(WarehouseSimulationSimple sfml-graphics sfml-window sfml-system)
 
 # 包含目录
-target_include_directories(WarehouseSimulation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(WarehouseSimulation PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Core
+)
+target_include_directories(WarehouseSimulationSimple PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Core
+)
 
 # 链接SFML库
 target_link_libraries(WarehouseSimulation PRIVATE sfml-graphics sfml-window sfml-system)
+target_link_libraries(WarehouseSimulationSimple PRIVATE sfml-graphics sfml-window sfml-system)
 
 # 资源文件复制
 add_custom_command(TARGET WarehouseSimulation POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                    ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:WarehouseSimulation>/resources)
 
+add_custom_command(TARGET WarehouseSimulationSimple POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                   ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:WarehouseSimulationSimple>/resources)
+
 # 设置输出目录
 set_target_properties(WarehouseSimulation PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
+set_target_properties(WarehouseSimulationSimple PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
 # 编译选项
 if(MSVC)
     target_compile_options(WarehouseSimulation PRIVATE /W4)
+    target_compile_options(WarehouseSimulationSimple PRIVATE /W4)
 else()
     target_compile_options(WarehouseSimulation PRIVATE -Wall -Wextra)
+    target_compile_options(WarehouseSimulationSimple PRIVATE -Wall -Wextra)
 endif()
 
 # 打印信息

@@ -4,6 +4,7 @@
 #include <vector>
 #include <functional>
 #include "SimObject.hpp"
+#include "DeviceState.hpp"
 
 /**
  * @class SimulationInterface
