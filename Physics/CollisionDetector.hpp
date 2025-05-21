@@ -14,6 +14,7 @@ public:
 	float LeadingVehiclePosition;
 	//前车与后车相对距离
 	float distance;
+	float epsilon; // 防止浮点数误差
 
 public:
 
@@ -33,11 +34,13 @@ public:
 	if(distance<0.f){
 		distance += 95.671963268f;
 	}
+	//防止浮点数误差
+	epsilon = 0.002f;
+
 	
 //到车库停车的判断和处理
-	if(vehicle->m_state.motionState == Vehicle::MotionState::Stopped && VehiclePosition == 车库位置){
-		if(vehicle->m_state.operationTimer.getElapsedTime().asSeconds()== 0.0f)
-			vehicle->m_state.operationTimer.restart();
+	if(vehicle->m_state.motionState == Vehicle::MotionState::Stopped && abs(VehiclePosition - 车库位置)<epsilon){
+		vehicle->m_state.operationTimer.restart();
 		
 		if (vehicle->m_state.operationTimer.getElapsedTime().asSeconds() >= vehicle->m_loadTime) {
                     vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
@@ -48,26 +51,23 @@ public:
 //防碰撞减速
     else if (((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed)/(2*vehicle->m_acceleration))<=(distance+vehicle->m_length+0.002)){
             vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-			break;
         }
 //到车库提前减速	
 	else if((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed)/(2*vehicle->m_acceleration)<= (abs(目标车库的位置-VehiclePosition))){
 			vehicle.motionState = Vehicle::MotionState::Decelerating;
-			break;
 		}
 //弯道减速	
 	//处理下面那个弯道的减速
 	else if((VehiclePosition>=0.f) && (VehiclePosition<=40.0f)){
             if((40.0f-VehiclePosition)<=(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration)){
 				vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-				break;
+
 			}
 	}
 	//处理上面那个弯道的减速
 	else if((VehiclePosition>=47.835981634)&&(VehiclePosition<=87.835981634)){
             if((87.835981634f-VehiclePosition)<=(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration)){
 				vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-				break;
 			}
 	}
 //不减速即设定为加速，更快运动
