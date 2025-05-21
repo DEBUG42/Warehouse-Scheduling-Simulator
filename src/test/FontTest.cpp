@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <string>
+#include <filesystem>
 
 int main()
 {
@@ -8,13 +9,32 @@ int main()
     sf::RenderWindow window(sf::VideoMode(800, 600), "字体测试");
     window.setFramerateLimit(60);
 
-    // 加载字体
+    // 获取当前工作目录
+    std::cout << "当前工作目录: " << std::filesystem::current_path() << std::endl;
+
+    // 尝试加载字体
     sf::Font font;
-    // if (!font.loadFromFile("assets/fonts/arial.ttf"))
-    // {
-    //     std::cerr << "无法加载字体文件！请确保字体文件位于 assets/fonts/SourceHanSansSC-Regular.otf" << std::endl;
-    //     return -1;
-    // }
+    std::string fontPath = "../../assets/fonts/SourceHanSansSC-Regular.otf";
+    std::cout << "尝试加载字体: " << fontPath << std::endl;
+
+    if (!font.loadFromFile(fontPath))
+    {
+        std::cerr << "无法加载字体文件：" << fontPath << std::endl;
+        std::cerr << "尝试加载备用字体..." << std::endl;
+
+        // 尝试加载备用字体
+        fontPath = "../../assets/fonts/arial.ttf";
+        if (!font.loadFromFile(fontPath))
+        {
+            std::cerr << "无法加载备用字体文件：" << fontPath << std::endl;
+            return -1;
+        }
+        std::cout << "成功加载备用字体：" << fontPath << std::endl;
+    }
+    else
+    {
+        std::cout << "成功加载字体：" << fontPath << std::endl;
+    }
 
     // 创建中文文本
     sf::Text chineseText;

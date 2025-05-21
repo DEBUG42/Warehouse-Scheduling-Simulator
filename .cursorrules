@@ -3,7 +3,11 @@
 
 # 构建规则
 # 1. 禁止使用CMake命令行构建项目
-# 2. 确保.vscode目录下的配置文件（settings.json, tasks.json, launch.json）正确配置了编译器和库路径
+# 2. 所有构建和运行操作必须通过VSCode的构建任务（tasks.json）执行
+# 3. 确保.vscode目录下的配置文件（settings.json, tasks.json, launch.json）正确配置了编译器和库路径
+# 4. 使用CMD终端（而非PowerShell）执行编译命令
+# 5. 编译命令格式：
+#    g++ -g ${file} -o ${fileDirname}/${fileBasenameNoExtension}.exe -I"G:/SFML/SFML-2.6.2/include" -L"G:/SFML/SFML-2.6.2/lib" -lsfml-graphics -lsfml-window -lsfml-system -static-libgcc -static-libstdc++
 
 # 代码风格
 # 1. 使用项目统一的代码格式化工具
@@ -16,9 +20,21 @@
 # 测试规则
 # 1. 所有测试程序必须通过VSCode的构建任务运行
 # 2. 确保测试资源（如字体文件）位于正确的目录
+# 3. 测试程序编译命令：
+#    g++ -g test/${file} -o test/${fileBasenameNoExtension}.exe -I"G:/SFML/SFML-2.6.2/include" -L"G:/SFML/SFML-2.6.2/lib" -lsfml-graphics -lsfml-window -lsfml-system -static-libgcc -static-libstdc++
 
 # 文档规则
 # 1. 保持文档的及时更新
 # 2. 使用Markdown格式编写文档
 
 # 安全规则
+# 1. 禁止在代码中硬编码敏感信息
+# 2. 使用环境变量或配置文件管理敏感信息
+
+# 环境要求
+# 1. SFML 2.6.2 安装在 G:/SFML/SFML-2.6.2/
+# 2. MinGW-w64 安装在 G:/mingw64/
+# 3. 确保SFML的DLL文件在系统PATH中或程序目录下：
+#    - sfml-graphics-2.dll
+#    - sfml-window-2.dll
+#    - sfml-system-2.dll
