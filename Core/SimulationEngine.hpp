@@ -1,6 +1,5 @@
 #include <SFML/Graphics.hpp>
 #include <map>
-#include "Vehicle.hpp"
 
 class SimulationEngine {
 private:
