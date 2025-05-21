@@ -26,9 +26,7 @@ void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
     float scaledCurveRadius = curveRadius * m_mmToPxRatio * m_scaleFactor;
 
     // 轨道宽度计算 - 转换为像素
-    float trackOffset = m_trackWidth * m_mmToPxRatio * m_scaleFactor / 2.0f; // 内轨道偏移量
-    float trackWidthInPixels = m_trackWidth * m_mmToPxRatio * m_scaleFactor; // 轨道宽度(1200mm)转换为像素
-    float outerTrackOffset = trackOffset + trackWidthInPixels;               // 外轨道偏移量 = 内轨道偏移量 + 轨道宽度
+    float trackOffset = m_trackWidth * m_mmToPxRatio * m_scaleFactor / 2.0f; // 内外轨道的对称偏移量 (原轨道宽度的一半)
 
     // ============= 生成中心线坐标点 =============
     // 赛道由四段组成：上直道、右弯道、下直道、左弯道
@@ -167,8 +165,8 @@ void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
     // 生成内轨道线
     generateTrack(m_centerPoints, trackOffset, m_innersTrack, m_straightColor);
 
-    // 生成外轨道线 - 使用内轨道偏移量加上轨道宽度
-    generateTrack(m_centerPoints, outerTrackOffset, m_outerTrack, m_straightColor);
+    // 生成外轨道线 - 使用对称的负偏移量
+    generateTrack(m_centerPoints, -trackOffset, m_outerTrack, m_straightColor);
 }
 
 // 坐标转换：后端坐标系(左下角弯道与直道交汇点为原点) -> 渲染坐标系(轨道中心为原点)
