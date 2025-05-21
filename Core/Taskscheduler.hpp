@@ -16,6 +16,19 @@ struct Task {
     int end_device;    // 任务结束的设备ID
 }
 
+struct Task {
+    int id;                     // 任务唯一编号
+    TaskType type;                   // 入库/出库任务
+    int materialId;                  // 物料编号
+    int startDeviceId;               // 起始设备ID
+    int endDeviceId;                 // 目标设备ID
+    sf::Time createTime;             // 任务创建时间
+    sf::Time startTime;              // 实际开始时间
+    sf::Time completeTime;           // 完成时间
+    int assignedVehicleId = -1;      // 分配的车辆ID
+    bool validate(const std::map<int, DeviceBase*>& devices) const;
+};
+
     //根据设备ID输出设备坐标和坐标状态传到device类里面
 void outputDeviceStatus(int device_id) const {
     };
