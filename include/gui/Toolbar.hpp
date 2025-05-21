@@ -116,8 +116,14 @@ public:
     void updateTimeScale(float scale);
 
     /**
-     * @brief 更新播放/暂停状态
+     * @brief 更新播放/暂停状态，并改变按钮标签
      * @param isPlaying 是否正在播放
      */
     void updatePlayPauseState(bool isPlaying);
+
+    /**
+     * @brief 获取当前时间缩放控件的值
+     * @return 当前速度控件设置的时间缩放比例
+     */
+    float getTimeScaleValue() const;
 };

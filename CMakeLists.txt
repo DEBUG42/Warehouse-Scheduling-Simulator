@@ -104,3 +104,4 @@ endif()
 message(STATUS "SFML版本: ${SFML_VERSION}")
 message(STATUS "C++标准: ${CMAKE_CXX_STANDARD}")
 message(STATUS "编译器: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+ 

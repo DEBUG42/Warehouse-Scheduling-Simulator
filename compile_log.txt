@@ -1,0 +1,30 @@
+In file included from test/../include/gui/SimObject.hpp:4,
+                 from test/../include/gui/TaskList.hpp:8,
+                 from test/../include/gui/StatusPanel.hpp:6,
+                 from test/ComprehensiveGUITest.cpp:12:
+test/../include/gui/../Core/Vehicle.hpp:6:10: fatal error: ../Physics/TrackSegment.hpp: No such file or directory
+    6 | #include "../Physics/TrackSegment.hpp"
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+In file included from include/gui/SimObject.hpp:4,
+                 from include/gui/TaskList.hpp:8,
+                 from include/gui/StatusPanel.hpp:6,
+                 from src/gui/StatusPanel.cpp:1:
+include/gui/../Core/Vehicle.hpp:6:10: fatal error: ../Physics/TrackSegment.hpp: No such file or directory
+    6 | #include "../Physics/TrackSegment.hpp"
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+In file included from include/gui/SimObject.hpp:4,
+                 from include/gui/ObjectInspector.hpp:6,
+                 from src/gui/ObjectInspector.cpp:1:
+include/gui/../Core/Vehicle.hpp:6:10: fatal error: ../Physics/TrackSegment.hpp: No such file or directory
+    6 | #include "../Physics/TrackSegment.hpp"
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+In file included from include/gui/SimObject.hpp:4,
+                 from include/gui/VehicleRenderer.hpp:3,
+                 from src/gui/VehicleRenderer.cpp:1:
+include/gui/../Core/Vehicle.hpp:6:10: fatal error: ../Physics/TrackSegment.hpp: No such file or directory
+    6 | #include "../Physics/TrackSegment.hpp"
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.

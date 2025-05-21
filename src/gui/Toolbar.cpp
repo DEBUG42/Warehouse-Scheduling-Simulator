@@ -1,5 +1,5 @@
-#include "Toolbar.hpp"
-#include "UIControls.hpp"
+#include "gui/Toolbar.hpp"
+#include "gui/UIControls.hpp"
 #include <iostream>
 
 Toolbar::Toolbar(sf::Font &font, float height, float width)
@@ -163,5 +163,36 @@ void Toolbar::setSwitchModeCallback(std::function<void()> callback)
     m_onSwitchMode = callback;
 }
 
-void Toolbar::updateTimeScale(float scale) {}
-void Toolbar::updatePlayPauseState(bool isPlaying) {}
+void Toolbar::updateTimeScale(float scale)
+{
+    if (m_speedControl)
+    {
+        m_speedControl->setValue(scale);
+    }
+}
+
+void Toolbar::updatePlayPauseState(bool isPlaying)
+{
+    if (m_playPauseButton)
+    {
+        if (isPlaying)
+        {
+            m_playPauseButton->setLabel("❚❚"); // 暂停符号
+        }
+        else
+        {
+            m_playPauseButton->setLabel("▶"); // 播放符号
+        }
+    }
+    // 注意：这里只改变了按钮的视觉表示，
+    // 实际的播放/暂停逻辑需要通过 m_onPlayPauseToggled 回调来触发。
+}
+
+float Toolbar::getTimeScaleValue() const
+{
+    if (m_speedControl)
+    {
+        return m_speedControl->getValue();
+    }
+    return 1.0f; // 如果速度控件不存在，返回默认值1.0
+}

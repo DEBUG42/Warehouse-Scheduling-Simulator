@@ -10,7 +10,7 @@
  * 根据车辆状态(空载/载货/分配任务)显示不同颜色
  * 支持伪3D效果，增强立体感
  */
-class VehicleRenderer
+class VehicleRenderer : public sf::Drawable
 {
 private:
     const sf::Vector2f m_baseSize{40.0f, 16.0f}; // 基础尺寸（2000mm车长、800mm车宽对应的像素）
@@ -24,7 +24,7 @@ private:
     sf::Color m_shadowColor{50, 50, 50, 150}; // 阴影颜色
 
     // 字体
-    sf::Font m_font; // 文本字体
+    const sf::Font &m_font; // 文本字体
 
     // 渲染参数
     float m_vehicleLength = 2000.0f; // 车辆长度(mm)
@@ -41,11 +41,21 @@ private:
     // 车辆状态
     std::vector<VehicleState> m_vehicles; // 车辆状态列表
 
+    sf::RectangleShape m_body;
+    sf::RectangleShape m_statusBounds;    // 新增：用于显示状态的外部矩形
+    sf::CircleShape m_directionIndicator; // 或者其他表示方向的形状
+    sf::Text m_idText;
+
+    VehicleState m_currentState; // 存储当前状态用于绘制
+
+    // 新增：获取不同状态对应的颜色
+    sf::Color getColorForStatus(gui::VehicleStatus status) const;
+
 public:
     /**
      * @brief 构造函数，加载资源
      */
-    VehicleRenderer();
+    VehicleRenderer(const sf::Font &font);
 
     /**
      * @brief 更新车辆位置，根据轨道路程计算实际坐标和朝向
@@ -59,13 +69,15 @@ public:
                            float trackLength,
                            float curveRadius,
                            sf::Vector2f &position,
-                           float &rotation); /**
-                                              * @brief 绘制单个车辆
-                                              * @param target 渲染目标
-                                              * @param vehicle 车辆数据引用
-                                              * @param position 车辆世界坐标
-                                              * @param rotation 车辆朝向角度
-                                              */
+                           float &rotation);
+
+    /**
+     * @brief 绘制单个车辆
+     * @param target 渲染目标
+     * @param vehicle 车辆数据引用
+     * @param position 车辆世界坐标
+     * @param rotation 车辆朝向角度
+     */
     void renderVehicle(sf::RenderTarget &target,
                        const VehicleState &vehicle,
                        const sf::Vector2f &position,
@@ -86,4 +98,17 @@ public:
      * @param vehicles 车辆状态列表
      */
     void updateVehicleStates(const std::vector<VehicleState> &vehicles);
+
+    virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override;
+
+    /**
+     * @brief 更新渲染器的内部状态以匹配提供的车辆状态
+     * @param state 最新的车辆状态
+     * @param trackLengthMm 轨道的总直线段长度 (mm)
+     * @param curveRadiusMm 轨道的弯道半径 (mm)
+     */
+    void updateState(const gui::VehicleState &state, float trackLengthMm, float curveRadiusMm);
+
+private:
+    // ... existing code ...
 };

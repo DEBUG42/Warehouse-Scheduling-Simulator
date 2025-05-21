@@ -1,3 +1,0 @@
-"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\WarehouseSimulationSimple.dir/objects.a
-G:\mingw64\bin\ar.exe qc CMakeFiles\WarehouseSimulationSimple.dir/objects.a @CMakeFiles\WarehouseSimulationSimple.dir\objects1.rsp
-G:\mingw64\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\WarehouseSimulationSimple.dir/objects.a -Wl,--no-whole-archive -o bin\WarehouseSimulationSimple.exe -Wl,--out-implib,libWarehouseSimulationSimple.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\WarehouseSimulationSimple.dir\linkLibs.rsp

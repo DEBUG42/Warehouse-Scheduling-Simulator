@@ -1,30 +1,53 @@
-#include "VehicleRenderer.hpp"
-#include "../Core/Vehicle.hpp"
+#include "gui/VehicleRenderer.hpp"
+#include "Core/Vehicle.hpp"
 #include <iostream>
 #include <cmath>
+
+// 定义车体和状态框的尺寸 (假设是后端坐标系下的毫米)
+const float BODY_WIDTH_MM = 2000.0f;
+const float BODY_HEIGHT_MM = 1000.0f;
+const float STATUS_BORDER_MM = 100.0f; // 状态框比车体每边宽 STATUS_BORDER_MM
+// MM_TO_PX 常量已从此移除，将使用头文件中的 MM_TO_PIXEL 成员变量
 
 /**
  * @brief 构造函数，加载资源
  */
-VehicleRenderer::VehicleRenderer()
+VehicleRenderer::VehicleRenderer(const sf::Font &font) : m_font(font)
 {
-    // 加载字体
-    if (!m_font.loadFromFile("resources/fonts/Arial.ttf"))
-    {
-        // 尝试多个可能的路径
-        if (m_font.loadFromFile("GUI/resources/fonts/Arial.ttf"))
-        {
-            // 成功加载
-        }
-        else if (m_font.loadFromFile("fonts/Arial.ttf"))
-        {
-            // 成功加载
-        }
-        else
-        {
-            std::cerr << "警告：无法加载字体文件，车辆标签可能无法正确显示" << std::endl;
-        }
-    }
+    // 加载字体 (这部分字体加载逻辑在您提供的 VehicleRenderer.cpp 中，但通常字体应由外部资源管理器传入引用)
+    // 如果 m_font 是构造函数传入的引用，则不需要在这里 loadFromFile
+    // 为保持与您提供的版本一致，暂时保留这里的检查，但理想情况下应移除
+    // if (!m_font.getInfo().family.empty()) // 检查字体是否有效，而不是重新加载
+    // {
+    //     // 字体有效
+    // }
+    // else
+    // {
+    //     std::cerr << "警告：传入 VehicleRenderer 的字体无效，车辆标签可能无法正确显示" << std::endl;
+    // }
+
+    // 车体尺寸 (转换为像素)
+    float bodyWidthPx = BODY_WIDTH_MM * MM_TO_PIXEL;   // 使用成员 MM_TO_PIXEL
+    float bodyHeightPx = BODY_HEIGHT_MM * MM_TO_PIXEL; // 使用成员 MM_TO_PIXEL
+    m_body.setSize(sf::Vector2f(bodyWidthPx, bodyHeightPx));
+    m_body.setOrigin(bodyWidthPx / 2.f, bodyHeightPx / 2.f); // 中心原点
+    m_body.setFillColor(sf::Color(0, 120, 255));             // 默认蓝色车体
+    m_body.setOutlineThickness(1.f);                         // 给车体一个细边框
+    m_body.setOutlineColor(sf::Color::Black);
+
+    // 状态框尺寸 (转换为像素)
+    float statusWidthPx = (BODY_WIDTH_MM + 2 * STATUS_BORDER_MM) * MM_TO_PIXEL;   // 使用成员 MM_TO_PIXEL
+    float statusHeightPx = (BODY_HEIGHT_MM + 2 * STATUS_BORDER_MM) * MM_TO_PIXEL; // 使用成员 MM_TO_PIXEL
+    m_statusBounds.setSize(sf::Vector2f(statusWidthPx, statusHeightPx));
+    m_statusBounds.setOrigin(statusWidthPx / 2.f, statusHeightPx / 2.f); // 中心原点
+
+    m_directionIndicator.setRadius(std::max(1.f, bodyHeightPx * 0.15f));
+    m_directionIndicator.setOrigin(m_directionIndicator.getRadius(), m_directionIndicator.getRadius());
+    m_directionIndicator.setFillColor(sf::Color::White);
+
+    m_idText.setFont(m_font);
+    m_idText.setCharacterSize(static_cast<unsigned int>(std::max(8.f, bodyHeightPx * 0.3f)));
+    m_idText.setFillColor(sf::Color::Black);
 }
 
 /**
@@ -36,74 +59,80 @@ VehicleRenderer::VehicleRenderer()
  * - 逆时针绕轨道行驶
  *
  * @param vehicle 车辆状态
- * @param trackLength 轨道总长度(mm)
- * @param curveRadius 弯道半径(mm)
- * @param position 输出参数，返回计算后的位置
- * @param rotation 输出参数，返回计算后的角度
+ * @param totalStraightLengthMm 总直线长度
+ * @param curveRadiusMm 弯道半径
+ * @param outRenderPosition 输出参数，返回计算后的位置
+ * @param outRenderRotationDeg 输出参数，返回计算后的角度
  */
-void VehicleRenderer::calculatePosition(const VehicleState &vehicle,
-                                        float trackLength,
-                                        float curveRadius,
-                                        sf::Vector2f &position,
-                                        float &rotation)
+void VehicleRenderer::calculatePosition(const gui::VehicleState &vehicle,
+                                        float totalStraightLengthMm, // 改为总直线长度
+                                        float curveRadiusMm,
+                                        sf::Vector2f &outRenderPosition, // 改名以更清晰
+                                        float &outRenderRotationDeg)     // 改名以更清晰
 {
-    float totalLength = trackLength + 2 * M_PI * curveRadius;
-    float position_mm = fmod(vehicle.trackPosition, totalLength);
-    if (position_mm < 0)
-        position_mm += totalLength;
+    // 使用车辆原始轨道位置
+    float currentTrackPosMm = vehicle.rawTrackPositionMm;
 
-    // 计算轨道各段长度
-    float straightLength = 40000.0f;             // 直道长度固定为40000mm
-    float leftCurveLength = M_PI * curveRadius;  // 左弯道长度
-    float rightCurveLength = M_PI * curveRadius; // 右弯道长度
+    // 轨道几何
+    float singleStraightLengthMm = totalStraightLengthMm / 2.0f; // 假设对称轨道，两段等长直线
+    float curveLengthMm = M_PI * curveRadiusMm;
+    float fullTrackPerimeterMm = totalStraightLengthMm + 2.0f * curveLengthMm;
 
-    // 确定车辆在轨道哪一段
-    // 段1: 下方直道 (0 ~ straightLength)
-    // 段2: 右侧弯道 (straightLength ~ straightLength + rightCurveLength)
-    // 段3: 上方直道 (straightLength + rightCurveLength ~ 2*straightLength + rightCurveLength)
-    // 段4: 左侧弯道 (2*straightLength + rightCurveLength ~ totalLength)
-
-    // 转换为像素坐标
-    float curveRadius_px = curveRadius * MM_TO_PIXEL;
-    float pos_x = 0.0f, pos_y = 0.0f;
-    float angle_degrees = 0.0f;
-
-    if (position_mm < straightLength)
+    // 确保位置在轨道长度范围内 (0 to fullTrackPerimeterMm)
+    currentTrackPosMm = fmod(currentTrackPosMm, fullTrackPerimeterMm);
+    if (currentTrackPosMm < 0)
     {
-        // 段1: 下方直道
-        pos_x = position_mm * MM_TO_PIXEL;
-        pos_y = -curveRadius * MM_TO_PIXEL;
-        angle_degrees = 0.0f; // 朝右
+        currentTrackPosMm += fullTrackPerimeterMm;
     }
-    else if (position_mm < straightLength + rightCurveLength)
+
+    // 段1: 下方直道 (0 ~ singleStraightLengthMm)
+    // 段2: 右侧弯道 (singleStraightLengthMm ~ singleStraightLengthMm + curveLengthMm)
+    // 段3: 上方直道 (singleStraightLengthMm + curveLengthMm ~ 2*singleStraightLengthMm + curveLengthMm)
+    // 段4: 左侧弯道 (2*singleStraightLengthMm + curveLengthMm ~ fullTrackPerimeterMm)
+
+    float renderX = 0.0f, renderY = 0.0f;
+    float angleDeg = 0.0f;
+
+    float curveRadiusPx = curveRadiusMm * MM_TO_PIXEL;
+    float singleStraightPx = singleStraightLengthMm * MM_TO_PIXEL;
+
+    if (currentTrackPosMm < singleStraightLengthMm)
+    {
+        // 段1: 下方直道 (原点在左弯道中心，轨道从左下角开始向右)
+        renderX = (currentTrackPosMm * MM_TO_PIXEL) - singleStraightPx / 2.0f; // 调整，使轨道中心在 (0,0) 附近
+        renderY = curveRadiusPx;                                               // Y向下为正，下方直道在 +curveRadiusPx
+        angleDeg = 0.0f;                                                       // 朝右
+    }
+    else if (currentTrackPosMm < singleStraightLengthMm + curveLengthMm)
     {
         // 段2: 右侧弯道
-        float angle = (position_mm - straightLength) / curveRadius; // 弧度
-        pos_x = straightLength * MM_TO_PIXEL + curveRadius_px * sin(angle);
-        pos_y = -curveRadius_px * cos(angle);
-        angle_degrees = angle * 180.0f / M_PI; // 转换为角度
+        float angleRad = (currentTrackPosMm - singleStraightLengthMm) / curveRadiusMm;
+        // 右侧弯道中心: (singleStraightPx / 2.0f, 0)
+        renderX = (singleStraightPx / 2.0f) + curveRadiusPx * sin(angleRad);
+        renderY = curveRadiusPx * cos(angleRad); // Y从+curveRadiusPx变到-curveRadiusPx (cos从1到-1)
+        angleDeg = angleRad * 180.0f / M_PI;
     }
-    else if (position_mm < 2 * straightLength + rightCurveLength)
+    else if (currentTrackPosMm < 2 * singleStraightLengthMm + curveLengthMm)
     {
         // 段3: 上方直道
-        float pos_on_segment = position_mm - (straightLength + rightCurveLength);
-        pos_x = (straightLength - pos_on_segment) * MM_TO_PIXEL; // 从右向左
-        pos_y = curveRadius * MM_TO_PIXEL;
-        angle_degrees = 180.0f; // 朝左
+        float posOnSegment = currentTrackPosMm - (singleStraightLengthMm + curveLengthMm);
+        renderX = (singleStraightPx / 2.0f) - (posOnSegment * MM_TO_PIXEL); // 从右向左
+        renderY = -curveRadiusPx;
+        angleDeg = 180.0f; // 朝左
     }
     else
     {
         // 段4: 左侧弯道
-        float angle = (position_mm - (2 * straightLength + rightCurveLength)) / curveRadius; // 弧度
-        pos_x = -curveRadius_px * sin(angle);
-        pos_y = curveRadius_px * cos(angle);
-        angle_degrees = 180.0f + angle * 180.0f / M_PI; // 转换为角度
+        float angleRad = (currentTrackPosMm - (2 * singleStraightLengthMm + curveLengthMm)) / curveRadiusMm;
+        // 左侧弯道中心: (-singleStraightPx / 2.0f, 0)
+        renderX = (-singleStraightPx / 2.0f) - curveRadiusPx * sin(angleRad);
+        renderY = -curveRadiusPx * cos(angleRad); // Y从-curveRadiusPx变到+curveRadiusPx (sin从0到1再到0, cos从-1到1)
+        angleDeg = 180.0f + angleRad * 180.0f / M_PI;
     }
 
-    // 设置输出参数
-    position.x = pos_x;
-    position.y = pos_y;
-    rotation = angle_degrees;
+    outRenderPosition.x = renderX;
+    outRenderPosition.y = renderY;
+    outRenderRotationDeg = angleDeg;
 }
 
 /**
@@ -122,13 +151,13 @@ void VehicleRenderer::calculatePosition(const VehicleState &vehicle,
  * @param rotation 车辆朝向角度
  */
 void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
-                                    const VehicleState &vehicle,
+                                    const gui::VehicleState &vehicle,
                                     const sf::Vector2f &position,
                                     float rotation)
 {
     // 根据车辆状态确定颜色
     sf::Color bodyColor;
-    if (vehicle.currentTaskId >= 0)
+    if (!vehicle.currentTaskId.empty())
     {
         bodyColor = m_colorAssigned; // 已分配任务
     }
@@ -207,7 +236,7 @@ void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
         // 创建文本对象
         sf::Text idText;
         idText.setFont(m_font);
-        idText.setString(std::to_string(vehicle.id));
+        idText.setString(vehicle.id);
         idText.setCharacterSize(12);
         idText.setFillColor(sf::Color::White);
         idText.setOutlineThickness(1.0f);
@@ -222,11 +251,11 @@ void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
     }
 
     // 7. 如果有任务，显示任务ID
-    if (vehicle.currentTaskId >= 0)
+    if (!vehicle.currentTaskId.empty())
     {
         sf::Text taskText;
         taskText.setFont(m_font);
-        taskText.setString("T" + std::to_string(vehicle.currentTaskId));
+        taskText.setString("T" + std::to_string(std::stoi(vehicle.currentTaskId)));
         taskText.setCharacterSize(10);
         taskText.setFillColor(sf::Color::Yellow);
 
@@ -264,8 +293,93 @@ void VehicleRenderer::renderShadow(sf::RenderTarget &target,
     target.draw(shadow);
 }
 
-void VehicleRenderer::updateVehicleStates(const std::vector<VehicleState> &vehicles)
+void VehicleRenderer::updateVehicleStates(const std::vector<gui::VehicleState> &vehicles)
 {
     m_vehicles = vehicles;
     // 如果需要计算世界坐标，可在渲染时调用calculatePosition
+}
+
+sf::Color VehicleRenderer::getColorForStatus(gui::VehicleStatus status) const
+{
+    switch (status)
+    {
+    case gui::VehicleStatus::IDLE:
+        return m_statusColors.idle;
+    case gui::VehicleStatus::MOVING_TO_LOAD:
+        return m_statusColors.movingToLoad;
+    case gui::VehicleStatus::LOADING:
+        return m_statusColors.loading;
+    case gui::VehicleStatus::MOVING_TO_UNLOAD:
+        return m_statusColors.movingToUnload;
+    case gui::VehicleStatus::UNLOADING:
+        return m_statusColors.unloading;
+    case gui::VehicleStatus::CHARGING:
+        return m_statusColors.charging;
+    case gui::VehicleStatus::ERROR:
+        return m_statusColors.error;
+    default:
+        return m_statusColors.unknown;
+    }
+}
+
+void VehicleRenderer::updateState(const gui::VehicleState &state, float totalStraightLengthMm, float curveRadiusMm)
+{
+    m_currentState = state; // Store the raw state
+
+    // Calculate render position and rotation based on raw track position and track geometry
+    sf::Vector2f renderPos;
+    float renderRotDeg;
+    calculatePosition(state, totalStraightLengthMm, curveRadiusMm, renderPos, renderRotDeg);
+
+    // Update the VehicleRenderer's own transform (since it's a sf::Transformable)
+    // This means the draw() call will draw the vehicle at this calculated position and rotation.
+    this->setPosition(renderPos);
+    this->setRotation(renderRotDeg);
+
+    // Update visual properties of internal shapes based on the state
+    // These internal shapes are drawn relative to the VehicleRenderer's transform.
+    // Their own setPosition/setRotation should be (0,0) and 0 if they are meant to align with the VehicleRenderer's origin.
+
+    m_statusBounds.setFillColor(getColorForStatus(state.status));
+    // m_statusBounds' position and rotation are relative to the VehicleRenderer's origin (now 0,0)
+    // m_statusBounds.setPosition(0,0);
+    // m_statusBounds.setRotation(0);
+
+    // Body color based on load
+    if (state.isLoaded)
+    {
+        m_body.setFillColor(sf::Color(100, 180, 255)); // Light blue for loaded
+    }
+    else
+    {
+        m_body.setFillColor(sf::Color(0, 120, 255)); // Default blue
+    }
+    // m_body.setPosition(0,0); // Relative to VehicleRenderer's origin
+    // m_body.setRotation(0);   // Relative to VehicleRenderer's origin
+
+    m_idText.setString(state.id);
+    sf::FloatRect textBounds = m_idText.getLocalBounds();
+    m_idText.setOrigin(textBounds.left + textBounds.width / 2.0f,
+                       textBounds.top + textBounds.height / 2.0f);
+    // m_idText.setPosition(0,0); // Centered on VehicleRenderer's origin
+    // m_idText.setRotation(0);   // No independent rotation for text relative to body
+
+    // Direction indicator position needs to be calculated relative to the body,
+    // which is now at (0,0) relative to the VehicleRenderer's transform.
+    // The body's origin is its center.
+    sf::Vector2f localDirPos(m_body.getSize().x / 2.f, 0.f); // Front-center of the body
+    m_directionIndicator.setPosition(localDirPos);           // This is now in local coords of VehicleRenderer
+    // m_directionIndicator.setRotation(0); // Indicator itself usually doesn't rotate, its position indicates direction
+}
+
+void VehicleRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) const
+{
+    // Apply the VehicleRenderer's own transform (set by setPosition/setRotation in updateState)
+    states.transform *= getTransform();
+
+    // Draw components. They are positioned relative to the VehicleRenderer's origin.
+    target.draw(m_statusBounds, states);
+    target.draw(m_body, states);
+    target.draw(m_directionIndicator, states);
+    target.draw(m_idText, states);
 }

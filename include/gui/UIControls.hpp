@@ -38,6 +38,7 @@ private:
     sf::RectangleShape m_background;
     sf::Text m_text;
     std::function<void()> m_onClick;
+    const sf::Font &m_fontRef; // 保存字体引用以备后用
 
     sf::Color m_normalColor{60, 60, 60};
     sf::Color m_hoverColor{80, 80, 80};
@@ -57,6 +58,13 @@ public:
 
     // 获取按钮尺寸
     sf::Vector2f getSize() const { return {m_bounds.width, m_bounds.height}; }
+
+    /**
+     * @brief 设置按钮标签文本和可选的字体大小。
+     * @param newLabel 新的标签文本。
+     * @param characterSize 新的字符大小，如果为0则使用基于按钮高度的默认大小。
+     */
+    void setLabel(const std::string &newLabel, unsigned int characterSize = 0);
 };
 
 // 时间显示控件

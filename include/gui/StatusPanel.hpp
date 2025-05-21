@@ -3,11 +3,10 @@
 #include <memory>
 #include <vector>
 #include "../Core/Task.hpp"
-#include "TaskList.hpp"
-#include "SimObject.hpp"
-#include "DeviceState.hpp"
-
-class SimObject;
+#include "gui/TaskListView.hpp"
+#include "gui/ObjectInspector.hpp"
+#include "gui/SimObject.hpp"
+#include "gui/DeviceState.hpp"
 
 /**
  * @brief 状态面板类
@@ -23,13 +22,21 @@ private:
     const float m_panelWidth = 300.0f;             // 面板宽度
     float m_panelHeight = 600.0f;                  // 面板高度（可调整）
     const sf::Color m_backgroundColor{35, 40, 45}; // 背景色
+    const float m_padding = 10.0f;                 // 内部边距
+    const float m_lineSpacing = 18.0f;             // 行间距
 
     // 字体引用
     sf::Font &m_font;
 
     // 内容元素
-    std::unique_ptr<TaskListView> m_taskList;     // 任务队列视图
-    std::unique_ptr<ObjectInspector> m_inspector; // 对象详细信息
+    std::unique_ptr<TaskListView> m_taskListView;       // 任务队列视图
+    std::unique_ptr<ObjectInspector> m_objectInspector; // 对象详细信息
+
+    // 存储的状态信息文本
+    sf::Text m_simTimeDisplay;
+    sf::Text m_vehicleCountDisplay;
+    sf::Text m_completedTasksDisplay;
+    sf::Text m_pendingTasksDisplay;
 
 public:
     /**

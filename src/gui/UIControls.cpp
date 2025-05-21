@@ -1,31 +1,29 @@
-#include "UIControls.hpp"
+#include "gui/UIControls.hpp"
 #include <sstream>
 #include <iomanip>
 #include <cmath>
 
 // Button 实现
 Button::Button(const sf::FloatRect &bounds, const sf::Font &font, const std::string &label)
-    : m_onClick(nullptr)
+    : m_fontRef(font), m_onClick(nullptr)
 {
     // 设置按钮范围
     m_bounds = bounds;
 
     // 设置按钮背景
     m_background.setSize(sf::Vector2f(bounds.width, bounds.height));
-    m_background.setPosition(bounds.left, bounds.top);
     m_background.setFillColor(m_normalColor);
 
     // 设置按钮文本
-    m_text.setFont(font);
+    m_text.setFont(m_fontRef);
     m_text.setString(label);
-    m_text.setCharacterSize(static_cast<unsigned int>(bounds.height * 0.7f));
+    m_text.setCharacterSize(static_cast<unsigned int>(bounds.height * 0.6f));
     m_text.setFillColor(sf::Color::White);
 
-    // 居中文本
+    // 初始文本居中（相对于(0,0)的背景）
     sf::FloatRect textBounds = m_text.getLocalBounds();
-    float textX = bounds.left + (bounds.width - textBounds.width) / 2.0f - textBounds.left;
-    float textY = bounds.top + (bounds.height - textBounds.height) / 2.0f - textBounds.top;
-    m_text.setPosition(textX, textY);
+    m_text.setOrigin(textBounds.left + textBounds.width / 2.0f,
+                     textBounds.top + textBounds.height / 2.0f);
 }
 
 void Button::setCallback(std::function<void()> callback)
@@ -76,11 +74,31 @@ bool Button::handleEvent(const sf::Event &event, const sf::Vector2f &mousePos)
     return wasActive != m_isActive;
 }
 
+void Button::setLabel(const std::string &newLabel, unsigned int characterSize)
+{
+    m_text.setString(newLabel);
+    if (characterSize > 0)
+    {
+        m_text.setCharacterSize(characterSize);
+    }
+    // 重新计算原点以保持居中
+    sf::FloatRect textBounds = m_text.getLocalBounds();
+    m_text.setOrigin(textBounds.left + textBounds.width / 2.0f,
+                     textBounds.top + textBounds.height / 2.0f);
+}
+
 void Button::render(sf::RenderTarget &target, const sf::Vector2f &position)
 {
-    // 设置按钮位置
+    // 更新控件的全局边界，用于事件处理
+    m_bounds.left = position.x;
+    m_bounds.top = position.y;
+
+    // 设置按钮背景位置
     m_background.setPosition(position);
-    m_text.setPosition(position + sf::Vector2f(10.f, 5.f));
+
+    // 设置文本位置为按钮中心
+    m_text.setPosition(position.x + m_bounds.width / 2.0f,
+                       position.y + m_bounds.height / 2.0f);
 
     // 绘制按钮
     target.draw(m_background);
@@ -144,6 +162,10 @@ bool TimeDisplay::handleEvent(const sf::Event &event, const sf::Vector2f &mouseP
 
 void TimeDisplay::render(sf::RenderTarget &target, const sf::Vector2f &position)
 {
+    // 更新控件的全局边界
+    m_bounds.left = position.x;
+    m_bounds.top = position.y;
+
     // 设置时间显示位置
     m_simTimeText.setPosition(position);
     m_realTimeText.setPosition(position + sf::Vector2f(0.f, 14.f));
@@ -244,50 +266,64 @@ bool SpeedControl::handleEvent(const sf::Event &event, const sf::Vector2f &mouse
 
 void SpeedControl::render(sf::RenderTarget &target, const sf::Vector2f &position)
 {
-    // 设置速度控制位置
-    m_track.setPosition(position);
-    m_handle.setPosition(position + sf::Vector2f(10.f, position.y + 2.f));
-    m_labelText.setPosition(position + sf::Vector2f(0.f, -20.f));
-    m_valueText.setPosition(position + sf::Vector2f(m_track.getSize().x + 10.f, 0.f));
+    // 更新控件的全局边界
+    m_bounds.left = position.x;
+    m_bounds.top = position.y;
 
-    // 绘制速度控制
-    target.draw(m_track);
-    target.draw(m_handle);
+    // 设置速度控制各组件的位置，相对于 position 参数
+    m_labelText.setPosition(position.x, position.y);
+    m_valueText.setPosition(position.x + m_labelText.getLocalBounds().width + 5.f, position.y); // 值文本在标签旁边
+
+    // 滑块轨道位置，在标签下方
+    float trackYOffset = m_labelText.getCharacterSize() + 5.f; // 标签下方一点
+    m_track.setPosition(position.x + 10.f, position.y + trackYOffset + m_bounds.height / 2.f - m_track.getSize().y / 2.f);
+
+    // 更新手柄位置，手柄应该基于 m_track 的位置和 m_currentValue
+    updateHandlePosition(); // 这个函数内部会使用 m_track 的位置
+
+    // 绘制
     target.draw(m_labelText);
     target.draw(m_valueText);
+    target.draw(m_track);
+    target.draw(m_handle);
 }
 
 void SpeedControl::updateHandlePosition()
 {
-    // 计算滑块位置
-    float normalizedValue = (m_currentValue - m_minValue) / (m_maxValue - m_minValue);
-    float handleX = m_track.getPosition().x + normalizedValue * m_track.getSize().x;
-    float handleY = m_track.getPosition().y + m_track.getSize().y / 2;
-    m_handle.setPosition(handleX, handleY);
+    // 计算手柄在轨道上的相对位置
+    float trackWidth = m_track.getSize().x;
+    float relativePos = (m_currentValue - m_minValue) / (m_maxValue - m_minValue);
+    float handleX = m_track.getPosition().x + relativePos * trackWidth;
+    // 手柄Y轴与轨道中心对齐
+    m_handle.setPosition(handleX, m_track.getPosition().y + m_track.getSize().y / 2.0f);
 }
 
 void SpeedControl::updateValueText()
 {
-    std::ostringstream valueStr;
-    valueStr << std::fixed << std::setprecision(1) << m_currentValue << "x";
-    m_valueText.setString(valueStr.str());
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(1) << m_currentValue << "x";
+    m_valueText.setString(oss.str());
 }
 
-void SpeedControl::updateValueFromPosition(float xPos)
+void SpeedControl::updateValueFromPosition(float mouseX)
 {
-    // 计算位置对应的值
-    float trackStart = m_track.getPosition().x;
-    float trackEnd = trackStart + m_track.getSize().x;
-    float normalizedPos = (xPos - trackStart) / (trackEnd - trackStart);
-    normalizedPos = std::max(0.0f, std::min(1.0f, normalizedPos));
+    // 鼠标X坐标相对于滑块轨道的起点
+    float relativeMouseX = mouseX - m_track.getPosition().x;
+    float trackWidth = m_track.getSize().x;
 
-    // 计算并设置新值
-    float newValue = m_minValue + normalizedPos * (m_maxValue - m_minValue);
-    setValue(newValue);
+    // 将鼠标位置映射到滑块的值域
+    float newValueRatio = std::max(0.0f, std::min(1.0f, relativeMouseX / trackWidth));
+    m_currentValue = m_minValue + newValueRatio * (m_maxValue - m_minValue);
 
-    // 如果有回调函数，通知值变化
-    if (m_onValueChanged)
+    setValue(m_currentValue); // 调用setValue以确保更新手柄和文本，并触发回调
+
+    // 触发回调 (如果存在)
+    if (m_callback)
     {
+        m_callback(m_currentValue);
+    }
+    if (m_onValueChanged)
+    { // 兼容旧回调
         m_onValueChanged(m_currentValue);
     }
 }
