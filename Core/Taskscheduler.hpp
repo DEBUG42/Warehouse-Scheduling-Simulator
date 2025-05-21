@@ -1,12 +1,9 @@
-#ifndef TASK_SCHEDULER_H
-#define TASK_SCHEDULER_H
-
 // 包含必要的标准库头文件
 #include <string>
 #include <map>
 #include <queue>
 #include <vector>
-
+#include <SFML/System.hpp>
 // 定义任务类型枚举，包括入库和出库两种类型
 enum TaskType { INBOUND, OUTBOUND };
 
@@ -17,7 +14,24 @@ struct Task {
     TaskType type;     // 任务类型，可以是入库或出库
     int start_device;  // 任务起始的设备ID
     int end_device;    // 任务结束的设备ID
+}
+
+struct Task {
+    int id;                     // 任务唯一编号
+    TaskType type;                   // 入库/出库任务
+    int materialId;                  // 物料编号
+    int startDeviceId;               // 起始设备ID
+    int endDeviceId;                 // 目标设备ID
+    sf::Time createTime;             // 任务创建时间
+    sf::Time startTime;              // 实际开始时间
+    sf::Time completeTime;           // 完成时间
+    int assignedVehicleId = -1;      // 分配的车辆ID
+    bool validate(const std::map<int, DeviceBase*>& devices) const;
 };
+
+    //根据设备ID输出设备坐标和坐标状态传到device类里面
+void outputDeviceStatus(int device_id) const {
+    };
 
 // 任务调度器类，用于管理和调度仓库中的任务
 class TaskScheduler {
@@ -31,9 +45,12 @@ public:
     // 获取指定设备ID的下一个任务
     Task getNextTask(int device_id);
 
+    //每个时间步或事件触发时调用的调度主控函数
+    void onEvent(float m_simTime)
+
+
+
 private:
     // 使用map存储每个设备的任务队列，map的键是设备ID，值是任务队列
     std::map<int, std::queue<Task>> task_queue_map;
 };
-
-#endif

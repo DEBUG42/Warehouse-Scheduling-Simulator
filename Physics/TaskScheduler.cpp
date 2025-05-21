@@ -98,11 +98,6 @@ bool TaskScheduler::hasTasks(int device_id) const {
 }
 
 // 功能: 获取指定设备的下一个任务。
-// 输入:
-// device_id: 设备的唯一标识符，整数类型。
-// 输出:
-// 返回 Task 结构体，表示该设备的下一个任务。
-// 如果指定设备没有任务，抛出 std::runtime_error 异常，异常信息为 "No tasks available for this device."
 Task TaskScheduler::getNextTask(int device_id) {
     // 获取指定设备的任务队列
     auto it = task_queue_map.find(device_id);
@@ -116,52 +111,102 @@ Task TaskScheduler::getNextTask(int device_id) {
     throw std::runtime_error("No tasks available for this device.");
 }
 
-procedure onEvent(current_time):
+//功能：触发整个调度系统的事件驱动过程。    
+void TaskScheduler::onEvent(sf::Time current_time) {
+    // Step 1: 更新所有设备和车辆状态（如搬运完成、货物被取走等）
 
-    updateAllDeviceStates(current_time)
-    updateAllCarStates(current_time)
+    updateAllDeviceStates(current_time);
+    updateAllCarStates(current_time);
 
-    ready_tasks ← filterReadyTasks(all_tasks, device_states)
+    // Step 2: 从任务池中筛选出当前“就绪”任务（满足起点/终点状态、顺序依赖等）
+    ready_tasks ← filterReadyTasks(all_tasks, device_states, current_time)
 
+    // Step 3: 遍历就绪任务，为每个任务选择合适车辆
     for task in ready_tasks:
         if not task.is_assigned:
+
+            // 筛选当前能够执行该任务的车辆
             candidate_cars ← filterAvailableCars(task, all_cars, current_time)
+
             if candidate_cars is not empty:
+
+                // 从候选车辆中选择一个最早完成任务的车辆
                 best_car ← selectCarWithEarliestFinish(task, candidate_cars, current_time)
-                assignTaskToCar(task, best_car, current_time)
-                logTaskAssignment(task, best_car)
 
+                if best_car ≠ null:
 
+                    // Step 4: 正式分配任务给车辆
+                    assignTaskToCar(task, best_car, current_time)
 
-function isTaskReady(task, current_time):
+                    // 更新车辆可用时间、当前位置、状态（改为“执行中”）
+                    updateCarStatus(best_car, task, current_time)
 
-    if task.id != next_task_id[task.start_device]:
-        return false  // 顺序不对
+                    // 更新设备预约状态（起点设备标记“将被取货”，终点设备标记“将被放货”）
+                    reserveDeviceForTask(task, current_time)
+
+                    // 标记任务为“已分配”
+                    task.is_assigned ← true
+
+                    // Step 5: 写入调度日志（TaskExeLog、DeviceStateLog）
+                    logTaskAssignment(task, best_car)
+}
+
+// 功能:判断任务是否可调度
+bool isTaskReady(task, current_time){
+
+    // Step 1: 顺序约束 —— 同一个起始设备上的任务必须按编号顺序执行
+    if task.id ≠ next_task_id[task.start_device]:
+        return false  // 起始设备当前不能跳过前面的任务
+
+    // Step 2: 设备状态检查
+    start = device_states[task.start_device]
+    end   = device_states[task.end_device]
 
     if task.type == 出库:
-        if not device_states[task.start_device].has_goods:
+
+        // 起点必须为“有货、非搬运中、允许小车取货”状态
+        if not start.has_goods or start.is_transferring:
             return false
-        if not device_states[task.end_device].is_empty:
+
+        // 终点（出库口）必须为空闲（无货、未被占用）
+        if not end.is_empty or end.is_waiting_unload:
             return false
 
     else if task.type == 入库:
-        if not device_states[task.start_device].has_goods:
+
+        // 起点（入库口）必须有货且未被其他任务占用
+        if not start.has_goods or start.is_transferring:
             return false
-        if not device_states[task.end_device].is_empty:
+
+        // 终点（入库接口）必须为空（即未被货物占据）
+        if not end.is_empty or end.is_reserved:
             return false
 
-    return true
+    // Step 3: 时间条件（任务准备时间 ≤ 当前时间）
+    if task.ready_time > current_time:
+        return false
 
+    return true  // 该任务满足调度条件
+}
 
-function filterReadyTasks(all_tasks, device_states):
-
+function filterReadyTasks(all_tasks, device_states, current_time, next_task_id){
     ready_list ← []
 
     for task in all_tasks:
-        if not task.is_assigned and isTaskReady(task, current_time):
+
+        // 1. 已经被分配过的任务跳过
+        if task.is_assigned:
+            continue
+
+        // 2. 是否满足就绪条件（顺序约束 + 起止设备状态 + 时间）
+        if isTaskReady(task, current_time, device_states, next_task_id):
+
+            // 3. 加入就绪任务池
             ready_list.append(task)
 
     return ready_list
+}
+
 
 
 
