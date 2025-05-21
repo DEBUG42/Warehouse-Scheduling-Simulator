@@ -2,13 +2,11 @@
 #include <SFML/Graphics.hpp>
 #include <map>
 #include <string> // For Task ID
+#include "Device.hpp"
 
 namespace Core
 {
-
-    // 前向声明
-    class DeviceBase;
-
+    // DeviceBase已在Device.hpp中namespace Core内声明
     enum class TaskType
     {
         OUTPUT, // 出库

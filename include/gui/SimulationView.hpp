@@ -46,9 +46,9 @@ private:
     float m_curveRadius = 2500.0f;  // 弯道半径(mm)
 
     // 选择系统
-    std::shared_ptr<SimObject> m_selectedObject; // 存储的状态数据
-    std::vector<VehicleState> m_vehicles;        // 车辆状态
-    std::vector<DeviceState> m_devices;          // 设备状态（旧接口）
+    std::shared_ptr<gui::SimObject> m_selectedObject; // 存储的状态数据
+    std::vector<gui::VehicleState> m_vehicles;        // 车辆状态
+    std::vector<gui::DeviceState> m_devices;          // 设备状态（旧接口）
 
 public:
     /**
@@ -107,19 +107,19 @@ public:
      * @brief 获取当前选中的对象
      * @return 选中对象指针（可能为nullptr）
      */
-    std::shared_ptr<SimObject> getSelectedObject() const;
+    std::shared_ptr<gui::SimObject> getSelectedObject() const;
 
     /**
      * @brief 更新车辆状态
      * @param vehicles 车辆状态列表
      */
-    void updateVehicles(const std::vector<VehicleState> &vehicles);
+    void updateVehicles(const std::vector<gui::VehicleState> &vehicles);
 
     /**
      * @brief 更新设备状态
      * @param devices 设备状态列表
      */
-    void updateDevices(const std::vector<DeviceState> &devices);
+    void updateDevices(const std::vector<gui::DeviceState> &devices);
 
     // 调整视图大小
     void resize(unsigned int width, unsigned int height);

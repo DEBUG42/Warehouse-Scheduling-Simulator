@@ -50,8 +50,8 @@ public:
      * @param selectedObject 当前选中的对象（可为nullptr）
      * @param pendingTasks 全局待处理任务队列
      */
-    void refreshContent(const SimObject *selectedObject,
-                        const std::vector<Task> &pendingTasks);
+    void refreshContent(const gui::SimObject *selectedObject,
+                        const std::vector<Core::Task> &pendingTasks);
 
     /**
      * @brief 渲染面板界面

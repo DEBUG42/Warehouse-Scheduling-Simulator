@@ -8,11 +8,10 @@
 StatusPanel::StatusPanel(sf::Font &font) : m_font(font)
 {
     // 初始化任务列表视图
-    // 高度将由 StatusPanel::render 或 resize 动态计算和设置
-    m_taskList = std::make_unique<TaskListView>(m_font, m_panelWidth - 2 * m_padding);
+    m_taskListView = std::make_unique<TaskListView>(m_font, m_panelWidth - 2 * m_padding);
 
     // 初始化对象检视器
-    m_inspector = std::make_unique<ObjectInspector>(m_font, m_panelWidth - 2 * m_padding);
+    m_objectInspector = std::make_unique<ObjectInspector>(m_font, m_panelWidth - 2 * m_padding);
 
     // 初始化状态显示文本对象
     m_simTimeDisplay.setFont(m_font);
@@ -38,14 +37,14 @@ StatusPanel::StatusPanel(sf::Font &font) : m_font(font)
     setPendingTaskCount(0);
 }
 
-void StatusPanel::refreshContent(const SimObject *selectedObject,
-                                 const std::vector<Task> &pendingTasks)
+void StatusPanel::refreshContent(const gui::SimObject *selectedObject,
+                                 const std::vector<Core::Task> &pendingTasks)
 {
     // 更新对象检视器
-    m_inspector->updateObject(selectedObject);
+    m_objectInspector->updateObject(selectedObject);
 
     // 更新任务列表
-    m_taskList->updateTasks(pendingTasks);
+    m_taskListView->updateTasks(pendingTasks);
     setPendingTaskCount(pendingTasks.size()); // 顺便更新待处理任务数
 }
 
@@ -95,8 +94,8 @@ void StatusPanel::render(sf::RenderTarget &target, const sf::Vector2f &position)
     // 2. 绘制检视器
     sf::Transform inspectorTransform;
     inspectorTransform.translate(position.x + m_padding, position.y + m_padding + globalStatusHeight);
-    m_inspector->setPosition(inspectorTransform.transformPoint(0, 0)); // 设置检视器的位置
-    target.draw(*m_inspector);                                         // 注意 Inspector 是 sf::Drawable
+    m_objectInspector->setPosition(inspectorTransform.transformPoint(0, 0)); // 设置检视器的位置
+    target.draw(*m_objectInspector);                                         // 注意 Inspector 是 sf::Drawable
 
     // 3. 绘制分隔线
     sf::RectangleShape divider(sf::Vector2f(m_panelWidth - 2 * m_padding, 1.0f));
@@ -105,12 +104,12 @@ void StatusPanel::render(sf::RenderTarget &target, const sf::Vector2f &position)
     target.draw(divider);
 
     // 4. 绘制任务列表
-    m_taskList->setViewHeight(taskListHeight); // 设置任务列表的实际绘制高度
+    m_taskListView->setViewHeight(taskListHeight); // 设置任务列表的实际绘制高度
     sf::Transform taskListTransform;
     taskListTransform.translate(position.x + m_padding,
                                 position.y + m_padding + globalStatusHeight + inspectorHeight + 1.0f);
-    m_taskList->setPosition(taskListTransform.transformPoint(0, 0)); // 设置任务列表的位置
-    target.draw(*m_taskList);                                        // 注意 TaskList 是 sf::Drawable
+    m_taskListView->setPosition(taskListTransform.transformPoint(0, 0)); // 设置任务列表的位置
+    target.draw(*m_taskListView);                                        // 注意 TaskListView 是 sf::Drawable
 }
 
 bool StatusPanel::handleEvent(const sf::Event &event, const sf::Vector2f &panelLocalMousePos)
@@ -131,8 +130,8 @@ bool StatusPanel::handleEvent(const sf::Event &event, const sf::Vector2f &panelL
     sf::FloatRect taskListBounds(m_padding, m_padding + globalStatusHeight + inspectorHeight + 1.0f,
                                  m_panelWidth - 2 * m_padding, m_panelHeight - (m_padding + globalStatusHeight + inspectorHeight + 1.0f) - m_padding);
 
-    // if (m_inspector->getGlobalBounds().contains(panelLocalMousePos)) { // 需要 inspector 提供 getGlobalBounds 或手动计算
-    //     // TODO: 将事件和相对坐标传递给 m_inspector->handleEvent(...)
+    // if (m_objectInspector->getGlobalBounds().contains(panelLocalMousePos)) { // 需要 inspector 提供 getGlobalBounds 或手动计算
+    //     // TODO: 将事件和相对坐标传递给 m_objectInspector->handleEvent(...)
     // }
 
     if (event.type == sf::Event::MouseWheelScrolled)
@@ -141,7 +140,7 @@ bool StatusPanel::handleEvent(const sf::Event &event, const sf::Vector2f &panelL
         {
             // 将鼠标位置转换为 TaskListView 的局部坐标
             sf::Vector2f taskListViewLocalMousePos = panelLocalMousePos - sf::Vector2f(taskListBounds.left, taskListBounds.top);
-            if (m_taskList->handleScrollEvent(event.mouseWheelScroll, taskListViewLocalMousePos))
+            if (m_taskListView->handleScrollEvent(event.mouseWheelScroll, taskListViewLocalMousePos))
             {
                 return true; // 事件被任务列表消耗
             }
@@ -167,7 +166,7 @@ void StatusPanel::setSimulationTime(float time)
     int hours = static_cast<int>(time / 3600);
     int minutes = static_cast<int>((time - hours * 3600) / 60);
     int seconds = static_cast<int>(time) % 60;
-    oss << "仿真时间: " << std::setw(2) << std::setfill('0') << hours << ":"
+    oss << "Simulation Time: " << std::setw(2) << std::setfill('0') << hours << ":"
         << std::setw(2) << std::setfill('0') << minutes << ":"
         << std::setw(2) << std::setfill('0') << seconds;
     m_simTimeDisplay.setString(oss.str());
@@ -175,15 +174,15 @@ void StatusPanel::setSimulationTime(float time)
 
 void StatusPanel::setVehicleCount(size_t count)
 {
-    m_vehicleCountDisplay.setString("车辆总数: " + std::to_string(count));
+    m_vehicleCountDisplay.setString("Total Vehicles: " + std::to_string(count));
 }
 
 void StatusPanel::setCompletedTaskCount(size_t count)
 {
-    m_completedTasksDisplay.setString("已完成任务: " + std::to_string(count));
+    m_completedTasksDisplay.setString("Completed Tasks: " + std::to_string(count));
 }
 
 void StatusPanel::setPendingTaskCount(size_t count)
 {
-    m_pendingTasksDisplay.setString("待处理任务: " + std::to_string(count));
+    m_pendingTasksDisplay.setString("Pending Tasks: " + std::to_string(count));
 }

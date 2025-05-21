@@ -37,12 +37,12 @@ void ObjectInspector::rebuildDisplay()
 
     if (!m_currentObject)
     {
-        m_titleText.setString("未选中对象");
+        m_titleText.setString("No Object Selected");
         m_titleText.setPosition(m_padding, m_padding);
         return;
     }
 
-    m_titleText.setString("对象详情");
+    m_titleText.setString("Object Details");
     m_titleText.setPosition(m_padding, m_padding);
 
     // 使用 SimObject 的 getter 方法
@@ -51,7 +51,7 @@ void ObjectInspector::rebuildDisplay()
     std::ostringstream ossPos;
     ossPos << std::fixed << std::setprecision(1)
            << "(" << m_currentObject->getPosition().x << ", " << m_currentObject->getPosition().y << ")";
-    addDetailLine("位置: ", ossPos.str(), currentY);
+    addDetailLine("Position: ", ossPos.str(), currentY);
 
     // 特定类型信息
     if (m_currentObject->getType() == gui::SimObjectType::Vehicle)
@@ -60,21 +60,21 @@ void ObjectInspector::rebuildDisplay()
         const auto *vehicle = dynamic_cast<const gui::VehicleState *>(m_currentObject);
         if (vehicle)
         {
-            addDetailLine("类型: ", "车辆 (AGV)", currentY);
+            addDetailLine("Type: ", "AGV", currentY);
             std::ostringstream ossSpeed;
             ossSpeed << std::fixed << std::setprecision(2) << vehicle->speed << " m/s";
-            addDetailLine("速度: ", ossSpeed.str(), currentY);
-            addDetailLine("运动状态: ", vehicleStatusToString(vehicle->status), currentY);
-            addDetailLine("当前任务ID: ", vehicle->currentTaskId.empty() ? "无" : vehicle->currentTaskId, currentY);
-            addDetailLine("载货状态: ", vehicle->isLoaded ? "已载货" : "空闲", currentY);
+            addDetailLine("Speed: ", ossSpeed.str(), currentY);
+            addDetailLine("Status: ", vehicleStatusToString(vehicle->status), currentY);
+            addDetailLine("Task ID: ", vehicle->currentTaskId.empty() ? "None" : vehicle->currentTaskId, currentY);
+            addDetailLine("Load Status: ", vehicle->isLoaded ? "Loaded" : "Empty", currentY);
             if (vehicle->isLoaded)
             {
-                addDetailLine("  物料ID: ", std::to_string(vehicle->cargo.materialId), currentY);
-                addDetailLine("  数量: ", std::to_string(vehicle->cargo.quantity), currentY);
+                addDetailLine("  Material ID: ", std::to_string(vehicle->cargo.materialId), currentY);
+                addDetailLine("  Quantity: ", std::to_string(vehicle->cargo.quantity), currentY);
             }
             std::ostringstream ossBattery;
             ossBattery << std::fixed << std::setprecision(0) << (vehicle->batteryLevel * 100) << "%";
-            addDetailLine("电量: ", ossBattery.str(), currentY);
+            addDetailLine("Battery: ", ossBattery.str(), currentY);
         }
     }
     else if (m_currentObject->getType() == gui::SimObjectType::Device)
@@ -82,24 +82,24 @@ void ObjectInspector::rebuildDisplay()
         const auto *device = dynamic_cast<const gui::DeviceState *>(m_currentObject);
         if (device)
         {
-            addDetailLine("类型: ", deviceTypeToString(device->deviceType), currentY);
-            addDetailLine("设备状态: ", deviceStatusToString(device->status), currentY);
+            addDetailLine("Type: ", deviceTypeToString(device->deviceType), currentY);
+            addDetailLine("Status: ", deviceStatusToString(device->status), currentY);
             if (!device->boundVehicleId.empty())
             {
-                addDetailLine("关联车辆ID: ", device->boundVehicleId, currentY);
+                addDetailLine("Bound Vehicle: ", device->boundVehicleId, currentY);
             }
             if (device->deviceType == gui::DeviceType::WORK_STATION)
             {
                 // addDetailLine("  物料需求: ", "示例需求", currentY);
                 // addDetailLine("  生产进度: ", "50%", currentY);
             }
-            addDetailLine("  容量: ", std::to_string(device->capacity), currentY);
-            addDetailLine("  当前负载: ", std::to_string(device->currentLoad), currentY);
-            addDetailLine("  物料ID (处理中): ", device->materialId == -1 ? "无" : std::to_string(device->materialId), currentY);
+            addDetailLine("  Capacity: ", std::to_string(device->capacity), currentY);
+            addDetailLine("  Current Load: ", std::to_string(device->currentLoad), currentY);
+            addDetailLine("  Material ID (Processing): ", device->materialId == -1 ? "None" : std::to_string(device->materialId), currentY);
             std::ostringstream ossProgress;
             ossProgress << std::fixed << std::setprecision(0) << (device->processingProgress * 100) << "%";
-            addDetailLine("  处理进度: ", ossProgress.str(), currentY);
-            addDetailLine("  排队任务: ", std::to_string(device->queuedTaskCount), currentY);
+            addDetailLine("  Processing Progress: ", ossProgress.str(), currentY);
+            addDetailLine("  Queued Tasks: ", std::to_string(device->queuedTaskCount), currentY);
         }
     }
 }
@@ -131,23 +131,21 @@ std::string ObjectInspector::vehicleStatusToString(gui::VehicleStatus status) co
     switch (status)
     {
     case gui::VehicleStatus::IDLE:
-        return "空闲";
+        return "Idle";
     case gui::VehicleStatus::MOVING_TO_LOAD:
-        return "前往装货点";
+        return "Moving to Load";
     case gui::VehicleStatus::LOADING:
-        return "装货中";
+        return "Loading";
     case gui::VehicleStatus::MOVING_TO_UNLOAD:
-        return "前往卸货点";
+        return "Moving to Unload";
     case gui::VehicleStatus::UNLOADING:
-        return "卸货中";
+        return "Unloading";
     case gui::VehicleStatus::CHARGING:
-        return "充电中";
+        return "Charging";
     case gui::VehicleStatus::ERROR:
-        return "错误";
-    case gui::VehicleStatus::UNKNOWN:
-        return "未知(移动中)";
+        return "Error";
     default:
-        return "未知车辆状态";
+        return "Unknown";
     }
 }
 
@@ -156,28 +154,14 @@ std::string ObjectInspector::deviceTypeToString(gui::DeviceType type) const
 {
     switch (type)
     {
-    case gui::DeviceType::CHARGER:
-        return "充电桩";
-    case gui::DeviceType::WORK_STATION:
-        return "工作站";
-    case gui::DeviceType::INPUT_STATION:
-        return "入库口";
-    case gui::DeviceType::OUTPUT_STATION:
-        return "出库口";
-    case gui::DeviceType::STORAGE_STATION:
-        return "仓储区";
-    case gui::DeviceType::CORE_STORAGE_IN:
-        return "入库接口(Core)";
-    case gui::DeviceType::CORE_STORAGE_OUT:
-        return "出库接口(Core)";
-    case gui::DeviceType::CORE_WORKSTATION_IN:
-        return "工作站入(Core)";
     case gui::DeviceType::CORE_WORKSTATION_OUT:
-        return "工作站出(Core)";
-    case gui::DeviceType::UNKNOWN_DEVICE_TYPE:
-        return "未知设备类型";
+        return "Workstation Out";
+    case gui::DeviceType::CORE_WORKSTATION_IN:
+        return "Workstation In";
+    case gui::DeviceType::CHARGER:
+        return "Charger";
     default:
-        return "未知设备类型";
+        return "Unknown Device";
     }
 }
 
@@ -187,21 +171,19 @@ std::string ObjectInspector::deviceStatusToString(gui::DeviceStatus status) cons
     switch (status)
     {
     case gui::DeviceStatus::IDLE:
-        return "空闲";
-    case gui::DeviceStatus::WORKING:
-        return "工作中";
-    case gui::DeviceStatus::CHARGING_VEHICLE:
-        return "车辆充电中";
-    case gui::DeviceStatus::OFFLINE:
-        return "离线";
-    case gui::DeviceStatus::ERROR_STATUS:
-        return "错误";
+        return "Idle";
     case gui::DeviceStatus::BUSY:
-        return "忙碌";
-    case gui::DeviceStatus::UNKNOWN_DEVICE_STATUS:
-        return "未知设备状态";
+        return "Busy";
+    case gui::DeviceStatus::WORKING:
+        return "Working";
+    case gui::DeviceStatus::OFFLINE:
+        return "Offline";
+    case gui::DeviceStatus::CHARGING_VEHICLE:
+        return "Charging Vehicle";
+    case gui::DeviceStatus::ERROR:
+        return "Error";
     default:
-        return "未知设备状态";
+        return "Unknown";
     }
 }
 

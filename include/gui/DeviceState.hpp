@@ -1,7 +1,7 @@
 #pragma once
+#include "../Core/Device.hpp"
 #include <SFML/Graphics.hpp>
 #include <string>            // 需要包含 <string> 以使用 std::to_string
-#include "Core/Device.hpp"   // 包含核心设备头文件
 #include "gui/SimObject.hpp" // 确保 SimObject 被包含
 
 // 将GUI相关的枚举和辅助函数放入 gui 命名空间
@@ -32,7 +32,8 @@ namespace gui
         WORKING,
         OFFLINE,
         CHARGING_VEHICLE,
-        ERROR_STATUS,
+        ERROR,                // 新增，直接写ERROR
+        ERROR_STATUS = ERROR, // 兼容旧代码
         UNKNOWN_DEVICE_STATUS
     };
 
@@ -69,7 +70,7 @@ namespace gui
     }
 
     // 设备状态信息结构
-    struct DeviceState : public SimObject
+    struct DeviceState : public gui::SimObject
     {
         gui::DeviceType deviceType; // 使用 gui::DeviceType
         gui::DeviceStatus status;   // 使用 gui::DeviceStatus
@@ -79,13 +80,15 @@ namespace gui
         float processingProgress;
         int queuedTaskCount;
         std::string boundVehicleId;
+        sf::Vector2f position; // 兼容测试代码直接访问
 
         // 默认构造函数
         DeviceState() : SimObject(SimObjectType::Device, ""),
                         deviceType(gui::DeviceType::UNKNOWN_DEVICE_TYPE),
                         status(gui::DeviceStatus::UNKNOWN_DEVICE_STATUS),
                         capacity(1), currentLoad(0), materialId(-1),
-                        processingProgress(0.0f), queuedTaskCount(0)
+                        processingProgress(0.0f), queuedTaskCount(0),
+                        position(sf::Vector2f(0, 0))
         {
         }
 
@@ -97,21 +100,14 @@ namespace gui
               status(_status),
               boundVehicleId(_boundVehicleId),
               capacity(1), currentLoad(0), materialId(-1),
-              processingProgress(0.0f), queuedTaskCount(0) {}
+              processingProgress(0.0f), queuedTaskCount(0),
+              position(_pos) {}
 
         // 新增构造函数：从 Core::DeviceBase 构建
-        DeviceState(const Core::DeviceBase &coreDevice, const sf::Vector2f &_pos)
-            : SimObject(SimObjectType::Device, std::to_string(coreDevice.getId()), _pos),
-              deviceType(coreToGuiDeviceType(coreDevice.getCoreType())),
-              status(coreToGuiDeviceStatus(coreDevice.getCoreStatus())),
-              capacity(coreDevice.getCapacity()),
-              currentLoad(coreDevice.getCurrentLoad()),
-              materialId(coreDevice.getCurrentMaterialId()),
-              processingProgress(coreDevice.getProcessingProgress()),
-              queuedTaskCount(static_cast<int>(coreDevice.getQueuedTaskCount())),
-              boundVehicleId("") // 核心设备目前没有绑定车辆ID的直接概念，暂留空
-        {
-        }
+        DeviceState(const Core::DeviceBase &coreDevice, const sf::Vector2f &_pos);
+
+        // 便于外部访问位置
+        sf::Vector2f getPosition() const { return SimObject::getPosition(); }
     };
 
 } // namespace gui

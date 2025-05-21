@@ -6,23 +6,23 @@ Toolbar::Toolbar(sf::Font &font, float height, float width)
     : m_font(font), m_height(height), m_width(width)
 {
 
-    // 初始化工具栏背景
+    // Initialize toolbar background
     m_background.setSize(sf::Vector2f(width, height));
     m_background.setFillColor(sf::Color(50, 50, 50));
 
-    // 创建播放/暂停按钮
+    // Create play/pause button
     sf::FloatRect playBtnBounds(10, 5, 20, 20);
     m_playPauseButton = std::make_unique<Button>(playBtnBounds, font, "▶");
 
-    // 创建时间显示
+    // Create time display
     sf::FloatRect timeDisplayBounds(40, 5, 150, 20);
     m_timeDisplay = std::make_unique<TimeDisplay>(timeDisplayBounds, font);
 
-    // 创建速度控制滑块
+    // Create speed control slider
     sf::FloatRect speedControlBounds(200, 5, 150, 20);
     m_speedControl = std::make_unique<SpeedControl>(speedControlBounds, font);
 
-    // 创建额外功能按钮
+    // Create extra function buttons
     createFunctionButtons();
 }
 
@@ -30,28 +30,28 @@ void Toolbar::createFunctionButtons()
 {
     float buttonWidth = 80;
     float buttonHeight = 20;
-    float startX = 400;
+    float startX = 370;
     float spacing = 10;
 
-    // 添加任务按钮
+    // Add Task button
     sf::FloatRect addTaskBounds(startX, 5, buttonWidth, buttonHeight);
-    auto addTaskBtn = std::make_unique<Button>(addTaskBounds, m_font, "添加任务");
+    auto addTaskBtn = std::make_unique<Button>(addTaskBounds, m_font, "Add Task");
     addTaskBtn->setCallback([this]()
                             {
         if (m_onAddTask) m_onAddTask(); });
     m_buttons.push_back(std::move(addTaskBtn));
 
-    // 视图复位按钮
+    // Reset View button
     sf::FloatRect resetViewBounds(startX + buttonWidth + spacing, 5, buttonWidth, buttonHeight);
-    auto resetViewBtn = std::make_unique<Button>(resetViewBounds, m_font, "复位视图");
+    auto resetViewBtn = std::make_unique<Button>(resetViewBounds, m_font, "Reset View");
     resetViewBtn->setCallback([this]()
                               {
         if (m_onResetView) m_onResetView(); });
     m_buttons.push_back(std::move(resetViewBtn));
 
-    // 切换显示模式按钮
+    // Switch Mode button
     sf::FloatRect switchModeBounds(startX + 2 * (buttonWidth + spacing), 5, buttonWidth, buttonHeight);
-    auto switchModeBtn = std::make_unique<Button>(switchModeBounds, m_font, "切换模式");
+    auto switchModeBtn = std::make_unique<Button>(switchModeBounds, m_font, "Switch Mode");
     switchModeBtn->setCallback([this]()
                                {
         if (m_onSwitchMode) m_onSwitchMode(); });
@@ -115,8 +115,8 @@ void Toolbar::render(sf::RenderTarget &target, const sf::Vector2f &position)
     // 绘制速度控制
     m_speedControl->render(target, position + sf::Vector2f(300.f, 5.f));
 
-    // 绘制其他按钮
-    float buttonX = position.x + 500.f;
+    // 绘制其他按钮（紧跟速度控件后，靠左）
+    float buttonX = position.x + 370.f;
     for (auto &button : m_buttons)
     {
         button->render(target, sf::Vector2f(buttonX, position.y + 5.f));
@@ -177,11 +177,11 @@ void Toolbar::updatePlayPauseState(bool isPlaying)
     {
         if (isPlaying)
         {
-            m_playPauseButton->setLabel("❚❚"); // 暂停符号
+            m_playPauseButton->setLabel("Pause");
         }
         else
         {
-            m_playPauseButton->setLabel("▶"); // 播放符号
+            m_playPauseButton->setLabel("Play");
         }
     }
     // 注意：这里只改变了按钮的视觉表示，

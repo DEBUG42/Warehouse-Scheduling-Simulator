@@ -4,7 +4,7 @@
 #include <string>     // 为 Vehicle 的 ID (如果需要) 和 Task 的 ID
 #include "Task.hpp"   // 假设 Task.hpp 也在 Core 命名空间或会被调整
 #include "Device.hpp" // 假设 Device.hpp 也在 Core 命名空间或会被调整
-// #include "../Physics/TrackSegment.hpp" // 实际项目中此文件不存在，彻底移除或注释
+#include "../Physics/TrackSegment.hpp"
 
 namespace Core
 {
@@ -71,10 +71,10 @@ namespace Core
          * @brief 更新车辆物理状态
          * @param deltaTime 仿真时间增量（秒）
          * @param leadingVehicle 前车对象（可为nullptr）
+         * @param trackInfo 轨道信息
          * @return 是否发生状态变更（用于触发UI更新）
          */
-        // bool updatePhysics(float deltaTime, const Vehicle* leadingVehicle, const TrackSegment& trackInfo); // 原签名
-        bool updatePhysics(float deltaTime, const Vehicle *leadingVehicle /*, 其他轨道参数如果需要的话 */); // 修改后的签名，移除了TrackSegment
+        bool updatePhysics(float deltaTime, const Vehicle *leadingVehicle, const Physics::TrackSegment &trackInfo);
 
         // 任务操作
         /**

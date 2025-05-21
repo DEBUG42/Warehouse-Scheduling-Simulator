@@ -11,9 +11,9 @@ TaskListView::TaskListView(sf::Font &font, float width)
     : m_font(font), m_width(width)
 {
     m_titleText.setFont(m_font);
-    m_titleText.setCharacterSize(16); // 标题字号
+    m_titleText.setCharacterSize(16); // Title font size
     m_titleText.setFillColor(sf::Color::White);
-    m_titleText.setString("任务队列");
+    m_titleText.setString("Task Queue");
     // m_height 将由 StatusPanel 通过 setViewHeight 设置，或者使用默认值
 }
 
@@ -102,11 +102,11 @@ void TaskListView::draw(sf::RenderTarget &target, sf::RenderStates states) const
         if (itemBottomY > 20.0f && itemTopY < m_height)
         {
             std::ostringstream taskLine;
-            taskLine << "ID: " << task.taskId
-                     << " 类型: " << (task.type == TaskType::input ? "入" : "出")
-                     << " 物料: " << task.materialId
-                     << " 起: " << task.startDeviceId
-                     << "->止: " << task.endDeviceId;
+            taskLine << "ID: " << task.id
+                     << " Type: " << (task.type == Core::TaskType::INPUT ? "Input" : (task.type == Core::TaskType::OUTPUT ? "Output" : "Move"))
+                     << " Material: " << task.materialId
+                     << " Start: " << task.startDeviceId
+                     << " -> End: " << task.endDeviceId;
 
             sf::Text taskText(taskLine.str(), m_font, 12); // 任务文本字号
             taskText.setFillColor(sf::Color::White);

@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include "SimObject.hpp"
+#include <SFML/Graphics/Transformable.hpp>
 
 /**
  * @brief 车辆渲染器类
@@ -10,7 +11,7 @@
  * 根据车辆状态(空载/载货/分配任务)显示不同颜色
  * 支持伪3D效果，增强立体感
  */
-class VehicleRenderer : public sf::Drawable
+class VehicleRenderer : public sf::Drawable, public sf::Transformable
 {
 private:
     const sf::Vector2f m_baseSize{40.0f, 16.0f}; // 基础尺寸（2000mm车长、800mm车宽对应的像素）
@@ -39,14 +40,14 @@ private:
     sf::Color m_borderColor{100, 100, 100}; // 边框颜色
 
     // 车辆状态
-    std::vector<VehicleState> m_vehicles; // 车辆状态列表
+    std::vector<gui::VehicleState> m_vehicles; // 车辆状态列表
 
     sf::RectangleShape m_body;
     sf::RectangleShape m_statusBounds;    // 新增：用于显示状态的外部矩形
     sf::CircleShape m_directionIndicator; // 或者其他表示方向的形状
     sf::Text m_idText;
 
-    VehicleState m_currentState; // 存储当前状态用于绘制
+    gui::VehicleState m_currentState; // 存储当前状态用于绘制
 
     // 新增：获取不同状态对应的颜色
     sf::Color getColorForStatus(gui::VehicleStatus status) const;
@@ -65,7 +66,7 @@ public:
      * @param position 输出参数，返回计算后的位置
      * @param rotation 输出参数，返回计算后的角度
      */
-    void calculatePosition(const VehicleState &vehicle,
+    void calculatePosition(const gui::VehicleState &vehicle,
                            float trackLength,
                            float curveRadius,
                            sf::Vector2f &position,
@@ -79,7 +80,7 @@ public:
      * @param rotation 车辆朝向角度
      */
     void renderVehicle(sf::RenderTarget &target,
-                       const VehicleState &vehicle,
+                       const gui::VehicleState &vehicle,
                        const sf::Vector2f &position,
                        float rotation);
 
@@ -97,7 +98,7 @@ public:
      * @brief 更新车辆状态
      * @param vehicles 车辆状态列表
      */
-    void updateVehicleStates(const std::vector<VehicleState> &vehicles);
+    void updateVehicleStates(const std::vector<gui::VehicleState> &vehicles);
 
     virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override;
 

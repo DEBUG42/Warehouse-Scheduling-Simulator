@@ -86,7 +86,7 @@ namespace gui
     {
         // std::string id; // 从 SimObject 继承
         // SimObjectType type = SimObjectType::Vehicle; // SimObject 构造时设置
-        // sf::Vector2f position; // 从 SimObject 继承 // 这是渲染用的像素位置, SimObject 基类提供
+        sf::Vector2f position;     // 兼容测试代码直接访问
         float rawTrackPositionMm;  // 新增: 车辆在轨道上的原始位置 (mm)
         float speed;               // 当前速度（米/秒）
         gui::VehicleStatus status; // GUI特定的车辆状态
@@ -103,7 +103,8 @@ namespace gui
               status(gui::VehicleStatus::UNKNOWN),
               currentTaskId(""),
               isLoaded(false),
-              batteryLevel(1.0f) {}
+              batteryLevel(1.0f),
+              position(sf::Vector2f(0, 0)) {}
 
         // 测试/手动创建用构造函数
         VehicleState(const std::string &_id, const sf::Vector2f &_pos, // _pos is render position
@@ -113,7 +114,8 @@ namespace gui
             : SimObject(gui::SimObjectType::Vehicle, _id, _pos),
               rawTrackPositionMm(_rawTrackPosMm),
               speed(_speed), status(_status), currentTaskId(_taskId),
-              isLoaded(_isLoaded), cargo(_cargoDetails), batteryLevel(_batteryLevel)
+              isLoaded(_isLoaded), cargo(_cargoDetails), batteryLevel(_batteryLevel),
+              position(_pos)
         {
         }
 
@@ -127,7 +129,8 @@ namespace gui
               currentTaskId(coreVehicle.getCurrentTaskId()),
               isLoaded(coreVehicle.getIsLoaded()),
               cargo(coreVehicle.getCargoInfo()), // 直接从 Core::CargoInfo 转换/构造
-              batteryLevel(coreVehicle.getBatteryLevel())
+              batteryLevel(coreVehicle.getBatteryLevel()),
+              position(worldPos)
         {
             // 此处可以根据 coreVehicle.getCurrentTask() 的类型来细化 status
             // 例如，如果任务是去取货，且状态是移动，则 status = MOVING_TO_LOAD

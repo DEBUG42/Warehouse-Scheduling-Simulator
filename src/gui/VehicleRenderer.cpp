@@ -2,6 +2,7 @@
 #include "Core/Vehicle.hpp"
 #include <iostream>
 #include <cmath>
+#include <SFML/Graphics/Transformable.hpp>
 
 // 定义车体和状态框的尺寸 (假设是后端坐标系下的毫米)
 const float BODY_WIDTH_MM = 2000.0f;
@@ -236,17 +237,14 @@ void VehicleRenderer::renderVehicle(sf::RenderTarget &target,
         // 创建文本对象
         sf::Text idText;
         idText.setFont(m_font);
-        idText.setString(vehicle.id);
+        idText.setString(vehicle.getId());
         idText.setCharacterSize(12);
         idText.setFillColor(sf::Color::White);
         idText.setOutlineThickness(1.0f);
         idText.setOutlineColor(sf::Color::Black);
-
-        // 计算文本位置（不随车辆旋转）
         sf::FloatRect textBounds = idText.getLocalBounds();
         idText.setOrigin(textBounds.width / 2, textBounds.height / 2);
         idText.setPosition(position);
-
         target.draw(idText);
     }
 
@@ -304,80 +302,52 @@ sf::Color VehicleRenderer::getColorForStatus(gui::VehicleStatus status) const
     switch (status)
     {
     case gui::VehicleStatus::IDLE:
-        return m_statusColors.idle;
+        return sf::Color(200, 200, 200);
     case gui::VehicleStatus::MOVING_TO_LOAD:
-        return m_statusColors.movingToLoad;
+        return sf::Color(100, 200, 100);
     case gui::VehicleStatus::LOADING:
-        return m_statusColors.loading;
+        return sf::Color(100, 100, 200);
     case gui::VehicleStatus::MOVING_TO_UNLOAD:
-        return m_statusColors.movingToUnload;
+        return sf::Color(200, 200, 100);
     case gui::VehicleStatus::UNLOADING:
-        return m_statusColors.unloading;
+        return sf::Color(200, 100, 100);
     case gui::VehicleStatus::CHARGING:
-        return m_statusColors.charging;
+        return sf::Color(100, 200, 200);
     case gui::VehicleStatus::ERROR:
-        return m_statusColors.error;
+        return sf::Color(255, 0, 0);
     default:
-        return m_statusColors.unknown;
+        return sf::Color(128, 128, 128);
     }
 }
 
 void VehicleRenderer::updateState(const gui::VehicleState &state, float totalStraightLengthMm, float curveRadiusMm)
 {
-    m_currentState = state; // Store the raw state
-
-    // Calculate render position and rotation based on raw track position and track geometry
+    m_currentState = state;
     sf::Vector2f renderPos;
     float renderRotDeg;
     calculatePosition(state, totalStraightLengthMm, curveRadiusMm, renderPos, renderRotDeg);
-
-    // Update the VehicleRenderer's own transform (since it's a sf::Transformable)
-    // This means the draw() call will draw the vehicle at this calculated position and rotation.
     this->setPosition(renderPos);
     this->setRotation(renderRotDeg);
-
-    // Update visual properties of internal shapes based on the state
-    // These internal shapes are drawn relative to the VehicleRenderer's transform.
-    // Their own setPosition/setRotation should be (0,0) and 0 if they are meant to align with the VehicleRenderer's origin.
-
     m_statusBounds.setFillColor(getColorForStatus(state.status));
-    // m_statusBounds' position and rotation are relative to the VehicleRenderer's origin (now 0,0)
-    // m_statusBounds.setPosition(0,0);
-    // m_statusBounds.setRotation(0);
-
-    // Body color based on load
     if (state.isLoaded)
     {
-        m_body.setFillColor(sf::Color(100, 180, 255)); // Light blue for loaded
+        m_body.setFillColor(sf::Color(100, 180, 255));
     }
     else
     {
-        m_body.setFillColor(sf::Color(0, 120, 255)); // Default blue
+        m_body.setFillColor(sf::Color(0, 120, 255));
     }
-    // m_body.setPosition(0,0); // Relative to VehicleRenderer's origin
-    // m_body.setRotation(0);   // Relative to VehicleRenderer's origin
-
-    m_idText.setString(state.id);
+    m_idText.setString(state.getId());
     sf::FloatRect textBounds = m_idText.getLocalBounds();
     m_idText.setOrigin(textBounds.left + textBounds.width / 2.0f,
                        textBounds.top + textBounds.height / 2.0f);
-    // m_idText.setPosition(0,0); // Centered on VehicleRenderer's origin
-    // m_idText.setRotation(0);   // No independent rotation for text relative to body
-
-    // Direction indicator position needs to be calculated relative to the body,
-    // which is now at (0,0) relative to the VehicleRenderer's transform.
-    // The body's origin is its center.
-    sf::Vector2f localDirPos(m_body.getSize().x / 2.f, 0.f); // Front-center of the body
-    m_directionIndicator.setPosition(localDirPos);           // This is now in local coords of VehicleRenderer
-    // m_directionIndicator.setRotation(0); // Indicator itself usually doesn't rotate, its position indicates direction
+    sf::Vector2f localDirPos(m_body.getSize().x / 2.f, 0.f);
+    m_directionIndicator.setPosition(localDirPos);
 }
 
 void VehicleRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) const
 {
-    // Apply the VehicleRenderer's own transform (set by setPosition/setRotation in updateState)
     states.transform *= getTransform();
-
-    // Draw components. They are positioned relative to the VehicleRenderer's origin.
     target.draw(m_statusBounds, states);
     target.draw(m_body, states);
     target.draw(m_directionIndicator, states);

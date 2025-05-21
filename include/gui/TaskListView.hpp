@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include "../Core/Task.hpp" // 需要 Task 结构定义
+using Core::Task;
 
 /**
  * @brief 任务列表视图类
@@ -14,10 +15,10 @@
 class TaskListView : public sf::Drawable, public sf::Transformable
 {
 private:
-    sf::Font &m_font;          // 外部传入的字体引用
-    float m_width;             // 视图宽度
-    float m_height = 200.0f;   // 视图高度 (StatusPanel会设置一个默认值或者通过setViewHeight更新)
-    std::vector<Task> m_tasks; // 当前要显示的任务列表
+    sf::Font &m_font;                // 外部传入的字体引用
+    float m_width;                   // 视图宽度
+    float m_height = 200.0f;         // 视图高度 (StatusPanel会设置一个默认值或者通过setViewHeight更新)
+    std::vector<Core::Task> m_tasks; // 当前要显示的任务列表
 
     // 滚动相关
     float m_scrollOffset = 0.0f;       // 当前滚动偏移量（像素）
@@ -40,7 +41,7 @@ public:
      * @brief 更新要显示的任务列表
      * @param tasks 新的任务列表
      */
-    void updateTasks(const std::vector<Task> &tasks);
+    void updateTasks(const std::vector<Core::Task> &tasks);
 
     /**
      * @brief 处理鼠标滚轮事件以实现滚动

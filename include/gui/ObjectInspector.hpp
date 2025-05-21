@@ -18,7 +18,7 @@ private:
     float m_width;    // 检视器宽度
     // float m_height;       // 检视器高度 (由 StatusPanel 控制)
 
-    const SimObject *m_currentObject = nullptr; // 当前显示的对象
+    const gui::SimObject *m_currentObject = nullptr; // 当前显示的对象
 
     sf::Text m_titleText;                // 标题 "对象详情" 或 "未选中对象"
     std::vector<sf::Text> m_detailLines; // 用于显示多行详细信息
@@ -41,9 +41,9 @@ private:
     void addDetailLine(const std::string &label, const std::string &value, float &currentY);
 
     // 将各种状态枚举转换为可读字符串的辅助函数
-    std::string vehicleStatusToString(VehicleStatus status) const;
-    std::string deviceTypeToString(DeviceType type) const;
-    std::string deviceStatusToString(DeviceStatus status) const;
+    std::string vehicleStatusToString(gui::VehicleStatus status) const;
+    std::string deviceTypeToString(gui::DeviceType type) const;
+    std::string deviceStatusToString(gui::DeviceStatus status) const;
 
 public:
     /**
@@ -57,7 +57,7 @@ public:
      * @brief 更新当前要显示的对象
      * @param selectedObject 指向 SimObject 的指针，如果为 nullptr 则表示没有对象被选中
      */
-    void updateObject(const SimObject *selectedObject);
+    void updateObject(const gui::SimObject *selectedObject);
 
     /**
      * @brief 绘制对象检视器
