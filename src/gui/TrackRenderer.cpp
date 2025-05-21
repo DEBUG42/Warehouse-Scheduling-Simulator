@@ -5,8 +5,10 @@
 #endif
 
 TrackRenderer::TrackRenderer()
-    : m_straightSegments(sf::Lines), // 使用线条绘制直轨道
-      m_curveSegments(sf::Lines)     // 使用线条绘制弯曲轨道
+    : m_straightSegments(sf::Lines),    // 使用线条绘制直轨道
+      m_curveSegments(sf::Lines),       // 使用线条绘制弯曲轨道
+      m_outerBorderSegments(sf::Lines), // 外边框线条
+      m_innerTrackSegments(sf::Lines)   // 内轨道线条
 {
 }
 
@@ -19,16 +21,23 @@ void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
     // 清除现有顶点
     m_straightSegments.clear();
     m_curveSegments.clear();
+    m_outerBorderSegments.clear();
+    m_innerTrackSegments.clear();
 
     // 将真实尺寸（毫米）转换为像素，确保宽度足够可见
     float scaledTrackLength = trackLength * m_mmToPxRatio * m_scaleFactor;
     float scaledCurveRadius = curveRadius * m_mmToPxRatio * m_scaleFactor;
-    float scaledHalfWidth = m_trackWidth * m_mmToPxRatio * m_scaleFactor / 2.0f;
+
+    // 轨道实际宽度的一半 (1200mm/2 = 600mm)
+    float trackHalfWidth = m_trackWidth * m_mmToPxRatio * m_scaleFactor / 2.0f;
+
+    // 内外轨道之间的距离 (按实际轨道计算)
+    float trackGap = trackHalfWidth * 0.8f; // 内轨距外轨的距离
 
     // 确保轨道宽度至少有2个像素
-    if (scaledHalfWidth < 1.0f)
+    if (trackHalfWidth < 1.0f)
     {
-        scaledHalfWidth = 1.0f;
+        trackHalfWidth = 1.0f;
     }
 
     // 计算轨道的整体尺寸 - 使用真实比例
@@ -48,55 +57,76 @@ void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
     float leftCenterX = -halfTotalWidth + scaledCurveRadius;
     float leftCenterY = 0.0f;
 
-    // 轨道外线
-    float outerTop = -scaledHalfWidth;
-    float outerBottom = scaledHalfWidth;
+    // 轨道外线位置 (根据实际轨道宽度计算)
+    float outerTop = -trackHalfWidth;
+    float outerBottom = trackHalfWidth;
 
-    // 轨道内线
-    float innerTop = -scaledHalfWidth * 3; // 让内外间距更宽一些，模拟双线效果
-    float innerBottom = scaledHalfWidth * 3;
+    // 轨道内线位置 (根据实际轨道宽度计算)
+    float innerTop = -trackHalfWidth + trackGap;
+    float innerBottom = trackHalfWidth - trackGap;
 
-    // 1. 绘制上方直轨段 - 外线
-    m_straightSegments.append(sf::Vertex(sf::Vector2f(leftCenterX, outerTop), m_straightColor));
-    m_straightSegments.append(sf::Vertex(sf::Vector2f(rightCenterX, outerTop), m_straightColor));
+    // 确保精确的轨道连接
+    int segmentCount = 60;                 // 每个弯道的分段数，增加精度
+    float angleStep = M_PI / segmentCount; // 弯道角度步进值
 
-    // 2. 绘制上方直轨段 - 内线
-    m_straightSegments.append(sf::Vertex(sf::Vector2f(leftCenterX, innerTop), m_straightColor));
-    m_straightSegments.append(sf::Vertex(sf::Vector2f(rightCenterX, innerTop), m_straightColor));
+    // 计算右弯道的开始和结束点（确保与直线段完美连接）
+    float rightTopX = rightCenterX + scaledCurveRadius * std::cos(-M_PI / 2);
+    float rightTopY = rightCenterY + scaledCurveRadius * std::sin(-M_PI / 2);
+    float rightBottomX = rightCenterX + scaledCurveRadius * std::cos(M_PI / 2);
+    float rightBottomY = rightCenterY + scaledCurveRadius * std::sin(M_PI / 2);
 
-    // 3. 绘制下方直轨段 - 外线
-    m_straightSegments.append(sf::Vertex(sf::Vector2f(leftCenterX, outerBottom), m_straightColor));
-    m_straightSegments.append(sf::Vertex(sf::Vector2f(rightCenterX, outerBottom), m_straightColor));
+    // 计算左弯道的开始和结束点
+    float leftTopX = leftCenterX + scaledCurveRadius * std::cos(M_PI / 2);
+    float leftTopY = leftCenterY + scaledCurveRadius * std::sin(M_PI / 2);
+    float leftBottomX = leftCenterX + scaledCurveRadius * std::cos(3 * M_PI / 2);
+    float leftBottomY = leftCenterY + scaledCurveRadius * std::sin(3 * M_PI / 2);
 
-    // 4. 绘制下方直轨段 - 内线
-    m_straightSegments.append(sf::Vertex(sf::Vector2f(leftCenterX, innerBottom), m_straightColor));
-    m_straightSegments.append(sf::Vertex(sf::Vector2f(rightCenterX, innerBottom), m_straightColor));
+    // ======================= 外轨道绘制 =======================
+    // 1. 绘制最外层边框 - 上线
+    for (int i = 0; i < 3; i++)
+    {
+        float offset = 0.5f * i;
+        m_outerBorderSegments.append(sf::Vertex(sf::Vector2f(leftBottomX, outerTop - offset), m_outerBorderColor));
+        m_outerBorderSegments.append(sf::Vertex(sf::Vector2f(rightTopX, outerTop - offset), m_outerBorderColor));
+    }
 
-    // 5. 绘制右侧弯道
-    // 外弧
+    // 2. 绘制最外层边框 - 下线
+    for (int i = 0; i < 3; i++)
+    {
+        float offset = 0.5f * i;
+        m_outerBorderSegments.append(sf::Vertex(sf::Vector2f(leftTopX, outerBottom + offset), m_outerBorderColor));
+        m_outerBorderSegments.append(sf::Vertex(sf::Vector2f(rightBottomX, outerBottom + offset), m_outerBorderColor));
+    }
+
+    // 3. 绘制右侧弯道的最外层粗边框
+    addCurveBorder(
+        rightCenterX, rightCenterY,
+        scaledCurveRadius + trackHalfWidth, -M_PI / 2, M_PI / 2, segmentCount);
+
+    // 4. 绘制左侧弯道的最外层粗边框
+    addCurveBorder(
+        leftCenterX, leftCenterY,
+        scaledCurveRadius + trackHalfWidth, M_PI / 2, 3 * M_PI / 2, segmentCount);
+
+    // ======================= 内轨道绘制 =======================
+    // 5. 绘制上方内轨道线
+    m_innerTrackSegments.append(sf::Vertex(sf::Vector2f(leftBottomX, innerTop), m_straightColor));
+    m_innerTrackSegments.append(sf::Vertex(sf::Vector2f(rightTopX, innerTop), m_straightColor));
+
+    // 6. 绘制下方内轨道线
+    m_innerTrackSegments.append(sf::Vertex(sf::Vector2f(leftTopX, innerBottom), m_straightColor));
+    m_innerTrackSegments.append(sf::Vertex(sf::Vector2f(rightBottomX, innerBottom), m_straightColor));
+
+    // 7. 绘制右侧弯道内轨
+    float innerRadius = scaledCurveRadius - trackHalfWidth + trackGap;
     addCurveOutline(
-        rightCenterX,
-        rightCenterY,
-        scaledCurveRadius + scaledHalfWidth, -M_PI / 2, M_PI / 2, 40);
+        rightCenterX, rightCenterY,
+        innerRadius, -M_PI / 2, M_PI / 2, segmentCount);
 
-    // 内弧
+    // 8. 绘制左侧弯道内轨
     addCurveOutline(
-        rightCenterX,
-        rightCenterY,
-        scaledCurveRadius - scaledHalfWidth * 3, -M_PI / 2, M_PI / 2, 40);
-
-    // 6. 绘制左侧弯道
-    // 外弧
-    addCurveOutline(
-        leftCenterX,
-        leftCenterY,
-        scaledCurveRadius + scaledHalfWidth, M_PI / 2, 3 * M_PI / 2, 40);
-
-    // 内弧
-    addCurveOutline(
-        leftCenterX,
-        leftCenterY,
-        scaledCurveRadius - scaledHalfWidth * 3, M_PI / 2, 3 * M_PI / 2, 40);
+        leftCenterX, leftCenterY,
+        innerRadius, M_PI / 2, 3 * M_PI / 2, segmentCount);
 }
 
 // 使用线条绘制曲线轮廓
@@ -115,8 +145,35 @@ void TrackRenderer::addCurveOutline(float centerX, float centerY, float radius,
         float x2 = centerX + radius * std::cos(angle2);
         float y2 = centerY + radius * std::sin(angle2);
 
-        m_curveSegments.append(sf::Vertex(sf::Vector2f(x1, y1), m_curveColor));
-        m_curveSegments.append(sf::Vertex(sf::Vector2f(x2, y2), m_curveColor));
+        m_innerTrackSegments.append(sf::Vertex(sf::Vector2f(x1, y1), m_straightColor));
+        m_innerTrackSegments.append(sf::Vertex(sf::Vector2f(x2, y2), m_straightColor));
+    }
+}
+
+// 绘制多层线条来创建粗边框效果
+void TrackRenderer::addCurveBorder(float centerX, float centerY, float radius,
+                                   float startAngle, float endAngle, int segments)
+{
+    float angleStep = (endAngle - startAngle) / segments;
+
+    // 绘制多条线以创建粗线效果
+    for (int layer = 0; layer < 3; layer++)
+    {
+        float layerRadius = radius + 0.5f * layer;
+
+        for (int i = 0; i < segments; ++i)
+        {
+            float angle1 = startAngle + i * angleStep;
+            float angle2 = startAngle + (i + 1) * angleStep;
+
+            float x1 = centerX + layerRadius * std::cos(angle1);
+            float y1 = centerY + layerRadius * std::sin(angle1);
+            float x2 = centerX + layerRadius * std::cos(angle2);
+            float y2 = centerY + layerRadius * std::sin(angle2);
+
+            m_outerBorderSegments.append(sf::Vertex(sf::Vector2f(x1, y1), m_outerBorderColor));
+            m_outerBorderSegments.append(sf::Vertex(sf::Vector2f(x2, y2), m_outerBorderColor));
+        }
     }
 }
 
@@ -203,15 +260,15 @@ void TrackRenderer::render(sf::RenderTarget &target, const sf::Vector2f &positio
 {
     sf::RenderStates states;
     states.transform.translate(position);
-    target.draw(m_straightSegments, states);
-    target.draw(m_curveSegments, states);
+    target.draw(m_outerBorderSegments, states);
+    target.draw(m_innerTrackSegments, states);
 }
 
 void TrackRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) const
 {
-    // 绘制直线部分
-    target.draw(m_straightSegments, states);
+    // 绘制外边框
+    target.draw(m_outerBorderSegments, states);
 
-    // 绘制弯道部分
-    target.draw(m_curveSegments, states);
+    // 绘制内轨道
+    target.draw(m_innerTrackSegments, states);
 }

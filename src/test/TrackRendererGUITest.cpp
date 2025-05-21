@@ -12,16 +12,17 @@ int main()
     TrackRenderer trackRenderer;
 
     // 设置缩放系数，使轨道适合图片中的形状
-    trackRenderer.setScaleFactor(0.015f); // 降低缩放因子，使轨道看起来更小
+    trackRenderer.setScaleFactor(0.012f); // 降低缩放因子，使轨道看起来适合屏幕
     trackRenderer.setMmToPxRatio(0.05f);
 
     // 生成轨道几何形状 - 使用参考图片中的真实尺寸
     trackRenderer.generateGeometry(40000.0f, 2500.0f); // 直轨长度和弯道半径，单位：毫米
 
     // 设置轨道宽度和颜色
-    trackRenderer.setTrackWidth(1200.0f); // 设置为实际宽度1200毫米
-    trackRenderer.setStraightColor(sf::Color(100, 100, 100));
-    trackRenderer.setCurveColor(sf::Color(100, 100, 100));
+    trackRenderer.setTrackWidth(1200.0f);                     // 设置为实际宽度1200毫米
+    trackRenderer.setStraightColor(sf::Color(120, 120, 120)); // 内轨道线条
+    trackRenderer.setCurveColor(sf::Color(120, 120, 120));    // 内轨道弯道
+    trackRenderer.setOuterBorderColor(sf::Color(80, 80, 80)); // 外边框颜色更深
 
     // 设置初始视图
     sf::View view = window.getDefaultView();
@@ -36,6 +37,7 @@ int main()
     std::cout << "使用说明:\n";
     std::cout << "- 鼠标左键拖动: 移动视图\n";
     std::cout << "- 鼠标滚轮: 缩放视图\n";
+    std::cout << "- 空格键: 重置视图\n";
     std::cout << "- 轨道参数: 长度=40000mm, 弯道半径=2500mm, 宽度=1200mm\n";
 
     while (window.isOpen())
