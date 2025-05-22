@@ -53,12 +53,6 @@ public:
     void initialize(std::shared_ptr<SimulationInterface> simInterface);
 
     /**
-     * @brief 初始化窗口布局（兼容旧版API）
-     * @param engine 仿真引擎引用（用于数据绑定）
-     */
-    void initialize(TestSimulationEngine &engine);
-
-    /**
      * @brief 处理窗口事件循环
      */
     void runEventLoop();

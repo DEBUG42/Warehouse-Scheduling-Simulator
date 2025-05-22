@@ -93,48 +93,6 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
     updateLayout();
 }
 
-/**
- * @brief 向后兼容的初始化函数，支持旧版测试引擎
- * @param engine 仿真引擎引用
- */
-void MainWindow::initialize(TestSimulationEngine &engine)
-{
-    // 创建窗口
-    create(sf::VideoMode(m_initialSize.x, m_initialSize.y), "仓储穿梭车仿真系统",
-           sf::Style::Default);
-    setFramerateLimit(60);
-
-    // 加载全局字体
-    if (!m_globalFont.loadFromFile("resources/fonts/simhei.ttf"))
-    {
-        if (!m_globalFont.loadFromFile("resources/fonts/arial.ttf"))
-        {
-            std::cerr << "无法加载字体文件！" << std::endl;
-        }
-    }
-
-    // 初始化子组件
-    m_simView = std::make_unique<SimulationView>(m_globalFont);
-    m_simView->initialize(m_globalFont, engine);
-
-    m_statusPanel = std::make_unique<StatusPanel>(m_globalFont);
-    m_toolbar = std::make_unique<Toolbar>(m_globalFont, m_toolbarHeight, m_initialSize.x);
-
-    // 设置工具栏回调
-    m_toolbar->setTimeScaleCallback([&engine](float scale)
-                                    { engine.setTimeScale(scale); });
-
-    m_toolbar->setPlayPauseCallback([&engine]()
-                                    {
-        // 切换仿真暂停/运行状态
-        static bool paused = false;
-        paused = !paused;
-        engine.setPaused(paused); });
-
-    // 设置视图大小
-    updateLayout();
-}
-
 void MainWindow::runEventLoop()
 {
     sf::Clock frameClock;

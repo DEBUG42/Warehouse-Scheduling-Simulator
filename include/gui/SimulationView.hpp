@@ -9,8 +9,6 @@
 #include "DeviceState.hpp"
 #include "SimulationInterface.hpp"
 
-class TestSimulationEngine;
-
 /**
  * @brief 仿真场景视图类
  *
@@ -38,7 +36,6 @@ private:
     sf::Vector2f m_lastMousePos; // 上一次鼠标位置（屏幕坐标）
 
     // 仿真引擎引用
-    TestSimulationEngine *m_engine = nullptr;            // 旧版接口
     std::shared_ptr<SimulationInterface> m_simInterface; // 新版接口
 
     // 轨道参数
@@ -62,13 +59,6 @@ public:
      * @param simInterface 仿真接口
      */
     void initialize(sf::Font &font, std::shared_ptr<SimulationInterface> simInterface);
-
-    /**
-     * @brief 初始化仿真视图（兼容旧版接口）
-     * @param font 字体引用
-     * @param engine 仿真引擎引用
-     */
-    void initialize(sf::Font &font, TestSimulationEngine &engine);
 
     /**
      * @brief 更新视图变换参数

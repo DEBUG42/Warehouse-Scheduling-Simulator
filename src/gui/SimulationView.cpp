@@ -14,7 +14,7 @@
 void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterface> simInterface)
 {
     m_simInterface = simInterface;
-    m_engine = nullptr; // 不使用旧接口
+    // m_engine = nullptr; // 已移除，无需此行
 
     // 初始化视图变换
     m_viewCenter = sf::Vector2f(0.0f, 0.0f);
@@ -47,38 +47,6 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
         // 更新仓库状态
         m_warehouseRenderer.updateDeviceStates(m_devices);
     }
-}
-
-/**
- * @brief 初始化仿真视图（兼容旧版接口）
- * @param font 字体引用
- * @param engine 仿真引擎引用
- */
-void SimulationView::initialize(sf::Font &font, TestSimulationEngine &engine)
-{
-    m_engine = &engine;
-    m_simInterface = nullptr; // 不使用新接口
-
-    // 初始化视图变换
-    m_viewCenter = sf::Vector2f(0.0f, 0.0f);
-    m_zoomLevel = 0.4f;
-
-    // 初始化视图
-    m_worldView.setSize(1280, 720);
-    m_worldView.setCenter(m_viewCenter);
-
-    m_uiView.setSize(1280, 720);
-    m_uiView.setCenter(640, 360);
-
-    // 初始化轨道渲染器
-    m_trackLength = 90000.0f;
-    m_curveRadius = 2500.0f;
-
-    m_trackRenderer.setTrackWidth(600.0f);
-    m_trackRenderer.generateGeometry(m_trackLength, m_curveRadius);
-
-    // 初始化仓库渲染器（旧版不完全支持）
-    m_warehouseRenderer.initialize(m_curveRadius);
 }
 
 /**

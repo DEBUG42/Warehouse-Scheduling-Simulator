@@ -26,7 +26,7 @@ const unsigned int WINDOW_WIDTH = 1280;
 const unsigned int WINDOW_HEIGHT = 720;
 
 // Reference TrackRendererGUITest.cpp for successful font path
-const std::string FONT_PATH = "../resources/fonts/msyh.ttc"; // Assume this is the path used in TrackRendererGUITest
+const std::string FONT_PATH = "../assets/fonts/arial.ttf"; // Assume this is the path used in TrackRendererGUITest
 
 // Helper function: draw a simple device shape
 void drawSimpleDevice(sf::RenderTarget &target, const gui::DeviceState &device, sf::Font &font, const sf::Color &color)

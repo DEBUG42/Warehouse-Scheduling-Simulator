@@ -56,8 +56,22 @@
     "variant": "cpp",
     "cinttypes": "cpp",
     "map": "cpp",
-    "set": "cpp"
+    "set": "cpp",
+    "any": "cpp",
+    "bitset": "cpp",
+    "condition_variable": "cpp",
+    "cstring": "cpp",
+    "list": "cpp",
+    "unordered_set": "cpp",
+    "regex": "cpp",
+    "fstream": "cpp",
+    "future": "cpp",
+    "mutex": "cpp",
+    "semaphore": "cpp",
+    "stop_token": "cpp",
+    "thread": "cpp",
+    "typeindex": "cpp"
   },
   "C_Cpp.errorSquiggles": "disabled",
-  "cmake.sourceDirectory": "D:/CodeMaster/GitHub/C++SFML/Warehouse-sch/GUI"
+  "cmake.sourceDirectory": "D:/CodeMaster/GitHub/C++SFML/Warehouse-sch"
 }
