@@ -111,46 +111,6 @@ Task TaskScheduler::getNextTask(int device_id) {
     throw std::runtime_error("No tasks available for this device.");
 }
 
-//功能：触发整个调度系统的事件驱动过程。    
-void TaskScheduler::onEvent(sf::Time current_time) {
-    // Step 1: 更新所有设备和车辆状态（如搬运完成、货物被取走等）
-
-    updateAllDeviceStates(current_time);
-    updateAllCarStates(current_time);
-
-    // Step 2: 从任务池中筛选出当前“就绪”任务（满足起点/终点状态、顺序依赖等）
-    ready_tasks ← filterReadyTasks(all_tasks, device_states, current_time)
-
-    // Step 3: 遍历就绪任务，为每个任务选择合适车辆
-    for task in ready_tasks:
-        if not task.is_assigned:
-
-            // 筛选当前能够执行该任务的车辆
-            candidate_cars ← filterAvailableCars(task, all_cars, current_time)
-
-            if candidate_cars is not empty:
-
-                // 从候选车辆中选择一个最早完成任务的车辆
-                best_car ← selectCarWithEarliestFinish(task, candidate_cars, current_time)
-
-                if best_car ≠ null:
-
-                    // Step 4: 正式分配任务给车辆
-                    assignTaskToCar(task, best_car, current_time)
-
-                    // 更新车辆可用时间、当前位置、状态（改为“执行中”）
-                    updateCarStatus(best_car, task, current_time)
-
-                    // 更新设备预约状态（起点设备标记“将被取货”，终点设备标记“将被放货”）
-                    reserveDeviceForTask(task, current_time)
-
-                    // 标记任务为“已分配”
-                    task.is_assigned ← true
-
-                    // Step 5: 写入调度日志（TaskExeLog、DeviceStateLog）
-                    logTaskAssignment(task, best_car)
-}
-
 // 功能:判断任务是否可调度
 bool isTaskReady(task, current_time){
 
@@ -207,12 +167,49 @@ function filterReadyTasks(all_tasks, device_states, current_time, next_task_id){
     return ready_list
 }
 
+// 记录任务执行信息，便于评估系统效率。
+procedure logTaskAssignment(task, car){
+    log_line ← join([
+        task.id,
+        task.material_id,
+        task.type,               // 可以是 "入库" 或 "出库"
+        task.start_device,
+        task.end_device,
+        task.assign_time,
+        car.id,
+        task.pick_time,
+        task.drop_time,
+        task.complete_time
+    ], sep = '\t')
 
+    writeToFile("TaskExeLog.txt", log_line)
+}
 
+void Scheduler::tryDispatchTasks() {
+    auto ready_tasks = task_manager.getReadyTasks(current_time, device_manager);
 
-// | 模块                 | 输入                  | 输出            | 作用           |
-// | ------------------ | ------------------- | ------------- | ------------ |
-// | `onEvent`          | 当前时间、车辆状态、任务列表、设备状态 | 分配任务、更新车/设备状态 | 触发调度过程       |
-// | `isTaskReady`      | 单个任务、设备状态、当前时间      | True/False    | 判断任务是否满足执行条件 |
-// | `filterReadyTasks` | 所有任务、设备状态           | 就绪任务列表        | 从任务池中筛选就绪任务  |
+    for (auto* task : ready_tasks) {
+        if (task->is_assigned) continue;
 
+        auto candidates = car_manager.getAvailableCars(*task, current_time);
+        if (candidates.empty()) continue;
+
+        Car* best = car_manager.selectBestCar(*task, candidates, current_time);
+        if (!best) continue;
+
+        car_manager.applyTaskToCar(*best, *task, current_time);
+        task_manager.markTaskAssigned(task->id, best->id, current_time);
+        device_manager.reserve(task->start_device, task->id, current_time + 5); // 5秒为占用示意
+        logger.logTaskAssignment(*task, *best);
+
+        // 如果有延迟事件，如人工卸货，放入 event_queue
+        if (task->type == TaskType::OUTBOUND) {
+            event_queue.addEvent(Event{
+                .time = current_time + 30.0,
+                .type = EventType::DEVICE_BECOMES_EMPTY,
+                .device_id = task->end_device,
+                .task_id = task->id
+            });
+        }
+    }
+}
