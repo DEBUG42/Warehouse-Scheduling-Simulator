@@ -37,15 +37,16 @@ public:
 	//防止浮点数误差
 	epsilon = 0.002f;
 
+	vehicle->m_state.operationTimer=0.0f;
 	
 //到车库停车的判断和处理
 	if(vehicle->m_state.motionState == Vehicle::MotionState::Stopped && abs(VehiclePosition - 车库位置)<epsilon){
-		vehicle->m_state.operationTimer.restart();
+		vehicle->m_state.operationTimer+=deltaTime;
 		
-		if (vehicle->m_state.operationTimer.getElapsedTime().asSeconds() >= vehicle->m_loadTime) {
+		if (vehicle->m_state.operationTimer >= vehicle->m_loadTime) {
                     vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
                     vehicle->m_state.currentSpeed = 0.0f;
-					vehicle->m_state.operationTimer.restart();
+					vehicle->m_state.operationTimer=0.0f;
 		}
 	}
 //防碰撞减速
