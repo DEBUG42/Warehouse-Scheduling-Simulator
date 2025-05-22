@@ -21,7 +21,7 @@ public:
 	 * @param currentSpeed
 	 * @param motionState
 	 **/		
-	InitVehicle(float position, float currentSpeed, MotionState motionStateposition){
+	Vehicle(float position, float currentSpeed, MotionState motionStateposition){
 		Vehicle.m_state.position = position;
 		Vehicle.m_state.currentSpeed = currentSpeed;
 		Vehicle.m_state.motionState = motionState;
@@ -43,7 +43,7 @@ public:
         float currentSpeed;           // 当前速度（米/秒）
         MotionState motionState;      // 当前运动状态
         const Task* currentTask = nullptr; // 当前执行的任务
-        sf::Clock operationTimer;     // 装卸货操作计时器
+        float operationTimer;     // 装卸货操作计时器
     } m_state;
 
 
