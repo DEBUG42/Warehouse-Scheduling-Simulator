@@ -7,9 +7,6 @@
 
 StatusPanel::StatusPanel(sf::Font &font) : m_font(font)
 {
-    // 初始化任务列表视图
-    m_taskListView = std::make_unique<TaskListView>(m_font, m_panelWidth - 2 * m_padding);
-
     // 初始化对象检视器
     m_objectInspector = std::make_unique<ObjectInspector>(m_font, m_panelWidth - 2 * m_padding);
 
@@ -42,9 +39,6 @@ void StatusPanel::refreshContent(const gui::SimObject *selectedObject,
 {
     // 更新对象检视器
     m_objectInspector->updateObject(selectedObject);
-
-    // 更新任务列表
-    m_taskListView->updateTasks(pendingTasks);
     setPendingTaskCount(pendingTasks.size()); // 顺便更新待处理任务数
 }
 
@@ -102,14 +96,6 @@ void StatusPanel::render(sf::RenderTarget &target, const sf::Vector2f &position)
     divider.setPosition(position.x + m_padding, position.y + m_padding + globalStatusHeight + inspectorHeight);
     divider.setFillColor(sf::Color(70, 70, 70));
     target.draw(divider);
-
-    // 4. 绘制任务列表
-    m_taskListView->setViewHeight(taskListHeight); // 设置任务列表的实际绘制高度
-    sf::Transform taskListTransform;
-    taskListTransform.translate(position.x + m_padding,
-                                position.y + m_padding + globalStatusHeight + inspectorHeight + 1.0f);
-    m_taskListView->setPosition(taskListTransform.transformPoint(0, 0)); // 设置任务列表的位置
-    target.draw(*m_taskListView);                                        // 注意 TaskListView 是 sf::Drawable
 }
 
 bool StatusPanel::handleEvent(const sf::Event &event, const sf::Vector2f &panelLocalMousePos)

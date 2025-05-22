@@ -41,8 +41,8 @@ public:
 
     /// 状态更新回调函数类型
     using StateUpdateCallback = std::function<void(const SimulationState &)>;
-    using VehicleUpdateCallback = std::function<void(const std::vector<VehicleState> &)>;
-    using DeviceUpdateCallback = std::function<void(const std::vector<DeviceState> &)>;
+    using VehicleUpdateCallback = std::function<void(const std::vector<gui::VehicleState> &)>;
+    using DeviceUpdateCallback = std::function<void(const std::vector<gui::DeviceState> &)>;
 
 public:
     /// 虚析构函数
@@ -58,13 +58,13 @@ public:
      * @brief 获取所有车辆状态
      * @return 车辆状态向量
      */
-    virtual std::vector<VehicleState> getVehicleStates() const = 0;
+    virtual std::vector<gui::VehicleState> getVehicleStates() const = 0;
 
     /**
      * @brief 获取所有设备状态
      * @return 设备状态向量
      */
-    virtual std::vector<DeviceState> getDeviceStates() const = 0;
+    virtual std::vector<gui::DeviceState> getDeviceStates() const = 0;
 
     /**
      * @brief 设置仿真速度
@@ -110,14 +110,14 @@ public:
      * @param vehicleId 车辆ID
      * @return 车辆状态，如果找不到则返回默认状态
      */
-    virtual VehicleState getVehicleState(int vehicleId) const = 0;
+    virtual gui::VehicleState getVehicleState(int vehicleId) const = 0;
 
     /**
      * @brief 获取指定ID的设备状态
      * @param deviceId 设备ID
      * @return 设备状态，如果找不到则返回默认状态
      */
-    virtual DeviceState getDeviceState(int deviceId) const = 0;
+    virtual gui::DeviceState getDeviceState(int deviceId) const = 0;
 };
 
 #endif // SIMULATION_INTERFACE_HPP

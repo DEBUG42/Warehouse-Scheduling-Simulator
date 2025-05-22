@@ -52,6 +52,11 @@ private:
 
 public:
     /**
+     * @brief 构造函数，传入全局字体，确保VehicleRenderer等成员能正确初始化
+     */
+    SimulationView(sf::Font &font);
+
+    /**
      * @brief 初始化仿真视图（使用新版接口）
      * @param font 字体引用
      * @param simInterface 仿真接口

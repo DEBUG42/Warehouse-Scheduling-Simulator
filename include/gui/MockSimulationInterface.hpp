@@ -76,7 +76,7 @@ public:
      * @brief 获取所有车辆状态
      * @return 车辆状态向量
      */
-    virtual std::vector<VehicleState> getVehicleStates() const override
+    virtual std::vector<gui::VehicleState> getVehicleStates() const override
     {
         return m_vehicles;
     }
@@ -85,7 +85,7 @@ public:
      * @brief 获取所有设备状态
      * @return 设备状态向量
      */
-    virtual std::vector<DeviceState> getDeviceStates() const override
+    virtual std::vector<gui::DeviceState> getDeviceStates() const override
     {
         return m_devices;
     }
@@ -123,11 +123,9 @@ public:
         m_state.simulationTime = 0.0f;
         m_state.completedTaskCount = 0;
         createMockVehicles(m_vehicleCount);
-
-        // 重置设备状态
         for (auto &device : m_devices)
         {
-            device.status = DeviceStatus::IDLE;
+            device.status = gui::DeviceStatus::IDLE;
             device.processingProgress = 0.0f;
             device.queuedTaskCount = 0;
         }
@@ -165,19 +163,15 @@ public:
      * @param vehicleId 车辆ID
      * @return 车辆状态，如果找不到则返回默认状态
      */
-    virtual VehicleState getVehicleState(int vehicleId) const override
+    virtual gui::VehicleState getVehicleState(int vehicleId) const override
     {
+        std::string idStr = std::to_string(vehicleId);
         for (const auto &vehicle : m_vehicles)
         {
-            if (vehicle.id == vehicleId)
-            {
+            if (vehicle.getId() == idStr)
                 return vehicle;
-            }
         }
-
-        // 默认状态
-        VehicleState defaultState;
-        defaultState.id = -1;
+        gui::VehicleState defaultState;
         return defaultState;
     }
 
@@ -186,19 +180,15 @@ public:
      * @param deviceId 设备ID
      * @return 设备状态，如果找不到则返回默认状态
      */
-    virtual DeviceState getDeviceState(int deviceId) const override
+    virtual gui::DeviceState getDeviceState(int deviceId) const override
     {
+        std::string idStr = std::to_string(deviceId);
         for (const auto &device : m_devices)
         {
-            if (device.id == deviceId)
-            {
+            if (device.getId() == idStr)
                 return device;
-            }
         }
-
-        // 默认状态
-        DeviceState defaultState;
-        defaultState.id = -1;
+        gui::DeviceState defaultState;
         return defaultState;
     }
 
@@ -213,14 +203,9 @@ private:
 
         for (int i = 0; i < count; ++i)
         {
-            VehicleState vehicle;
-            vehicle.id = i;
-            vehicle.trackPosition = m_posDist(m_rng); // 随机位置
-            vehicle.speed = m_speedDist(m_rng);       // 随机速度
-            vehicle.motionState = Vehicle::MotionState::MOVING;
-            vehicle.isLoaded = (i % 3 == 0);               // 部分车辆载货
-            vehicle.currentTaskId = (i % 4 == 0) ? i : -1; // 部分车辆有任务
-
+            gui::VehicleState vehicle;
+            vehicle.speed = m_speedDist(m_rng); // 随机速度
+            vehicle.isLoaded = (i % 3 == 0);    // 部分车辆载货
             m_vehicles.push_back(vehicle);
         }
     }
@@ -231,41 +216,24 @@ private:
     void createMockDevices()
     {
         m_devices.clear();
-
-        // 添加18个设备（上方12个，下方6个）
         for (int i = 1; i <= 18; ++i)
         {
-            DeviceState device;
-            device.id = i;
-
-            // 根据ID判断设备类型
+            gui::DeviceState device;
             if (i % 2 == 1 && i <= 12)
-            {
-                device.type = DeviceType::INPUT_STATION; // 上方入库口
-            }
+                device.deviceType = gui::DeviceType::INPUT_STATION;
             else if (i % 2 == 0 && i <= 12)
-            {
-                device.type = DeviceType::OUTPUT_STATION; // 上方出库口
-            }
+                device.deviceType = gui::DeviceType::OUTPUT_STATION;
             else if (i >= 13 && i <= 15)
-            {
-                device.type = DeviceType::OUTPUT_STATION; // 下方出库口
-            }
+                device.deviceType = gui::DeviceType::OUTPUT_STATION;
             else
-            {
-                device.type = DeviceType::INPUT_STATION; // 下方入库口
-            }
-
-            // 初始化所有字段
-            device.status = DeviceStatus::IDLE;
-            device.trackPosition = 0.0f;
+                device.deviceType = gui::DeviceType::INPUT_STATION;
+            device.status = gui::DeviceStatus::IDLE;
             device.capacity = 1;
             device.currentLoad = 0;
             device.materialId = -1;
             device.processingProgress = 0.0f;
             device.queuedTaskCount = 0;
             device.position = sf::Vector2f(0.0f, 0.0f);
-
             m_devices.push_back(device);
         }
     }
@@ -353,38 +321,29 @@ private:
     {
         // 轨道总长度（毫米）
         const float trackLength = 2 * 40000.0f + 2 * M_PI * 2500.0f;
-
         for (auto &vehicle : m_vehicles)
         {
-            // 如果车辆在移动中
-            if (vehicle.motionState == Vehicle::MotionState::MOVING)
+            // 直接让所有车辆都移动
+            vehicle.status = gui::VehicleStatus::MOVING_TO_LOAD;
+            vehicle.rawTrackPositionMm += vehicle.speed * 1000.0f * deltaTime; // 速度m/s转mm/s
+            while (vehicle.rawTrackPositionMm >= trackLength)
             {
-                // 更新位置
-                vehicle.trackPosition += vehicle.speed * 1000.0f * deltaTime; // 速度m/s转换为mm/s
-
-                // 标准化位置（确保在轨道范围内）
-                while (vehicle.trackPosition >= trackLength)
-                {
-                    vehicle.trackPosition -= trackLength;
-                }
-
-                // 随机变化速度（小幅度）
-                if (rand() % 100 < 5)
-                { // 5%概率改变速度
-                    vehicle.speed = m_speedDist(m_rng);
-                }
+                vehicle.rawTrackPositionMm -= trackLength;
             }
-
+            // 随机变化速度（小幅度）
+            if (rand() % 100 < 5)
+            {
+                vehicle.speed = m_speedDist(m_rng);
+            }
             // 随机改变载货状态
             if (rand() % 1000 < 2)
-            { // 0.2%概率改变载货状态
+            {
                 vehicle.isLoaded = !vehicle.isLoaded;
             }
-
             // 随机改变任务状态
             if (rand() % 1000 < 1)
-            { // 0.1%概率分配新任务
-                vehicle.currentTaskId = (vehicle.currentTaskId < 0) ? rand() % 20 : -1;
+            {
+                vehicle.currentTaskId = (vehicle.currentTaskId.empty() || vehicle.currentTaskId == "-1") ? std::to_string(rand() % 20) : "-1";
             }
         }
     }
@@ -397,62 +356,47 @@ private:
     {
         for (auto &device : m_devices)
         {
-            // 随机改变设备状态
-            if (rand() % 500 < 1)
-            { // 0.2%概率改变设备状态
-                if (device.status == DeviceStatus::IDLE)
-                {
-                    device.status = DeviceStatus::WORKING;
-                    device.processingProgress = 0.0f;
-                    device.currentLoad = 1;
-                    device.materialId = rand() % 1000; // 随机物料ID
-                }
-                else
-                {
-                    device.status = DeviceStatus::IDLE;
-                    device.processingProgress = 0.0f;
-                    device.currentLoad = 0;
-                    device.materialId = -1;
-                }
-            }
-
-            // 如果设备忙碌，更新处理进度
-            if (device.status == DeviceStatus::WORKING)
+            if (device.status == gui::DeviceStatus::IDLE)
             {
-                device.processingProgress += deltaTime * 0.1f; // 10秒完成一个任务
-
+                device.status = gui::DeviceStatus::WORKING;
+                device.processingProgress = 0.0f;
+                device.currentLoad = 1;
+                device.materialId = rand() % 1000;
+            }
+            else
+            {
+                device.status = gui::DeviceStatus::IDLE;
+                device.processingProgress = 0.0f;
+                device.currentLoad = 0;
+                device.materialId = -1;
+            }
+            if (device.status == gui::DeviceStatus::WORKING)
+            {
+                device.processingProgress += deltaTime * 0.1f;
                 if (device.processingProgress >= 1.0f)
                 {
                     device.processingProgress = 0.0f;
                     device.currentLoad = 0;
                     device.materialId = -1;
-
-                    // 50%概率继续处理下一个任务，50%概率变为空闲
                     if (rand() % 2 == 0)
-                    {
-                        device.status = DeviceStatus::IDLE;
-                    }
+                        device.status = gui::DeviceStatus::IDLE;
                     else
                     {
                         device.currentLoad = 1;
-                        device.materialId = rand() % 1000; // 随机物料ID
+                        device.materialId = rand() % 1000;
                     }
                 }
             }
-
-            // 随机改变队列任务数
             if (rand() % 500 < 1)
-            {                                        // 0.2%概率改变队列任务数
-                device.queuedTaskCount = rand() % 3; // 0-2个任务
-            }
+                device.queuedTaskCount = rand() % 3;
         }
     }
 
 private:
-    int m_vehicleCount;                   ///< 车辆数量
-    SimulationState m_state;              ///< 仿真状态
-    std::vector<VehicleState> m_vehicles; ///< 车辆状态
-    std::vector<DeviceState> m_devices;   ///< 设备状态
+    int m_vehicleCount;                        ///< 车辆数量
+    SimulationState m_state;                   ///< 仿真状态
+    std::vector<gui::VehicleState> m_vehicles; ///< 车辆状态
+    std::vector<gui::DeviceState> m_devices;   ///< 设备状态
 
     bool m_running;             ///< 线程运行标志
     std::thread m_updateThread; ///< 更新线程

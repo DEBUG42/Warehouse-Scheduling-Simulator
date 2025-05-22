@@ -5,6 +5,7 @@
 #include "StatusPanel.hpp"
 #include "Toolbar.hpp"
 #include "SimulationInterface.hpp"
+#include "TaskListView.hpp"
 
 /**
  * @class MainWindow
@@ -21,9 +22,10 @@ private:
     const float m_toolbarHeight = 30.0f;   // 工具栏高度
 
     // 子视图组件
-    std::unique_ptr<SimulationView> m_simView;  // 仿真视图区域
-    std::unique_ptr<StatusPanel> m_statusPanel; // 右侧状态面板
-    std::unique_ptr<Toolbar> m_toolbar;         // 顶部工具栏
+    std::unique_ptr<SimulationView> m_simView;        // 仿真视图区域
+    std::unique_ptr<StatusPanel> m_statusPanel;       // 右侧状态面板
+    std::unique_ptr<Toolbar> m_toolbar;               // 顶部工具栏
+    std::unique_ptr<TaskListView> m_taskListViewLeft; // 左侧任务队列
 
     // 样式资源
     sf::Font m_globalFont;                   // 全局字体
@@ -31,6 +33,7 @@ private:
 
     // 仿真接口
     std::shared_ptr<SimulationInterface> m_simInterface; // 仿真接口
+    std::vector<Core::Task> m_pendingTasks;              // 当前任务队列
 
 public:
     /**
@@ -88,11 +91,11 @@ private:
      * @brief 处理车辆状态更新回调
      * @param vehicles 车辆状态列表
      */
-    void onVehicleUpdate(const std::vector<VehicleState> &vehicles);
+    void onVehicleUpdate(const std::vector<gui::VehicleState> &vehicles);
 
     /**
      * @brief 处理设备状态更新回调
      * @param devices 设备状态列表
      */
-    void onDeviceUpdate(const std::vector<DeviceState> &devices);
+    void onDeviceUpdate(const std::vector<gui::DeviceState> &devices);
 };

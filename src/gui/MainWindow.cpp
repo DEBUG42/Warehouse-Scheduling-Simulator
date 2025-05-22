@@ -1,9 +1,9 @@
-#include "MainWindow.hpp"
-#include "SimObject.hpp"
-#include "TestSimulationEngine.hpp"
-#include "MockSimulationInterface.hpp"
-#include "Toolbar.hpp"
-#include "StatusPanel.hpp"
+#include "gui/MainWindow.hpp"
+#include "gui/SimObject.hpp"
+#include "gui/MockSimulationInterface.hpp"
+#include "gui/Toolbar.hpp"
+#include "gui/StatusPanel.hpp"
+#include "gui/TaskListView.hpp"
 #include <iostream>
 
 /**
@@ -34,11 +34,13 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
     }
 
     // 初始化子组件
-    m_simView = std::make_unique<SimulationView>();
+    m_simView = std::make_unique<SimulationView>(m_globalFont);
     m_simView->initialize(m_globalFont, m_simInterface);
 
     m_statusPanel = std::make_unique<StatusPanel>(m_globalFont);
     m_toolbar = std::make_unique<Toolbar>(m_globalFont, m_toolbarHeight, m_initialSize.x);
+
+    m_taskListViewLeft = std::make_unique<TaskListView>(m_globalFont, 250.f); // 左侧250像素宽
 
     // 注册回调
     m_simInterface->registerStateUpdateCallback(
@@ -48,13 +50,13 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
         });
 
     m_simInterface->registerVehicleUpdateCallback(
-        [this](const std::vector<VehicleState> &vehicles)
+        [this](const std::vector<gui::VehicleState> &vehicles)
         {
             onVehicleUpdate(vehicles);
         });
 
     m_simInterface->registerDeviceUpdateCallback(
-        [this](const std::vector<DeviceState> &devices)
+        [this](const std::vector<gui::DeviceState> &devices)
         {
             onDeviceUpdate(devices);
         });
@@ -112,7 +114,7 @@ void MainWindow::initialize(TestSimulationEngine &engine)
     }
 
     // 初始化子组件
-    m_simView = std::make_unique<SimulationView>();
+    m_simView = std::make_unique<SimulationView>(m_globalFont);
     m_simView->initialize(m_globalFont, engine);
 
     m_statusPanel = std::make_unique<StatusPanel>(m_globalFont);
@@ -164,6 +166,10 @@ void MainWindow::runEventLoop()
 
         // 绘制工具栏
         m_toolbar->render(*this, sf::Vector2f(0, 0));
+
+        // 绘制左侧任务队列
+        if (m_taskListViewLeft)
+            draw(*m_taskListViewLeft);
 
         // 显示绘制的内容
         display();
@@ -237,6 +243,13 @@ void MainWindow::updateLayout()
                               simViewWidth / m_initialSize.x,
                               simViewHeight / m_initialSize.y);
     m_simView->updateViewport(simViewport);
+
+    float taskListWidth = 250.f;
+    if (m_taskListViewLeft)
+    {
+        m_taskListViewLeft->setViewHeight(m_initialSize.y - m_toolbarHeight);
+        m_taskListViewLeft->setPosition(sf::Vector2f(0, m_toolbarHeight));
+    }
 }
 
 /**
@@ -273,13 +286,16 @@ void MainWindow::onSimulationStateUpdate(const SimulationInterface::SimulationSt
     }
     m_toolbar->updateTimeScale(timeScale);
     m_toolbar->updatePlayPauseState(!state.isPaused);
+
+    if (m_taskListViewLeft)
+        m_taskListViewLeft->updateTasks(m_pendingTasks);
 }
 
 /**
  * @brief 处理车辆状态更新回调
  * @param vehicles 车辆状态列表
  */
-void MainWindow::onVehicleUpdate(const std::vector<VehicleState> &vehicles)
+void MainWindow::onVehicleUpdate(const std::vector<gui::VehicleState> &vehicles)
 {
     // 通知仿真视图更新车辆状态
     m_simView->updateVehicles(vehicles);
@@ -289,7 +305,7 @@ void MainWindow::onVehicleUpdate(const std::vector<VehicleState> &vehicles)
  * @brief 处理设备状态更新回调
  * @param devices 设备状态列表
  */
-void MainWindow::onDeviceUpdate(const std::vector<DeviceState> &devices)
+void MainWindow::onDeviceUpdate(const std::vector<gui::DeviceState> &devices)
 {
     // 通知仿真视图更新设备状态
     m_simView->updateDevices(devices);

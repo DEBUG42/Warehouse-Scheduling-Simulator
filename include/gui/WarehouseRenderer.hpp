@@ -44,7 +44,7 @@ public:
         float width;                ///< 宽度(mm)
         float height;               ///< 高度(mm)
         float depth;                ///< 深度(mm)
-        DeviceState state;          ///< 设备状态
+        gui::DeviceState state;     ///< 设备状态
     };
 
 public:
@@ -61,7 +61,7 @@ public:
      * @brief 更新设备状态
      * @param deviceStates 设备状态数组引用
      */
-    void updateDeviceStates(const std::vector<DeviceState> &deviceStates);
+    void updateDeviceStates(const std::vector<gui::DeviceState> &deviceStates);
 
     /**
      * @brief 设置入库口颜色

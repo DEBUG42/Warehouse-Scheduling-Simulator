@@ -1,4 +1,4 @@
-#include "WarehouseRenderer.hpp"
+#include "gui/WarehouseRenderer.hpp"
 #include <iostream>
 
 WarehouseRenderer::WarehouseRenderer()
@@ -23,14 +23,14 @@ void WarehouseRenderer::initialize(float trackRadius)
     createBottomInterfaces(trackRadius);
 }
 
-void WarehouseRenderer::updateDeviceStates(const std::vector<DeviceState> &deviceStates)
+void WarehouseRenderer::updateDeviceStates(const std::vector<gui::DeviceState> &deviceStates)
 {
     // 更新每个接口设备的状态
     for (const auto &state : deviceStates)
     {
         for (auto &interface : m_interfaces)
         {
-            if (interface.id == state.id)
+            if (std::to_string(interface.id) == state.getId())
             {
                 interface.state = state;
                 break;
@@ -100,12 +100,12 @@ void WarehouseRenderer::drawInterface(sf::RenderTarget &target, sf::RenderStates
     sf::Color fillColor = (interface.type == InterfaceType::INPUT) ? m_inputColor : m_outputColor;
 
     // 根据设备状态调整颜色亮度
-    if (interface.state.status == DeviceStatus::IDLE)
+    if (interface.state.status == gui::DeviceStatus::IDLE)
     {
         // 空闲状态，使用淡色
         fillColor.a = 180;
     }
-    else if (interface.state.status == DeviceStatus::BUSY)
+    else if (interface.state.status == gui::DeviceStatus::BUSY)
     {
         // 繁忙状态，使用亮色
         fillColor.a = 255;
@@ -141,17 +141,13 @@ void WarehouseRenderer::drawInterface(sf::RenderTarget &target, sf::RenderStates
 }
 
 // 添加辅助函数
-DeviceState warehouseToDeviceState(const WarehouseState &warehouse, bool isInput)
+gui::DeviceState warehouseToDeviceState(const WarehouseState &warehouse, bool isInput)
 {
-    DeviceState device;
-    device.id = warehouse.id;
-    device.type = isInput ? DeviceType::StorageIn : DeviceType::StorageOut;
-    device.status = DeviceStatus::IDLE;
-    device.capacity = 100;
-    device.currentLoad = 0;
-    device.materialId = -1;
-    device.processingProgress = 0.0f;
-    device.queuedTaskCount = 0;
+    // 不能直接访问id/type，需通过构造
+    gui::DeviceState device(std::to_string(warehouse.id), sf::Vector2f(0, 0),
+                            isInput ? gui::DeviceType::INPUT_STATION : gui::DeviceType::OUTPUT_STATION,
+                            gui::DeviceStatus::IDLE, "");
+    // 其它字段可按需赋值
     return device;
 }
 
@@ -195,11 +191,10 @@ void WarehouseRenderer::createTopInterfaces(float /* trackRadius */)
         interface.height = 2000.0f; // 高度假设为2m
 
         // 初始化设备状态
-        interface.state.id = interface.id;
-        interface.state.type = (interface.type == InterfaceType::INPUT) ? DeviceType::INPUT_STATION : DeviceType::OUTPUT_STATION;
-        interface.state.status = DeviceStatus::IDLE;
-        interface.state.queuedTaskCount = 0;
-        interface.state.processingProgress = 0.0f;
+        interface.state = gui::DeviceState(
+            std::to_string(interface.id), sf::Vector2f(0, 0),
+            (interface.type == InterfaceType::INPUT) ? gui::DeviceType::INPUT_STATION : gui::DeviceType::OUTPUT_STATION,
+            gui::DeviceStatus::IDLE, "");
 
         // 添加到列表
         m_interfaces.push_back(interface);
@@ -265,11 +260,10 @@ void WarehouseRenderer::createBottomInterfaces(float /* trackRadius */)
         interface.height = 2500.0f; // 高度假设为2.5m
 
         // 初始化设备状态
-        interface.state.id = interface.id;
-        interface.state.type = (interface.type == InterfaceType::INPUT) ? DeviceType::INPUT_STATION : DeviceType::OUTPUT_STATION;
-        interface.state.status = DeviceStatus::IDLE;
-        interface.state.queuedTaskCount = 0;
-        interface.state.processingProgress = 0.0f;
+        interface.state = gui::DeviceState(
+            std::to_string(interface.id), sf::Vector2f(0, 0),
+            (interface.type == InterfaceType::INPUT) ? gui::DeviceType::INPUT_STATION : gui::DeviceType::OUTPUT_STATION,
+            gui::DeviceStatus::IDLE, "");
 
         // 添加到列表
         m_interfaces.push_back(interface);
@@ -288,13 +282,13 @@ void WarehouseRenderer::createBottomInterfaces(float /* trackRadius */)
 void WarehouseRenderer::updateWarehouseStates(const std::vector<WarehouseState> &warehouseStates)
 {
     // 将WarehouseState转换为DeviceState
-    std::vector<DeviceState> deviceStates;
+    std::vector<gui::DeviceState> deviceStates;
 
     for (const auto &warehouse : warehouseStates)
     {
         // 转换为设备状态 - 默认isInput为true，但实际应根据仓库角色判断
         bool isInput = (warehouse.id % 2 == 0); // 简单划分：偶数ID为输入设备
-        DeviceState device = warehouseToDeviceState(warehouse, isInput);
+        gui::DeviceState device = warehouseToDeviceState(warehouse, isInput);
         deviceStates.push_back(device);
     }
 

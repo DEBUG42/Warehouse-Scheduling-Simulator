@@ -1,10 +1,10 @@
-#include "SimulationView.hpp"
-#include "TestSimulationEngine.hpp"
-#include "MockSimulationInterface.hpp"
+#include "gui/SimulationView.hpp"
+#include "gui/MockSimulationInterface.hpp"
 #include <iostream>
 #include <cmath>
-#include "DeviceState.hpp"
-#include "WarehouseState.hpp"
+#include "gui/DeviceState.hpp"
+#include "gui/WarehouseState.hpp"
+#include "gui/SimObject.hpp"
 
 /**
  * @brief 初始化仿真视图（使用新版接口）
@@ -33,9 +33,6 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
     m_curveRadius = 2500.0f;  // 弯道半径2.5米
 
     m_trackRenderer.setTrackWidth(600.0f); // 轨道宽度600mm
-    m_trackRenderer.setCenterLineColor(sf::Color(180, 180, 180));
-    m_trackRenderer.setStraightColor(sf::Color(140, 140, 140));
-    m_trackRenderer.setCurveColor(sf::Color(120, 120, 120));
     m_trackRenderer.generateGeometry(m_trackLength, m_curveRadius);
 
     // 初始化仓库渲染器
@@ -78,13 +75,7 @@ void SimulationView::initialize(sf::Font &font, TestSimulationEngine &engine)
     m_curveRadius = 2500.0f;
 
     m_trackRenderer.setTrackWidth(600.0f);
-    m_trackRenderer.setCenterLineColor(sf::Color(180, 180, 180));
-    m_trackRenderer.setStraightColor(sf::Color(140, 140, 140));
-    m_trackRenderer.setCurveColor(sf::Color(120, 120, 120));
     m_trackRenderer.generateGeometry(m_trackLength, m_curveRadius);
-
-    // 向旧引擎传递轨道总长度
-    m_engine->setTrackLength(m_trackLength);
 
     // 初始化仓库渲染器（旧版不完全支持）
     m_warehouseRenderer.initialize(m_curveRadius);
@@ -187,14 +178,14 @@ void SimulationView::renderUI(sf::RenderTarget &target)
     // 如果有选中对象，显示选择框或高亮效果
     if (m_selectedObject)
     {
-        if (m_selectedObject->getType() == SimObject::ObjectType::Vehicle)
+        if (m_selectedObject->getType() == gui::SimObjectType::Vehicle)
         {
-            int vehicleId = m_selectedObject->getId();
+            std::string vehicleId = m_selectedObject->getId();
 
             // 查找对应车辆
             for (const auto &vehicle : m_vehicles)
             {
-                if (vehicle.id == vehicleId)
+                if (vehicle.getId() == vehicleId)
                 {
                     sf::Vector2f position;
                     float rotation;
@@ -219,7 +210,7 @@ void SimulationView::renderUI(sf::RenderTarget &target)
                 }
             }
         }
-        else if (m_selectedObject->getType() == SimObject::ObjectType::Device)
+        else if (m_selectedObject->getType() == gui::SimObjectType::Device)
         {
             // TODO: 实现设备选择高亮效果
         }
@@ -331,7 +322,7 @@ void SimulationView::selectObjectAt(const sf::Vector2f &worldPos)
     {
         std::cout << "选中了仓库接口 ID: " << interface->id << std::endl;
         // 创建仓库对象
-        m_selectedObject = std::make_shared<SimObject>(SimObject::ObjectType::Device, interface->id);
+        m_selectedObject = std::make_shared<gui::SimObject>(gui::SimObjectType::Device, std::to_string(interface->id));
         return;
     }
 
@@ -355,8 +346,8 @@ void SimulationView::selectObjectAt(const sf::Vector2f &worldPos)
 
         if (std::abs(localPos.x) < vehicleHalfLength && std::abs(localPos.y) < vehicleHalfWidth)
         {
-            std::cout << "选中了车辆 ID: " << vehicle.id << std::endl;
-            m_selectedObject = std::make_shared<SimObject>(SimObject::ObjectType::Vehicle, vehicle.id);
+            std::cout << "选中了车辆 ID: " << vehicle.getId() << std::endl;
+            m_selectedObject = std::make_shared<gui::SimObject>(gui::SimObjectType::Vehicle, vehicle.getId());
             return;
         }
     }
@@ -366,7 +357,7 @@ void SimulationView::selectObjectAt(const sf::Vector2f &worldPos)
  * @brief 获取当前选中的对象
  * @return 选中对象指针（可能为nullptr）
  */
-std::shared_ptr<SimObject> SimulationView::getSelectedObject() const
+std::shared_ptr<gui::SimObject> SimulationView::getSelectedObject() const
 {
     return m_selectedObject;
 }
@@ -375,7 +366,7 @@ std::shared_ptr<SimObject> SimulationView::getSelectedObject() const
  * @brief 更新车辆状态
  * @param vehicles 车辆状态列表
  */
-void SimulationView::updateVehicles(const std::vector<VehicleState> &vehicles)
+void SimulationView::updateVehicles(const std::vector<gui::VehicleState> &vehicles)
 {
     m_vehicles = vehicles;
 }
@@ -384,7 +375,7 @@ void SimulationView::updateVehicles(const std::vector<VehicleState> &vehicles)
  * @brief 更新设备状态
  * @param devices 设备状态列表
  */
-void SimulationView::updateDevices(const std::vector<DeviceState> &devices)
+void SimulationView::updateDevices(const std::vector<gui::DeviceState> &devices)
 {
     m_devices = devices;
     m_warehouseRenderer.updateDeviceStates(devices);
@@ -400,4 +391,10 @@ void SimulationView::resize(unsigned int width, unsigned int height)
     float aspectRatio = static_cast<float>(width) / height;
     m_worldView.setSize(m_trackLength * aspectRatio, m_trackLength);
     m_worldView.setCenter(0.f, 0.f);
+}
+
+SimulationView::SimulationView(sf::Font &font)
+    : m_vehicleRenderer(font)
+{
+    // 其它成员用默认初始化
 }
