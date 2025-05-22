@@ -39,8 +39,8 @@ private:
     std::shared_ptr<SimulationInterface> m_simInterface; // 新版接口
 
     // 轨道参数
-    float m_trackLength = 90000.0f; // 轨道总长度(mm)
-    float m_curveRadius = 2500.0f;  // 弯道半径(mm)
+    float m_trackLength = 40000.0f; // 单个直轨段长度(mm)，根据文档
+    float m_curveRadius = 2500.0f;  // 弯道半径(mm)，根据文档
 
     // 选择系统
     std::shared_ptr<gui::SimObject> m_selectedObject; // 存储的状态数据

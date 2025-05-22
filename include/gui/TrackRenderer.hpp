@@ -22,11 +22,11 @@ private:
     sf::Color m_straightColor{120, 120, 120}; // 轨道颜色
 
     // 轨道几何参数
-    float m_trackLength = 0.0f; // 轨道直线段长度
-    float m_curveRadius = 0.0f; // 弯道半径
+    float m_trackLength = 0.0f; // 轨道单个直线段长度 (mm)
+    float m_curveRadius = 0.0f; // 弯道半径 (mm)
 
     // 缩放参数
-    float m_scaleFactor = 10.0f; // 缩放因子，用于调整轨道在视图中的整体大小
+    float m_scaleFactor = 1.0f;  // 缩放因子，设为1.0f，主要依赖mmToPxRatio
     float m_mmToPxRatio = 0.02f; // 毫米到像素的转换比例 (1mm = 0.02px)
 
 public:

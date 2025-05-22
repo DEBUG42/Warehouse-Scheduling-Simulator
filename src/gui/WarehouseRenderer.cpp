@@ -1,12 +1,39 @@
 #include "gui/WarehouseRenderer.hpp"
 #include <iostream>
 
+/*
+每一个仓库对应在弯道上的位置，
+根据开发界面信息规定的将整个轨道左下角弯道与直道的交汇点作为原点，
+计算出每个仓库接口应该对应的位置
+
+弯道半径=2500mm
+pi=3.14159265358979323846
+18 8000mm
+17 11000mm
+16 14000mm
+15 26000mm
+14 29000mm
+13 32000mm
+12 40000+2500pi+3800=43800+7500pi=   51635.981634mm
+11 40000+2500pi+6200=46200+7500pi=   54035.981634mm
+10 40000+2500pi+9800=49800+7500pi=   57635.981634mm
+9  40000+2500pi+12200=52200+7500pi=   60035.981634mm
+8  40000+2500pi+15800=55800+7500pi=   63635.981634mm
+7  40000+2500pi+18200=58200+7500pi=   66035.981634mm
+6  40000+2500pi+21800=61800+7500pi=   69635.981634mm
+5  40000+2500pi+24200=64200+7500pi=   72035.981634mm
+4  40000+2500pi+27800=67800+7500pi=   75635.981634mm
+3  40000+2500pi+30200=70200+7500pi=   78035.981634mm
+2  40000+2500pi+33800=73800+7500pi=   81635.981634mm
+1  40000+2500pi+36200=76200+7500pi=   84035.981634mm
+*/
+
 WarehouseRenderer::WarehouseRenderer()
 {
     // 加载字体
-    if (!m_font.loadFromFile("resources/fonts/Arial.ttf"))
+    if (!m_font.loadFromFile("assets/fonts/Arial.ttf"))
     {
-        std::cerr << "警告：无法加载字体文件，接口标签可能无法正确显示" << std::endl;
+        std::cerr << "WarehouseRenderer-Interface labels may not display correctly." << std::endl;
     }
 }
 
@@ -201,8 +228,8 @@ void WarehouseRenderer::createTopInterfaces(float /* trackRadius */)
 
         // 创建标签
         sf::Text label;
-        std::string labelText = std::to_string(interface.id) + "号" +
-                                ((interface.type == InterfaceType::INPUT) ? "入库口" : "出库口");
+        std::string labelText = "ID:" + std::to_string(interface.id) + " " +
+                                ((interface.type == InterfaceType::INPUT) ? "Input" : "Output");
         createLabel(label, m_font, labelText,
                     interface.centerX * MM_TO_PIXEL,
                     (interface.centerY - interface.depth / 2.0f) * MM_TO_PIXEL - 15.0f);
@@ -270,8 +297,8 @@ void WarehouseRenderer::createBottomInterfaces(float /* trackRadius */)
 
         // 创建标签
         sf::Text label;
-        std::string labelText = std::to_string(interface.id) + "号" +
-                                ((interface.type == InterfaceType::INPUT) ? "入库口" : "出库口");
+        std::string labelText = "ID:" + std::to_string(interface.id) + " " +
+                                ((interface.type == InterfaceType::INPUT) ? "Input" : "Output");
         createLabel(label, m_font, labelText,
                     interface.centerX * MM_TO_PIXEL,
                     (interface.centerY + interface.depth / 2.0f) * MM_TO_PIXEL + 5.0f);

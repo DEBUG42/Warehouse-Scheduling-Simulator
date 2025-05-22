@@ -29,11 +29,11 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
     m_uiView.setCenter(640, 360);
 
     // 初始化轨道渲染器
-    m_trackLength = 90000.0f; // 估计总长度约90米
-    m_curveRadius = 2500.0f;  // 弯道半径2.5米
+    float straightTrackSegmentLength = 40000.0f; // 根据文档，单个直道段长度40米
+    m_curveRadius = 2500.0f;                     // 弯道半径2.5米，与文档一致
 
-    m_trackRenderer.setTrackWidth(600.0f); // 轨道宽度600mm
-    m_trackRenderer.generateGeometry(m_trackLength, m_curveRadius);
+    m_trackRenderer.setTrackWidth(600.0f); // 轨道宽度600mm (视觉效果)
+    m_trackRenderer.generateGeometry(straightTrackSegmentLength, m_curveRadius);
 
     // 初始化仓库渲染器
     m_warehouseRenderer.initialize(m_curveRadius);
@@ -95,7 +95,25 @@ void SimulationView::renderWorld(sf::RenderTarget &target)
  */
 void SimulationView::renderTrack(sf::RenderTarget &target)
 {
-    target.draw(m_trackRenderer);
+    // TrackRenderer内部以其几何中心为(0,0)绘制（像素单位）。
+    // 文档原点是左下弯道中心 (0,0)_doc。
+    // 轨道几何中心 O_track_geom 相对于文档原点 O_doc 的坐标是：
+    // X_doc = m_curveRadius + m_trackLength / 2.0f (其中m_trackLength是直段长度)
+    // Y_doc = 0 (假设轨道上下对称于文档原点的X轴)
+    // 将这个毫米单位的偏移转换为像素单位。
+    float offsetX_doc_mm = m_curveRadius + (m_trackLength / 2.0f);
+    float offsetY_doc_mm = 0.0f;
+
+    // 使用统一的 MM_TO_PIXEL 转换
+    // TrackRenderer内部的m_scaleFactor已设为1.0，所以其内部单位与WarehouseRenderer的MM_TO_PIXEL效果一致
+    float scaledOffsetX = offsetX_doc_mm * WarehouseRenderer::MM_TO_PIXEL;
+    float scaledOffsetY = offsetY_doc_mm * WarehouseRenderer::MM_TO_PIXEL;
+
+    sf::RenderStates trackStates;
+    // 我们希望TrackRenderer的局部原点(其几何中心)被绘制在世界坐标的(scaledOffsetX, scaledOffsetY)处
+    // 这样，TrackRenderer的几何形状就会以文档原点为参考正确放置。
+    trackStates.transform.translate(scaledOffsetX, scaledOffsetY);
+    target.draw(m_trackRenderer, trackStates);
 }
 
 /**

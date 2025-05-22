@@ -18,7 +18,7 @@ int main()
 {
     try
     {
-        std::cout << "物流仓库仿真系统启动中..." << std::endl;
+        std::cout << "Warehouse Simulation System starting..." << std::endl;
 
         // 创建模拟仿真接口（用于GUI测试，不需连接实际后端）
         // 参数为模拟的小车数量

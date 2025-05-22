@@ -16,8 +16,8 @@
 class WarehouseRenderer : public sf::Drawable
 {
 public:
-    /// 单位转换系数: 1mm = 0.05px (与TrackRenderer保持一致)
-    static constexpr float MM_TO_PIXEL = 0.05f;
+    /// 单位转换系数: 1mm = 0.02px (与TrackRenderer保持一致)
+    static constexpr float MM_TO_PIXEL = 0.02f;
 
     /// 仓库接口类型枚举
     enum class InterfaceType

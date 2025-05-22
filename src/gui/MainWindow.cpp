@@ -17,7 +17,7 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
     m_simInterface = simInterface;
 
     // 创建窗口
-    create(sf::VideoMode(m_initialSize.x, m_initialSize.y), "仓储穿梭车仿真系统",
+    create(sf::VideoMode(m_initialSize.x, m_initialSize.y), "Warehouse Shuttle Simulation System",
            sf::Style::Default);
     setFramerateLimit(60);
 
@@ -26,9 +26,9 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
     {
         if (!m_globalFont.loadFromFile("GUI/resources/fonts/simhei.ttf"))
         {
-            if (!m_globalFont.loadFromFile("resources/fonts/arial.ttf"))
+            if (!m_globalFont.loadFromFile("assets/fonts/arial.ttf"))
             {
-                std::cerr << "警告：无法加载字体文件！" << std::endl;
+                std::cerr << "警告：MainWindow无法加载字体文件！" << std::endl;
             }
         }
     }
