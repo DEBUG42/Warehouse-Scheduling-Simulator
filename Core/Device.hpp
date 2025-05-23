@@ -42,59 +42,26 @@ enum class DeviceStatus {
 
 // 设备基类
 class DeviceBase {
-protected:
+public:
     const int m_id;                   // 设备唯一标识
     std::queue<Task> m_taskQueue;     // 任务等待队列
-    sf::Clock m_processingTimer;      // 处理计时器（用于堆垛机/人工操作）
 
-public:
     float m_storageIn =30.0/TimeScale(); // 入库时间（秒）
     float m_storageOut =25.0/TimeScale(); // 出库时间（秒）
 	DeviceBase(int id, DeviceType type);
     DeviceStatus m_status;
-    /**
-     * @brief 更新设备状态
-     * @param deltaTime 仿真时间增量（秒）
-     * @return 是否有状态变更（如完成货物处理）
-     */
-    virtual bool update(float deltaTime) = 0;
-    
-    /**
-     * @brief 添加新任务到队列
-     * @param task 任务对象
-     */
-//     void enqueueTask(const Task& task);
-    
-    // 其他公共接口...
 };
 
 
-// 入库接口设备特化
-class StorageInDevice : public DeviceBase {
+//设备管理函数类
+class DeviceManager {
+public:
+    void updateDevice(double current_time);
+    const DeviceState& getState(int device_id) const;
+    void reserveDevice(int device_id, int task_id, double until_time);
+    void releaseDevice(int device_id, int task_id);
+    void handleEvent(const Event& e); // 在 Scheduler 中转发事件时使用
+
 private:
-    bool m_readyForUnload;           // 是否允许卸货
-public:
-    StorageInDevice(int id);
-
-    bool update(float deltaTime) override;
-    
-    /**
-     * @brief 通知堆垛机完成取货
-     * @param success 是否成功取货
-     */
-    void notifyCargoPickup(bool success);
+    std::map<int, DeviceState> devices;
 };
-
-// 出库作业口特化
-class WorkstationOutDevice : public DeviceBase {
-public:
-    WorkstationOutDevice(int id);
-
-    bool update(float deltaTime) override;
-    
-    /**
-     * @brief 人工卸货完成回调
-     */
-    void notifyManualUnloadComplete();
-};
-
