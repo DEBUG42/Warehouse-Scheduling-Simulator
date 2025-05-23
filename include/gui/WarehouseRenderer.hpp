@@ -4,6 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
+#include <map>
 #include "SimObject.hpp"
 #include "DeviceState.hpp"
 #include "WarehouseUtils.hpp"
@@ -52,10 +53,11 @@ public:
     WarehouseRenderer();
 
     /**
-     * @brief 初始化所有仓库接口设备
+     * @brief 初始化所有仓库接口设备及图标资源
      * @param trackRadius 轨道半径(mm)
+     * @param iconBasePath 图标资源的基础路径
      */
-    void initialize(float trackRadius);
+    void initialize(float trackRadius, const std::string &iconBasePath = "resources/icons/");
 
     /**
      * @brief 更新设备状态
@@ -113,6 +115,15 @@ private:
     sf::Color m_outputColor{230, 85, 40};         ///< 出库口颜色
     sf::Color m_borderColor{100, 100, 100};       ///< 边框颜色
     sf::Color m_shadowColor{50, 50, 50, 150};     ///< 阴影颜色
+
+    // 状态颜色 (从DeviceRenderer借鉴并统一)
+    const sf::Color COLOR_IDLE{75, 185, 85, 180};      // 空闲状态 (稍透明)
+    const sf::Color COLOR_WORKING{60, 150, 230, 255};  // 工作中状态 (修改了颜色以区分原Input/Output)
+    const sf::Color COLOR_FAULT{230, 170, 50, 255};    // 故障状态
+    const sf::Color COLOR_OFFLINE{150, 150, 150, 200}; // 离线状态
+
+    // 图标资源
+    std::map<gui::DeviceType, sf::Texture> m_iconTextures;
 
     // 文本标签集合
     std::vector<sf::Text> m_labels; ///< 接口标签

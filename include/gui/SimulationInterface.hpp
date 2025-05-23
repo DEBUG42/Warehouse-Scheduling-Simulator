@@ -18,25 +18,15 @@
 class SimulationInterface
 {
 public:
-    /// 仿真速度枚举
-    enum class SimulationSpeed
-    {
-        SPEED_0_5X, ///< 0.5倍速
-        SPEED_1X,   ///< 1倍速（实时）
-        SPEED_2X,   ///< 2倍速
-        SPEED_5X,   ///< 5倍速
-        SPEED_10X   ///< 10倍速
-    };
-
     /// 仿真状态结构体
     struct SimulationState
     {
-        bool isPaused;          ///< 是否暂停
-        SimulationSpeed speed;  ///< 仿真速度
-        float simulationTime;   ///< 仿真时间(s)
-        int vehicleCount;       ///< 车辆数量
-        int completedTaskCount; ///< 已完成任务数量
-        int pendingTaskCount;   ///< 待处理任务数量
+        bool isPaused;               ///< 是否暂停
+        float simulationSpeedFactor; ///< 仿真速度因子 (e.g., 1.0 for normal, 2.0 for 2x)
+        float simulationTime;        ///< 仿真时间(s)
+        int vehicleCount;            ///< 车辆数量
+        int completedTaskCount;      ///< 已完成任务数量
+        int pendingTaskCount;        ///< 待处理任务数量
     };
 
     /// 状态更新回调函数类型
@@ -67,10 +57,10 @@ public:
     virtual std::vector<gui::DeviceState> getDeviceStates() const = 0;
 
     /**
-     * @brief 设置仿真速度
-     * @param speed 仿真速度枚举
+     * @brief 设置仿真速度因子
+     * @param speedFactor 仿真速度因子 (e.g., 1.0f for normal speed)
      */
-    virtual void setSimulationSpeed(SimulationSpeed speed) = 0;
+    virtual void setSimulationSpeedFactor(float speedFactor) = 0;
 
     /**
      * @brief 暂停仿真

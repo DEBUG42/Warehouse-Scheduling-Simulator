@@ -2,7 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include "TrackRenderer.hpp"
-#include "DeviceRenderer.hpp"
+// #include "DeviceRenderer.hpp" // Removed
 #include "VehicleRenderer.hpp"
 #include "WarehouseRenderer.hpp"
 #include "SimObject.hpp"
@@ -26,10 +26,10 @@ private:
     float m_zoomLevel = 1.0f;  // 当前缩放级别
 
     // 对象渲染器
-    TrackRenderer m_trackRenderer;         // 轨道绘制组件
-    DeviceRenderer m_deviceRenderer;       // 设备绘制组件（旧版）
+    TrackRenderer m_trackRenderer; // 轨道绘制组件
+    // DeviceRenderer m_deviceRenderer;       // 设备绘制组件（旧版） -> REMOVED
     VehicleRenderer m_vehicleRenderer;     // 车辆绘制组件
-    WarehouseRenderer m_warehouseRenderer; // 仓库绘制组件（新版）
+    WarehouseRenderer m_warehouseRenderer; // 仓库绘制组件（新版，已整合设备渲染）
 
     // 交互状态
     bool m_isDragging = false;   // 正在拖拽视图标志

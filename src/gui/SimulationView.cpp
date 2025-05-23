@@ -5,6 +5,7 @@
 #include "gui/DeviceState.hpp"
 #include "gui/WarehouseState.hpp"
 #include "gui/SimObject.hpp"
+#include "gui/CoordinateUtils.hpp"
 
 /**
  * @brief 构造函数，传入全局字体，确保VehicleRenderer等成员能正确初始化
@@ -46,8 +47,8 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
     m_trackRenderer.setTrackWidth(600.0f); // 轨道宽度600mm (视觉效果)
     m_trackRenderer.generateGeometry(straightTrackSegmentLength, m_curveRadius);
 
-    // 初始化仓库渲染器
-    m_warehouseRenderer.initialize(m_curveRadius);
+    // 初始化仓库渲染器 (并加载设备图标)
+    m_warehouseRenderer.initialize(m_curveRadius, "resources/icons/"); // 提供图标基础路径
 
     // 获取初始车辆和设备状态
     if (m_simInterface)
@@ -414,18 +415,13 @@ void SimulationView::selectObjectAt(const sf::Vector2f &worldPos)
         float rotation;
         m_vehicleRenderer.calculatePosition(vehicle, m_trackLength, m_curveRadius, position, rotation);
 
-        // 简单的矩形判断（可优化为更精确的碰撞检测）
-        float vehicleHalfWidth = 8.0f;   // 像素单位
-        float vehicleHalfLength = 20.0f; // 像素单位
+        // 使用CoordinateUtils进行命中检测
+        // 车辆的视觉尺寸，需要根据实际渲染调整，这里假设与之前的近似
+        // 注意：VehicleRenderer中并没有明确定义车辆的碰撞盒尺寸，这里的尺寸是估算的。
+        // 理想情况下，VehicleState 或 VehicleRenderer 应提供碰撞盒尺寸。
+        sf::Vector2f vehicleVisualSize(40.0f, 16.0f); // (Length, Width) in world units, matching previous half-lengths
 
-        // 转换点击位置到车辆局部坐标系
-        float angle = -rotation * M_PI / 180.0f;
-        sf::Vector2f relativePos = worldPos - position;
-        sf::Vector2f localPos(
-            relativePos.x * std::cos(angle) - relativePos.y * std::sin(angle),
-            relativePos.x * std::sin(angle) + relativePos.y * std::cos(angle));
-
-        if (std::abs(localPos.x) < vehicleHalfLength && std::abs(localPos.y) < vehicleHalfWidth)
+        if (CoordinateUtils::isPointInRotatedRect(position, vehicleVisualSize, rotation, worldPos))
         {
             std::cout << "选中了车辆 ID: " << vehicle.getId() << std::endl;
             m_selectedObject = std::make_shared<gui::SimObject>(gui::SimObjectType::Vehicle, vehicle.getId());

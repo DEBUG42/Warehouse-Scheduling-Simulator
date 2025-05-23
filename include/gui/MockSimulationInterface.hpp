@@ -33,7 +33,7 @@ public:
 
         // 初始化仿真状态
         m_state.isPaused = false;
-        m_state.speed = SimulationSpeed::SPEED_1X;
+        m_state.simulationSpeedFactor = 1.0f;
         m_state.simulationTime = 0.0f;
         m_state.vehicleCount = vehicleCount;
         m_state.completedTaskCount = 0;
@@ -91,12 +91,12 @@ public:
     }
 
     /**
-     * @brief 设置仿真速度
-     * @param speed 仿真速度枚举
+     * @brief 设置仿真速度因子
+     * @param speedFactor 仿真速度因子
      */
-    virtual void setSimulationSpeed(SimulationSpeed speed) override
+    virtual void setSimulationSpeedFactor(float speedFactor) override
     {
-        m_state.speed = speed;
+        m_state.simulationSpeedFactor = speedFactor;
     }
 
     /**

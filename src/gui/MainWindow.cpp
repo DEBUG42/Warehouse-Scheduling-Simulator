@@ -64,20 +64,8 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
     // 设置工具栏回调
     m_toolbar->setTimeScaleCallback([this](float scale)
                                     {
-        // 将浮点数转换为枚举
-        SimulationInterface::SimulationSpeed speedEnum;
-        if (scale <= 0.5f) {
-            speedEnum = SimulationInterface::SimulationSpeed::SPEED_0_5X;
-        } else if (scale <= 1.0f) {
-            speedEnum = SimulationInterface::SimulationSpeed::SPEED_1X;
-        } else if (scale <= 2.0f) {
-            speedEnum = SimulationInterface::SimulationSpeed::SPEED_2X;
-        } else if (scale <= 5.0f) {
-            speedEnum = SimulationInterface::SimulationSpeed::SPEED_5X;
-        } else {
-            speedEnum = SimulationInterface::SimulationSpeed::SPEED_10X;
-        }
-        m_simInterface->setSimulationSpeed(speedEnum); });
+        // 直接使用 float scale 调用新的接口
+        m_simInterface->setSimulationSpeedFactor(scale); });
 
     m_toolbar->setPlayPauseCallback([this]()
                                     {
@@ -216,34 +204,16 @@ void MainWindow::updateLayout()
  */
 void MainWindow::onSimulationStateUpdate(const SimulationInterface::SimulationState &state)
 {
-    // 更新状态面板显示
+    // 更新状态面板
     m_statusPanel->setSimulationTime(state.simulationTime);
     m_statusPanel->setVehicleCount(state.vehicleCount);
     m_statusPanel->setCompletedTaskCount(state.completedTaskCount);
     m_statusPanel->setPendingTaskCount(state.pendingTaskCount);
 
     // 更新工具栏状态
-    float timeScale = 1.0f;
-    switch (state.speed)
-    {
-    case SimulationInterface::SimulationSpeed::SPEED_0_5X:
-        timeScale = 0.5f;
-        break;
-    case SimulationInterface::SimulationSpeed::SPEED_1X:
-        timeScale = 1.0f;
-        break;
-    case SimulationInterface::SimulationSpeed::SPEED_2X:
-        timeScale = 2.0f;
-        break;
-    case SimulationInterface::SimulationSpeed::SPEED_5X:
-        timeScale = 5.0f;
-        break;
-    case SimulationInterface::SimulationSpeed::SPEED_10X:
-        timeScale = 10.0f;
-        break;
-    }
-    m_toolbar->updateTimeScale(timeScale);
-    m_toolbar->updatePlayPauseState(!state.isPaused);
+    m_toolbar->updateTimeDisplay(state.simulationTime, 0);   // 假设没有真实时间显示，或者需要从别处获取
+    m_toolbar->updatePlayPauseState(!state.isPaused);        // isPaused=true -> 按钮显示Play (即非isPlaying)
+    m_toolbar->updateTimeScale(state.simulationSpeedFactor); // 使用新的 float speed factor
 
     if (m_taskListViewLeft)
         m_taskListViewLeft->updateTasks(m_pendingTasks);
