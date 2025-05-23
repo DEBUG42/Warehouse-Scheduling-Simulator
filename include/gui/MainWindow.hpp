@@ -53,6 +53,18 @@ public:
     void initialize(std::shared_ptr<SimulationInterface> simInterface);
 
     /**
+     * @brief (For test purposes) Processes a single SFML event.
+     * @param event The SFML event to process.
+     */
+    void processEvent(const sf::Event &event);
+
+    /**
+     * @brief (For test purposes) Renders a single frame of the GUI.
+     * Does not call display().
+     */
+    void renderFrame();
+
+    /**
      * @brief 处理窗口事件循环
      */
     void runEventLoop();

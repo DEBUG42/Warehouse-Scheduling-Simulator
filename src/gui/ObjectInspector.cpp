@@ -1,6 +1,7 @@
 #include "gui/ObjectInspector.hpp"
 #include <iomanip> // For std::fixed, std::setprecision
 #include <sstream> // For std::ostringstream
+#include <iostream>
 
 /**
  * @brief 构造函数

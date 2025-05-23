@@ -1,227 +1,410 @@
 #include "gui/TrackRenderer.hpp"
-#include <cmath>
+#include <SFML/Graphics.hpp> // Redundant if already in hpp, but safe
+#include <cmath>             // For M_PI, std::cos, std::sin, std::fmod
+#include <iostream>          // For debug output
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
 TrackRenderer::TrackRenderer()
-    : m_innersTrack(sf::LineStrip), // 内轨道线条
-      m_outerTrack(sf::LineStrip)   // 外轨道线条
+// : m_innersTrack(sf::LineStrip), // OLD - REMOVE
+//   m_outerTrack(sf::LineStrip)   // OLD - REMOVE
 {
+    // Initial setup: Recalculate based on default member values
+    calculateMathematicalSegments();
+    updateVisualTrackGeometry();
 }
 
-void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
+void TrackRenderer::setMmToPxRatio(float ratio)
 {
-    // 保存轨道参数以便后续坐标转换
-    m_trackLength = trackLength;
-    m_curveRadius = curveRadius;
-
-    // 清除现有顶点
-    m_innersTrack.clear();
-    m_outerTrack.clear();
-    m_centerPoints.clear();
-
-    // 将真实尺寸（毫米）转换为像素
-    float scaledTrackLength = trackLength * m_mmToPxRatio * m_scaleFactor;
-    float scaledCurveRadius = curveRadius * m_mmToPxRatio * m_scaleFactor;
-
-    // 轨道宽度计算 - 转换为像素
-    float trackOffset = m_trackWidth * m_mmToPxRatio * m_scaleFactor / 2.0f; // 内外轨道的对称偏移量 (原轨道宽度的一半)
-
-    // ============= 生成中心线坐标点 =============
-    // 赛道由四段组成：上直道、右弯道、下直道、左弯道
-    int pointsPerCurve = 520; // 增加弯道分段数，使曲线更平滑
-
-    // 生成弯道和直道点的函数
-    auto generateCurve = [&](float cx, float cy, float r, float startAngle, float endAngle)
+    if (ratio > 0 && m_mmToPxRatio != ratio)
     {
-        float angleStep = (endAngle - startAngle) / pointsPerCurve;
-        for (int i = 0; i <= pointsPerCurve; ++i)
+        m_mmToPxRatio = ratio;
+        updateVisualTrackGeometry(); // Visuals depend on this ratio
+    }
+}
+
+void TrackRenderer::setTrackWidthMm(float widthMm)
+{
+    if (widthMm > 0 && m_trackWidthMm != widthMm)
+    {
+        m_trackWidthMm = widthMm;
+        updateVisualTrackGeometry(); // Visuals (track edges) depend on this width
+    }
+}
+
+void TrackRenderer::generateGeometry(float straightLengthMm, float curveRadiusMm)
+{
+    bool changed = false;
+    if (straightLengthMm > 0 && m_straightLengthMm != straightLengthMm)
+    {
+        m_straightLengthMm = straightLengthMm;
+        changed = true;
+    }
+    if (curveRadiusMm > 0 && m_curveRadiusMm != curveRadiusMm)
+    {
+        m_curveRadiusMm = curveRadiusMm;
+        changed = true;
+    }
+
+    if (changed)
+    {
+        calculateMathematicalSegments();
+        updateVisualTrackGeometry();
+    }
+}
+
+void TrackRenderer::setTrackColor(const sf::Color &color)
+{
+    if (m_trackColor != color)
+    {
+        m_trackColor = color;
+        updateVisualTrackGeometry(); // Update colors of the vertices
+    }
+}
+
+void TrackRenderer::setBorderColor(const sf::Color &color)
+{
+    if (m_borderColor != color)
+    {
+        m_borderColor = color;
+        updateVisualTrackGeometry();
+    }
+}
+
+void TrackRenderer::setCenterLineColor(const sf::Color &color)
+{
+    if (m_centerLineColor != color)
+    {
+        m_centerLineColor = color;
+        if (m_drawCenterLine)
         {
-            float angle = startAngle + i * angleStep;
-            m_centerPoints.push_back(sf::Vector2f(
-                cx + r * std::cos(angle),
-                cy + r * std::sin(angle)));
+            updateVisualTrackGeometry();
         }
-    };
+    }
+}
 
-    // 各弯道中心
-    float rightCurveX = scaledTrackLength / 2;
-    float rightCurveY = 0.0f;
-    float leftCurveX = -scaledTrackLength / 2;
-    float leftCurveY = 0.0f;
-
-    // 1. 从右上开始，沿轨道中心线顺时针生成点
-    // 生成右弯道点 (-90° ~ 90°)
-    generateCurve(rightCurveX, rightCurveY, scaledCurveRadius, -M_PI / 2, M_PI / 2);
-
-    // 2. 生成下直道点
-    sf::Vector2f rightBottom = m_centerPoints.back();   // 右弯道最后一点
-    sf::Vector2f leftBottom(leftCurveX, rightBottom.y); // 左弯道底部点
-    m_centerPoints.push_back(leftBottom);
-
-    // 3. 生成左弯道点 (90° ~ 270°)
-    generateCurve(leftCurveX, leftCurveY, scaledCurveRadius, M_PI / 2, 3 * M_PI / 2);
-
-    // 4. 生成上直道点
-    sf::Vector2f leftTop = m_centerPoints.back();  // 左弯道最后一点
-    sf::Vector2f rightTop(rightCurveX, leftTop.y); // 右弯道顶部点
-    m_centerPoints.push_back(rightTop);
-
-    // 不再添加起始点重复点，防止线条连接处出现交叉
-
-    // ============= 生成轨道内外轮廓 =============
-    // 根据中心线生成平行偏移的轨道线
-    auto generateTrack = [](const std::vector<sf::Vector2f> &centerLine, float offset,
-                            sf::VertexArray &track, const sf::Color &color)
+void TrackRenderer::enableCenterLineDrawing(bool enable)
+{
+    if (m_drawCenterLine != enable)
     {
-        // 清空顶点数组
-        track.clear();
+        m_drawCenterLine = enable;
+        updateVisualTrackGeometry(); // Need to update visuals if this changes
+    }
+}
 
-        // 计算每个点的偏移位置
-        std::vector<sf::Vector2f> offsetPoints;
+void TrackRenderer::calculateMathematicalSegments()
+{
+    m_trackSegments.clear();
+    m_totalTrackLengthMm = 0.0f;
 
-        for (size_t i = 0; i < centerLine.size(); ++i)
+    if (m_straightLengthMm <= 0 || m_curveRadiusMm <= 0)
+    {
+        return; // Invalid parameters
+    }
+
+    float currentDistanceMm = 0.0f;
+    // Doc Origin: Inner track, bottom-left, where curve meets straight.
+    // Track path proceeds CCW. Start point (0,0) is this doc origin for the centerline.
+    sf::Vector2f currentCoordMm(0.0f, 0.0f);
+    float currentAngleRad = 0.0f; // Initial direction: along +X axis
+
+    // Segment 1: Bottom straight track (length = m_straightLengthMm)
+    m_trackSegments.push_back({
+        TrackSegment::STRAIGHT,
+        currentDistanceMm, m_straightLengthMm,
+        currentCoordMm, currentAngleRad,
+        sf::Vector2f(), 0.0f, false // Unused for straight
+    });
+    currentDistanceMm += m_straightLengthMm;
+    currentCoordMm.x += m_straightLengthMm * std::cos(currentAngleRad); // Should be +m_straightLengthMm
+    currentCoordMm.y += m_straightLengthMm * std::sin(currentAngleRad); // Should be 0
+
+    // Segment 2: Right curve (CCW, 180 degrees / PI radians)
+    // Center of this curve: (L, R) relative to doc origin (0,0)
+    float curveLength = M_PI * m_curveRadiusMm;
+    sf::Vector2f curveCenterRight(m_straightLengthMm, m_curveRadiusMm);
+    m_trackSegments.push_back({
+        TrackSegment::CURVE,
+        currentDistanceMm, curveLength,
+        currentCoordMm, currentAngleRad,
+        curveCenterRight, 0.0f, false // Curve starts at angle 0 relative to its center's positive X-axis
+    });
+    currentDistanceMm += curveLength;
+    // End of this curve: (L, 2*R). Angle is now PI (pointing left).
+    currentCoordMm = sf::Vector2f(m_straightLengthMm, 2.0f * m_curveRadiusMm);
+    currentAngleRad = M_PI;
+
+    // Segment 3: Top straight track (length = m_straightLengthMm)
+    // Starts at (L, 2*R), moves left by L.
+    m_trackSegments.push_back({TrackSegment::STRAIGHT,
+                               currentDistanceMm, m_straightLengthMm,
+                               currentCoordMm, currentAngleRad,
+                               sf::Vector2f(), 0.0f, false});
+    currentDistanceMm += m_straightLengthMm;
+    // End of this straight: (0, 2*R). Angle is still PI.
+    currentCoordMm = sf::Vector2f(0.0f, 2.0f * m_curveRadiusMm);
+
+    // Segment 4: Left curve (CCW, 180 degrees / PI radians)
+    // Center of this curve: (0, R) relative to doc origin (0,0)
+    // curveLength is the same
+    sf::Vector2f curveCenterLeft(0.0f, m_curveRadiusMm);
+    m_trackSegments.push_back({TrackSegment::CURVE,
+                               currentDistanceMm, curveLength,
+                               currentCoordMm, currentAngleRad, // Starts at angle PI relative to its center's positive X-axis
+                               curveCenterLeft, M_PI, false});
+    currentDistanceMm += curveLength;
+    // End of this curve should be back at (0,0), angle 2*PI (or 0).
+    // currentCoordMm = sf::Vector2f(0.0f, 0.0f); // Reset for clarity, though not strictly needed for next iter
+    // currentAngleRad = 0.0f; // Or 2.0f * M_PI
+
+    m_totalTrackLengthMm = currentDistanceMm;
+}
+
+void TrackRenderer::updateVisualTrackGeometry()
+{
+    m_trackShape.clear();
+    m_centerLineVisual.clear();
+
+    if (m_trackSegments.empty() || m_mmToPxRatio <= 0.0f)
+    {
+        return;
+    }
+
+    m_trackShape.setPrimitiveType(sf::TriangleStrip); // Or LineStrip for inner/outer separately then combine
+                                                      // For a filled track, TriangleStrip is better.
+
+    // Define number of points for curves to make them smooth
+    const int curvePoints = 32; // Number of segments to approximate a 180-degree curve
+
+    std::vector<sf::Vector2f> centerLinePointsPx;
+    std::vector<sf::Vector2f> innerEdgePointsPx;
+    std::vector<sf::Vector2f> outerEdgePointsPx;
+
+    float halfTrackWidthPx = (m_trackWidthMm / 2.0f) * m_mmToPxRatio;
+
+    for (const auto &segment : m_trackSegments)
+    {
+        if (segment.type == TrackSegment::STRAIGHT)
         {
-            // 获取当前点和相邻点
-            const sf::Vector2f &current = centerLine[i];
-            sf::Vector2f prev, next;
+            sf::Vector2f p1_center_mm = segment.startCoordMm;
+            sf::Vector2f p2_center_mm = sf::Vector2f(
+                segment.startCoordMm.x + segment.lengthMm * std::cos(segment.startAngleRad),
+                segment.startCoordMm.y + segment.lengthMm * std::sin(segment.startAngleRad));
+            sf::Vector2f p1_center_px = sf::Vector2f(p1_center_mm.x * m_mmToPxRatio, p1_center_mm.y * m_mmToPxRatio);
+            sf::Vector2f p2_center_px = sf::Vector2f(p2_center_mm.x * m_mmToPxRatio, p2_center_mm.y * m_mmToPxRatio);
 
-            if (i == 0)
-            {
-                prev = centerLine.back();
-                next = centerLine[i + 1];
+            centerLinePointsPx.push_back(p1_center_px);
+            // Note: Don't add p2_center_px here if the next segment starts from it, to avoid duplicate points.
+            // However, for distinct segments in loop, last point of straight is needed before curve starts unless curve calc reuses.
+
+            // Normal vector (points "left" if looking along track dir, for CCW track this is outwards for bottom, inwards for top)
+            sf::Vector2f normal(std::sin(segment.startAngleRad), -std::cos(segment.startAngleRad)); // perpendicular to tangent
+
+            innerEdgePointsPx.push_back(p1_center_px - normal * halfTrackWidthPx);
+            outerEdgePointsPx.push_back(p1_center_px + normal * halfTrackWidthPx);
+            innerEdgePointsPx.push_back(p2_center_px - normal * halfTrackWidthPx);
+            outerEdgePointsPx.push_back(p2_center_px + normal * halfTrackWidthPx);
+
+            if (segment.startDistanceMm + segment.lengthMm >= m_totalTrackLengthMm - 0.1f)
+            {                                               // If it's the last point of track
+                centerLinePointsPx.push_back(p2_center_px); // Add final point for centerline
             }
-            else if (i == centerLine.size() - 1)
+        }
+        else
+        { // CURVE
+            for (int i = 0; i <= curvePoints; ++i)
             {
-                prev = centerLine[i - 1];
-                next = centerLine[0];
+                float fraction = static_cast<float>(i) / curvePoints;
+                float angleOnCurve = segment.curveStartAngleRad + (segment.clockwise ? -1 : 1) * fraction * M_PI;
+
+                sf::Vector2f center_pt_mm = sf::Vector2f(
+                    segment.curveCenterMm.x + m_curveRadiusMm * std::cos(angleOnCurve),
+                    segment.curveCenterMm.y + m_curveRadiusMm * std::sin(angleOnCurve));
+                sf::Vector2f center_pt_px = sf::Vector2f(center_pt_mm.x * m_mmToPxRatio, center_pt_mm.y * m_mmToPxRatio);
+
+                if (i == 0 && !centerLinePointsPx.empty() &&
+                    std::abs(centerLinePointsPx.back().x - center_pt_px.x) < 0.01f &&
+                    std::abs(centerLinePointsPx.back().y - center_pt_px.y) < 0.01f)
+                {
+                    // Skip if this point is identical to the last point (e.g. end of straight = start of curve)
+                }
+                else
+                {
+                    centerLinePointsPx.push_back(center_pt_px);
+                }
+
+                // Normal vector from curve center to point on curve (points outwards)
+                sf::Vector2f normal = center_pt_mm - segment.curveCenterMm;
+                float len = std::sqrt(normal.x * normal.x + normal.y * normal.y);
+                if (len > 0)
+                    normal /= len;
+
+                innerEdgePointsPx.push_back(center_pt_px - normal * halfTrackWidthPx);
+                outerEdgePointsPx.push_back(center_pt_px + normal * halfTrackWidthPx);
+            }
+        }
+    }
+
+    // Ensure the loop is closed for edge points if it isn't perfectly by calculation
+    if (!innerEdgePointsPx.empty() && !outerEdgePointsPx.empty())
+    {
+        if (std::hypot(innerEdgePointsPx.front().x - innerEdgePointsPx.back().x, innerEdgePointsPx.front().y - innerEdgePointsPx.back().y) > 0.1f * m_mmToPxRatio)
+        {
+            innerEdgePointsPx.push_back(innerEdgePointsPx.front());
+            outerEdgePointsPx.push_back(outerEdgePointsPx.front());
+        }
+        if (m_drawCenterLine && !centerLinePointsPx.empty() &&
+            std::hypot(centerLinePointsPx.front().x - centerLinePointsPx.back().x, centerLinePointsPx.front().y - centerLinePointsPx.back().y) > 0.1f * m_mmToPxRatio)
+        {
+            centerLinePointsPx.push_back(centerLinePointsPx.front());
+        }
+    }
+
+    // Build m_trackShape using a triangle strip from inner and outer edge points
+    // The order is important: OuterP1, InnerP1, OuterP2, InnerP2, ...
+    for (size_t i = 0; i < outerEdgePointsPx.size(); ++i)
+    {
+        m_trackShape.append(sf::Vertex(outerEdgePointsPx[i], m_trackColor, sf::Vector2f())); // UVs not used
+        m_trackShape.append(sf::Vertex(innerEdgePointsPx[i], m_trackColor, sf::Vector2f()));
+    }
+
+    // Build m_centerLineVisual if enabled
+    if (m_drawCenterLine)
+    {
+        m_centerLineVisual.setPrimitiveType(sf::LineStrip);
+        for (const auto &pt : centerLinePointsPx)
+        {
+            m_centerLineVisual.append(sf::Vertex(pt, m_centerLineColor));
+        }
+    }
+    // TODO: Add border drawing if desired (e.g., two more LineStrips for inner/outer edges with m_borderColor)
+}
+
+bool TrackRenderer::getPointAndOrientationOnTrack(float distanceMm, sf::Vector2f &pointPx, float &angleRadians, const sf::Vector2f &worldOriginOffsetPx) const
+{
+    if (m_trackSegments.empty() || m_totalTrackLengthMm <= 0)
+        return false;
+
+    // Normalize distance to be within one lap of the track
+    distanceMm = std::fmod(distanceMm, m_totalTrackLengthMm);
+    if (distanceMm < 0)
+        distanceMm += m_totalTrackLengthMm;
+
+    for (const auto &segment : m_trackSegments)
+    {
+        if (distanceMm >= segment.startDistanceMm && distanceMm <= segment.startDistanceMm + segment.lengthMm + 1e-3f /*epsilon for float inaccuracies at segment ends*/)
+        {
+            float distIntoSegment = distanceMm - segment.startDistanceMm;
+            sf::Vector2f localPointMm; // Point relative to track's own (0,0) doc origin
+
+            if (segment.type == TrackSegment::STRAIGHT)
+            {
+                localPointMm.x = segment.startCoordMm.x + distIntoSegment * std::cos(segment.startAngleRad);
+                localPointMm.y = segment.startCoordMm.y + distIntoSegment * std::sin(segment.startAngleRad);
+                angleRadians = segment.startAngleRad;
             }
             else
-            {
-                prev = centerLine[i - 1];
-                next = centerLine[i + 1];
+            { // CURVE
+                // distIntoSegment is arc length. Angle turned along the curve = arc length / radius.
+                float angleTurnedAlongCurve = distIntoSegment / m_curveRadiusMm;
+
+                // Calculate the actual angle of the point on the curve relative to the curve's center's coordinate system.
+                // segment.curveStartAngleRad is the angle from the curve's center to the start of this curve segment.
+                float currentPointAbsoluteAngle;
+                if (segment.clockwise)
+                {
+                    currentPointAbsoluteAngle = segment.curveStartAngleRad - angleTurnedAlongCurve;
+                }
+                else
+                {
+                    currentPointAbsoluteAngle = segment.curveStartAngleRad + angleTurnedAlongCurve;
+                }
+
+                localPointMm.x = segment.curveCenterMm.x + m_curveRadiusMm * std::cos(currentPointAbsoluteAngle);
+                localPointMm.y = segment.curveCenterMm.y + m_curveRadiusMm * std::sin(currentPointAbsoluteAngle);
+
+                // The tangent of the track path at this point.
+                // segment.startAngleRad is the tangent of the track WHEN IT ENTERS this curve segment.
+                // angleTurnedAlongCurve is how much the tangent has rotated since entering the curve.
+                if (segment.clockwise)
+                {
+                    angleRadians = segment.startAngleRad - angleTurnedAlongCurve;
+                }
+                else
+                {
+                    angleRadians = segment.startAngleRad + angleTurnedAlongCurve;
+                }
             }
 
-            // 计算前后方向向量
-            sf::Vector2f dir1(current.x - prev.x, current.y - prev.y);
-            sf::Vector2f dir2(next.x - current.x, next.y - current.y);
+            pointPx.x = localPointMm.x * m_mmToPxRatio + worldOriginOffsetPx.x;
+            pointPx.y = localPointMm.y * m_mmToPxRatio + worldOriginOffsetPx.y;
 
-            // 归一化
-            float len1 = std::sqrt(dir1.x * dir1.x + dir1.y * dir1.y);
-            float len2 = std::sqrt(dir2.x * dir2.x + dir2.y * dir2.y);
+            // Normalize angleRadians to be within [0, 2*PI)
+            angleRadians = std::fmod(angleRadians, 2.0 * M_PI);
+            if (angleRadians < 0)
+                angleRadians += 2.0 * M_PI;
 
-            if (len1 < 0.0001f || len2 < 0.0001f)
-            {
-                continue; // 防止除零错误
-            }
-
-            dir1.x /= len1;
-            dir1.y /= len1;
-            dir2.x /= len2;
-            dir2.y /= len2;
-
-            // 计算平均方向的法向量
-            sf::Vector2f avgDir((dir1.x + dir2.x) / 2, (dir1.y + dir2.y) / 2);
-            float avgLen = std::sqrt(avgDir.x * avgDir.x + avgDir.y * avgDir.y);
-
-            if (avgLen < 0.0001f)
-            {
-                // 如果平均方向太小，使用单一方向
-                sf::Vector2f normal(-dir1.y, dir1.x);
-                offsetPoints.push_back(sf::Vector2f(
-                    current.x + normal.x * offset,
-                    current.y + normal.y * offset));
-            }
-            else
-            {
-                // 归一化平均方向
-                avgDir.x /= avgLen;
-                avgDir.y /= avgLen;
-
-                // 计算法向量 (垂直于平均方向)
-                sf::Vector2f normal(-avgDir.y, avgDir.x);
-
-                // 计算偏移点
-                offsetPoints.push_back(sf::Vector2f(
-                    current.x + normal.x * offset,
-                    current.y + normal.y * offset));
-            }
+            return true;
         }
-
-        // 添加所有偏移点到顶点数组
-        for (const auto &point : offsetPoints)
+    }
+    // Fallback for the very last point if fmod made distanceMm 0 and it should be totalLength
+    if (distanceMm < 1e-3f && !m_trackSegments.empty())
+    { // Effectively 0 or very close, check last segment end point
+        const auto &lastSeg = m_trackSegments.back();
+        if (lastSeg.startDistanceMm + lastSeg.lengthMm >= m_totalTrackLengthMm - 1e-3f)
         {
-            track.append(sf::Vertex(point, color));
+            // Use the end of the last segment
+            // This logic is similar to above, for distIntoSegment = lastSeg.lengthMm
+            // ... (implementation for last point needed here if required, or ensure fmod handles endpoints cleanly)
+            // For simplicity, if it's 0 after fmod, it implies start of first segment.
         }
+    }
 
-        // 闭合曲线 - 添加第一个点
-        if (!offsetPoints.empty())
-        {
-            track.append(sf::Vertex(offsetPoints[0], color));
-        }
-    };
-
-    // 生成内轨道线
-    generateTrack(m_centerPoints, trackOffset, m_innersTrack, m_straightColor);
-
-    // 生成外轨道线 - 使用对称的负偏移量
-    generateTrack(m_centerPoints, -trackOffset, m_outerTrack, m_straightColor);
+    std::cerr << "TrackRenderer: Could not find point for distance " << distanceMm << " / " << m_totalTrackLengthMm << std::endl;
+    return false; // Should ideally not be reached if distanceMm is correctly normalized and segments cover track
 }
 
-// 坐标转换：后端坐标系(左下角弯道与直道交汇点为原点) -> 渲染坐标系(轨道中心为原点)
-sf::Vector2f TrackRenderer::backendToRenderTransform(const sf::Vector2f &backendPoint) const
+float TrackRenderer::getTotalTrackLengthMm() const
 {
-    // 将后端坐标（毫米）转换为像素，并应用缩放
-    float scaledX = backendPoint.x * m_mmToPxRatio * m_scaleFactor;
-    float scaledY = backendPoint.y * m_mmToPxRatio * m_scaleFactor;
-
-    // 计算轨道的整体尺寸（像素）
-    float scaledTrackLength = m_trackLength * m_mmToPxRatio * m_scaleFactor;
-    float scaledCurveRadius = m_curveRadius * m_mmToPxRatio * m_scaleFactor;
-    float totalWidth = scaledTrackLength + 2 * scaledCurveRadius;
-    float totalHeight = 2 * scaledCurveRadius;
-    float halfTotalWidth = totalWidth / 2.0f;
-    float halfTotalHeight = totalHeight / 2.0f;
-
-    // 转换坐标系
-    return sf::Vector2f(
-        scaledX - (halfTotalWidth - scaledCurveRadius),
-        scaledY - halfTotalHeight);
-}
-
-// 坐标转换：渲染坐标系(轨道中心为原点) -> 后端坐标系(左下角弯道与直道交汇点为原点)
-sf::Vector2f TrackRenderer::renderToBackendTransform(const sf::Vector2f &renderPoint) const
-{
-    // 计算轨道的整体尺寸（像素）
-    float scaledTrackLength = m_trackLength * m_mmToPxRatio * m_scaleFactor;
-    float scaledCurveRadius = m_curveRadius * m_mmToPxRatio * m_scaleFactor;
-    float totalWidth = scaledTrackLength + 2 * scaledCurveRadius;
-    float totalHeight = 2 * scaledCurveRadius;
-    float halfTotalWidth = totalWidth / 2.0f;
-    float halfTotalHeight = totalHeight / 2.0f;
-
-    // 从渲染坐标系转换到后端坐标系（像素）
-    float scaledX = renderPoint.x + (halfTotalWidth - scaledCurveRadius);
-    float scaledY = renderPoint.y + halfTotalHeight;
-
-    // 转换回毫米单位
-    return sf::Vector2f(
-        scaledX / (m_mmToPxRatio * m_scaleFactor),
-        scaledY / (m_mmToPxRatio * m_scaleFactor));
-}
-
-// 可选的位置偏移绘制方法
-void TrackRenderer::render(sf::RenderTarget &target, const sf::Vector2f &position)
-{
-    sf::RenderStates states;
-    states.transform.translate(position);
-    draw(target, states);
+    return m_totalTrackLengthMm;
 }
 
 void TrackRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) const
 {
-    // 先绘制内轨道，再绘制外轨道
-    target.draw(m_innersTrack, states);
-    target.draw(m_outerTrack, states);
+    // Apply the transform of the TrackRenderer itself (e.g. if it's moved/rotated in the scene)
+    states.transform *= getTransform();
+
+    // Draw the main track shape (filled area)
+    target.draw(m_trackShape, states);
+
+    // Draw the centerline if enabled
+    if (m_drawCenterLine)
+    {
+        target.draw(m_centerLineVisual, states);
+    }
+
+    // Optional: Draw borders if not part of m_trackShape
+    // If m_trackShape is a TriangleStrip, borders are implicitly the edges.
+    // If you want explicit border lines with m_borderColor, you'd draw LineStrips for inner/outer edges here.
+}
+
+float TrackRenderer::getMmToPxRatio() const
+{
+    return m_mmToPxRatio;
+}
+
+float TrackRenderer::getStraightLengthMm() const
+{
+    return m_straightLengthMm;
+}
+
+float TrackRenderer::getCurveRadiusMm() const
+{
+    return m_curveRadiusMm;
+}
+
+float TrackRenderer::getTrackWidthMm() const
+{
+    return m_trackWidthMm;
 }

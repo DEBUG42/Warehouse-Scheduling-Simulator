@@ -17,7 +17,7 @@ namespace gui
     // 基础模拟对象类，用于对象选择系统
     class SimObject
     {
-    private:
+    protected:
         SimObjectType m_simObjType; // 使用新的枚举名
         std::string m_id;           // ID 改为 std::string
         sf::Vector2f m_position;    // 增加位置成员，所有SimObject都应该有位置

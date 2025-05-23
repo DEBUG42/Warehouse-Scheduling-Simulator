@@ -22,43 +22,73 @@ SimulationView::SimulationView(sf::Font &font)
  * @brief 初始化仿真视图（使用新版接口）
  * @param font 字体引用
  * @param simInterface 仿真接口
+ * @param initialViewSize The initial size of the viewport for this view in pixels
  */
-void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterface> simInterface)
+void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterface> simInterface, const sf::Vector2f &initialViewSize)
 {
     m_simInterface = simInterface;
 
-    // 初始化视图变换
-    m_viewCenter = sf::Vector2f(0.0f, 0.0f);
-    m_zoomLevel = 0.4f;
+    // Use a consistent MM_TO_PX ratio. Get it from TrackRenderer's default or a shared const.
+    // float mmToPxRatio = m_trackRenderer.getMmToPxRatio(); // If TrackRenderer is already constructed with a default.
+    // For now, let's assume TrackRenderer uses its internal default (0.04f as per its hpp change)
+    // or we can set it explicitly if needed.
+    float mmToPxRatio = 0.04f; // Default as specified in TrackRenderer.hpp for now.
 
-    // 初始化世界视图（用于场景元素）
-    m_worldView.setSize(1280, 720);
+    // Track parameters in MM (m_trackLength and m_curveRadius are already members)
+    float trackWidthMm = 1200.0f; // As per user spec and test file
+
+    // Set the world origin offset. For now, track's (0,0) doc origin is at world (0,0).
+    // This means the view will need to be panned/zoomed to see it.
+    m_worldOriginOffsetPx = sf::Vector2f(0.0f, 0.0f);
+
+    // Initialize Track Renderer
+    m_trackRenderer.setMmToPxRatio(mmToPxRatio);                    // Set the ratio
+    m_trackRenderer.setTrackWidthMm(trackWidthMm);                  // Set actual width in mm (Corrected from setTrackWidth)
+    m_trackRenderer.generateGeometry(m_trackLength, m_curveRadius); // Pass MM dimensions
+
+    // Initialize Warehouse Renderer
+    // It needs the trackRenderer to know where to place items and the world origin offset.
+    m_warehouseRenderer.initialize(m_trackRenderer, m_worldOriginOffsetPx, "resources/icons/");
+
+    // Initial view settings
+    m_worldView.setSize(initialViewSize);
+    // Center the view initially to show a good overview of the track
+    // Track total width (approx): (Straight L + 2*Radius) * ratio
+    // Track total height (approx): (2*Radius) * ratio
+    // Center of this bounding box, offset by m_worldOriginOffsetPx
+    float estimatedTrackSystemWidthPx = (m_trackLength + 2.0f * m_curveRadius) * mmToPxRatio;
+    float estimatedTrackSystemHeightPx = (2.0f * m_curveRadius + 2.0f * trackWidthMm + 2.0f * 1500.0f /*approx device depth*/) * mmToPxRatio; // Rough estimate including devices
+
+    m_viewCenter = m_worldOriginOffsetPx + sf::Vector2f(estimatedTrackSystemWidthPx / 2.0f, estimatedTrackSystemHeightPx / 2.0f);
+    m_zoomLevel = 1.0f / 0.25f;                                             // Match the 0.25f scaleFactor from test initially (smaller number = more zoomed out, so 1/scaleFactor)
+                                                                            // Let's try to set a zoom that makes the track fit well. Test: 0.25f scale
+                                                                            // A zoomLevel of 1.0f means m_worldView.zoom(1.0f / 1.0f) which is no zoom from its setSize.
+                                                                            // To achieve a similar effect to scaleFactor 0.25 from test (which makes things LARGER on screen for same world units),
+                                                                            // we need m_worldView.zoom(0.25). So m_zoomLevel should be 1.0f / 0.25f = 4.0f. No, wait.
+                                                                            // m_worldView.zoom(factor) -> factor < 1 zooms in, factor > 1 zooms out.
+                                                                            // setScaleFactor(0.25f) in test meant 1 unit of track geometry became 0.25 display units. This is confusing.
+                                                                            // Let's use m_zoomLevel directly. Larger m_zoomLevel means more zoomed IN.
+                                                                            // The formula used is m_worldView.zoom(1.0f / m_zoomLevel) IF m_zoomLevel means a scale factor.
+                                                                            // If m_zoomLevel is an abstract level: pow(base, m_zoomLevel). Example uses pow(2.0f, m_zoomLevel).
+                                                                            // For now, let's find a zoom that roughly fits the track width in the view width.
+    float desiredViewWidthForTrackPx = initialViewSize.x * 0.9f;            // Show track in 90% of view width
+    m_zoomLevel = estimatedTrackSystemWidthPx / desiredViewWidthForTrackPx; // This is the factor for worldView.zoom()
+                                                                            // So, if track is 2000px wide, view is 1000px, zoom factor is 2.0 (zoom out by 2)
+
     m_worldView.setCenter(m_viewCenter);
+    m_worldView.zoom(m_zoomLevel); // Directly use calculated zoom factor. If >1, zooms out.
 
-    // 初始化UI视图（用于叠加UI元素，不受世界变换影响）
-    m_uiView.setSize(1280, 720);
-    m_uiView.setCenter(640, 360);
+    m_uiView.setSize(initialViewSize);
+    m_uiView.setCenter(initialViewSize.x / 2.0f, initialViewSize.y / 2.0f);
 
-    // 初始化轨道渲染器
-    float straightTrackSegmentLength = 40000.0f; // 根据文档，单个直道段长度40米
-    m_curveRadius = 2500.0f;                     // 弯道半径2.5米，与文档一致
-    m_trackLength = straightTrackSegmentLength;  // 存储轨道长度供后续使用
-
-    m_trackRenderer.setTrackWidth(600.0f); // 轨道宽度600mm (视觉效果)
-    m_trackRenderer.generateGeometry(straightTrackSegmentLength, m_curveRadius);
-
-    // 初始化仓库渲染器 (并加载设备图标)
-    m_warehouseRenderer.initialize(m_curveRadius, "resources/icons/"); // 提供图标基础路径
-
-    // 获取初始车辆和设备状态
+    // Get initial simulation states
     if (m_simInterface)
     {
-        // 获取模拟接口中的车辆和设备状态
         m_vehicles = m_simInterface->getVehicleStates();
         m_devices = m_simInterface->getDeviceStates();
-
-        // 更新仓库状态
         m_warehouseRenderer.updateDeviceStates(m_devices);
+        // m_vehicleRenderer might need an update too, if it uses m_trackLength, m_curveRadius and mmToPxRatio
+        // It seems VehicleRenderer::calculatePosition already takes these as params.
     }
 }
 
@@ -108,24 +138,11 @@ void SimulationView::renderWorld(sf::RenderTarget &target)
  */
 void SimulationView::renderTrack(sf::RenderTarget &target)
 {
-    // TrackRenderer内部以其几何中心为(0,0)绘制（像素单位）。
-    // 文档原点是左下弯道中心 (0,0)_doc。
-    // 轨道几何中心 O_track_geom 相对于文档原点 O_doc 的坐标是：
-    // X_doc = m_curveRadius + m_trackLength / 2.0f (其中m_trackLength是直段长度)
-    // Y_doc = 0 (假设轨道上下对称于文档原点的X轴)
-    // 将这个毫米单位的偏移转换为像素单位。
-    float offsetX_doc_mm = m_curveRadius + (m_trackLength / 2.0f);
-    float offsetY_doc_mm = 0.0f;
-
-    // 使用统一的 MM_TO_PIXEL 转换
-    // TrackRenderer内部的m_scaleFactor已设为1.0，所以其内部单位与WarehouseRenderer的MM_TO_PIXEL效果一致
-    float scaledOffsetX = offsetX_doc_mm * WarehouseRenderer::MM_TO_PIXEL;
-    float scaledOffsetY = offsetY_doc_mm * WarehouseRenderer::MM_TO_PIXEL;
-
     sf::RenderStates trackStates;
-    // 我们希望TrackRenderer的局部原点(其几何中心)被绘制在世界坐标的(scaledOffsetX, scaledOffsetY)处
-    // 这样，TrackRenderer的几何形状就会以文档原点为参考正确放置。
-    trackStates.transform.translate(scaledOffsetX, scaledOffsetY);
+    // TrackRenderer is assumed to draw its geometry relative to its own (0,0),
+    // which corresponds to the documentation's origin point (bottom-left inner track point).
+    // m_worldOriginOffsetPx shifts this entire track system in the world.
+    trackStates.transform.translate(m_worldOriginOffsetPx);
     target.draw(m_trackRenderer, trackStates);
 }
 
@@ -135,6 +152,9 @@ void SimulationView::renderTrack(sf::RenderTarget &target)
  */
 void SimulationView::renderWarehouses(sf::RenderTarget &target)
 {
+    // WarehouseRenderer has been initialized with the trackRenderer and worldOriginOffsetPx,
+    // so it should be drawing its devices directly in the correct world coordinates.
+    // No additional transform should be needed here if WarehouseRenderer handles it.
     target.draw(m_warehouseRenderer);
 }
 
@@ -208,14 +228,10 @@ void SimulationView::renderUI(sf::RenderTarget &target)
         if (m_selectedObject->getType() == gui::SimObjectType::Vehicle)
         {
             std::string vehicleId = m_selectedObject->getId();
-
-            // 常量设置，避免重复创建
             static const float selectionWidth = 50.0f;
             static const float selectionHeight = 25.0f;
             static sf::RectangleShape selectionRect(sf::Vector2f(selectionWidth, selectionHeight));
             static bool shapeInitialized = false;
-
-            // 只初始化一次形状属性
             if (!shapeInitialized)
             {
                 selectionRect.setOrigin(selectionWidth / 2, selectionHeight / 2);
@@ -224,23 +240,15 @@ void SimulationView::renderUI(sf::RenderTarget &target)
                 selectionRect.setOutlineThickness(2.0f);
                 shapeInitialized = true;
             }
-
-            // 查找对应车辆
             for (const auto &vehicle : m_vehicles)
             {
                 if (vehicle.getId() == vehicleId)
                 {
                     sf::Vector2f position;
                     float rotation;
-
-                    // 计算车辆位置
-                    m_vehicleRenderer.calculatePosition(vehicle, m_trackLength, m_curveRadius, position, rotation);
-
-                    // 将世界坐标转换为屏幕坐标 - 使用快捷方法
+                    m_vehicleRenderer.calculatePosition(vehicle, m_trackRenderer.getTotalTrackLengthMm(), m_trackRenderer.getCurveRadiusMm(), position, rotation);
                     sf::Vector2i screenPos = target.mapCoordsToPixel(position, m_worldView);
                     sf::Vector2f screenPosF(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
-
-                    // 更新选择框位置并绘制
                     selectionRect.setPosition(screenPosF);
                     target.draw(selectionRect);
                     break;
@@ -249,7 +257,17 @@ void SimulationView::renderUI(sf::RenderTarget &target)
         }
         else if (m_selectedObject->getType() == gui::SimObjectType::Device)
         {
-            // TODO: 实现设备选择高亮效果
+            // TODO: 实现设备选择高亮效果 (e.g., draw a rectangle around m_selectedObject->getPosition() transformed to UI view)
+            // Example for device selection highlight:
+            // sf::Vector2f devicePos = m_selectedObject->getPosition(); // This is world position
+            // sf::Vector2i screenPos = target.mapCoordsToPixel(devicePos, m_worldView);
+            // sf::CircleShape selectionCircle(10.f); // Or RectangleShape
+            // selectionCircle.setOrigin(10.f, 10.f);
+            // selectionCircle.setPosition(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
+            // selectionCircle.setFillColor(sf::Color::Transparent);
+            // selectionCircle.setOutlineColor(sf::Color::Cyan);
+            // selectionCircle.setOutlineThickness(2.0f);
+            // target.draw(selectionCircle);
         }
     }
 }
@@ -392,39 +410,38 @@ sf::Vector2f SimulationView::screenToWorld(const sf::Vector2f &screenPos) const
  */
 void SimulationView::selectObjectAt(const sf::Vector2f &worldPos)
 {
-    // 先清除当前选择
     m_selectedObject = nullptr;
 
-    // TODO: 实现对象选择逻辑
-    // 检查是否点击了仓库
-    const WarehouseRenderer::WarehouseInterface *interface =
-        m_warehouseRenderer.getInterfaceAt(worldPos);
-
-    if (interface)
+    const auto *selectedInterface = m_warehouseRenderer.getInterfaceAt(worldPos);
+    if (selectedInterface)
     {
-        std::cout << "选中了仓库接口 ID: " << interface->id << std::endl;
-        // 创建仓库对象
-        m_selectedObject = std::make_shared<gui::SimObject>(gui::SimObjectType::Device, std::to_string(interface->id));
+        std::cout << "Selected Warehouse Interface ID: " << selectedInterface->id
+                  << " at (" << selectedInterface->worldCenterPx.x << "," << selectedInterface->worldCenterPx.y << ")" << std::endl;
+        // Construct SimObject correctly
+        m_selectedObject = std::make_shared<gui::SimObject>(
+            gui::SimObjectType::Device, // Correct enum
+            std::to_string(selectedInterface->id),
+            selectedInterface->worldCenterPx);
         return;
     }
 
-    // 检查是否点击了车辆
-    for (const auto &vehicle : m_vehicles)
+    for (const auto &vehicle_state_obj : m_vehicles)
     {
-        sf::Vector2f position;
-        float rotation;
-        m_vehicleRenderer.calculatePosition(vehicle, m_trackLength, m_curveRadius, position, rotation);
+        sf::Vector2f vehicleRenderPosPx;
+        float vehicleRotation;
+        m_vehicleRenderer.calculatePosition(vehicle_state_obj, m_trackRenderer.getTotalTrackLengthMm(), m_trackRenderer.getCurveRadiusMm(), vehicleRenderPosPx, vehicleRotation);
 
-        // 使用CoordinateUtils进行命中检测
-        // 车辆的视觉尺寸，需要根据实际渲染调整，这里假设与之前的近似
-        // 注意：VehicleRenderer中并没有明确定义车辆的碰撞盒尺寸，这里的尺寸是估算的。
-        // 理想情况下，VehicleState 或 VehicleRenderer 应提供碰撞盒尺寸。
-        sf::Vector2f vehicleVisualSize(40.0f, 16.0f); // (Length, Width) in world units, matching previous half-lengths
+        float clickRadiusMm = 500.f;
+        float clickRadiusPx = clickRadiusMm * m_trackRenderer.getMmToPxRatio();
 
-        if (CoordinateUtils::isPointInRotatedRect(position, vehicleVisualSize, rotation, worldPos))
+        if (std::hypot(worldPos.x - vehicleRenderPosPx.x, worldPos.y - vehicleRenderPosPx.y) < clickRadiusPx)
         {
-            std::cout << "选中了车辆 ID: " << vehicle.getId() << std::endl;
-            m_selectedObject = std::make_shared<gui::SimObject>(gui::SimObjectType::Vehicle, vehicle.getId());
+            std::cout << "Selected Vehicle ID: " << vehicle_state_obj.getId() << std::endl;
+            // Construct SimObject correctly
+            m_selectedObject = std::make_shared<gui::SimObject>(
+                gui::SimObjectType::Vehicle, // Correct enum
+                vehicle_state_obj.getId(),
+                vehicleRenderPosPx);
             return;
         }
     }
@@ -455,8 +472,9 @@ void SimulationView::updateVehicles(const std::vector<gui::VehicleState> &vehicl
 void SimulationView::updateDevices(const std::vector<gui::DeviceState> &devices)
 {
     m_devices = devices;
-    m_warehouseRenderer.updateDeviceStates(devices);
+    m_warehouseRenderer.updateDeviceStates(m_devices);
 }
+
 void SimulationView::resize(unsigned int width, unsigned int height)
 {
     // 更新UI视图

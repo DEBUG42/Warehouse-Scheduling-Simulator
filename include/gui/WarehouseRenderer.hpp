@@ -9,6 +9,7 @@
 #include "DeviceState.hpp"
 #include "WarehouseUtils.hpp"
 #include "WarehouseState.hpp"
+#include "TrackRenderer.hpp"
 
 /**
  * @class WarehouseRenderer
@@ -37,15 +38,17 @@ public:
     /// 仓库接口信息结构体
     struct WarehouseInterface
     {
-        int id;                     ///< 接口ID
-        InterfaceType type;         ///< 接口类型(入库/出库)
-        WarehousePosition position; ///< 所处位置(上/下)
-        float centerX;              ///< 中心点X坐标(mm)
-        float centerY;              ///< 中心点Y坐标(mm)
-        float width;                ///< 宽度(mm)
-        float height;               ///< 高度(mm)
-        float depth;                ///< 深度(mm)
-        gui::DeviceState state;     ///< 设备状态
+        int id;                             ///< 接口ID
+        InterfaceType type;                 ///< 接口类型(入库/出库)
+        WarehousePosition positionCategory; ///< 所处位置分类(上/下)
+        gui::DeviceState state;             ///< 设备状态
+
+        // New members for precise positioning and dimensions
+        sf::Vector2f worldCenterPx; ///< Center of the device in world pixel coordinates
+        float worldRotationDegrees; ///< Rotation of the device in world degrees
+        sf::FloatRect boundsPx;     ///< Axis-aligned bounding box in world pixels for click detection
+        float widthMm;              ///< Physical width of the device (e.g., along the track or perpendicular)
+        float depthMm;              ///< Physical depth of the device (perpendicular to width)
     };
 
 public:
@@ -54,10 +57,11 @@ public:
 
     /**
      * @brief 初始化所有仓库接口设备及图标资源
-     * @param trackRadius 轨道半径(mm)
+     * @param trackRenderer 轨道渲染器引用
+     * @param worldOriginOffsetPx 世界坐标原点偏移量
      * @param iconBasePath 图标资源的基础路径
      */
-    void initialize(float trackRadius, const std::string &iconBasePath = "resources/icons/");
+    void initialize(TrackRenderer &trackRenderer, const sf::Vector2f &worldOriginOffsetPx, const std::string &iconBasePath = "resources/icons/");
 
     /**
      * @brief 更新设备状态
@@ -92,7 +96,7 @@ public:
 protected:
     /// 绘制接口设备
     void drawInterface(sf::RenderTarget &target, sf::RenderStates states,
-                       const WarehouseInterface &interface) const;
+                       const WarehouseInterface &interface_obj) const;
 
 private:
     /// 从sf::Drawable继承的绘制函数
@@ -127,6 +131,23 @@ private:
 
     // 文本标签集合
     std::vector<sf::Text> m_labels; ///< 接口标签
+
+    // Store a reference to TrackRenderer for coordinate calculations
+    TrackRenderer *m_trackRendererRef = nullptr;
+    sf::Vector2f m_worldOriginOffsetPx; // To align with TrackRenderer's coordinate system origin
+
+    // Static layout definition for all warehouse devices
+    struct PredefinedDeviceLayout
+    {
+        int id;
+        float trackDistanceMm;              // Distance along the track from origin (mm)
+        InterfaceType type;                 // Input or Output
+        WarehousePosition positionCategory; // Top or Bottom track section
+        float visualWidthMm;                // Visual width of the device on screen (mm)
+        float visualDepthMm;                // Visual depth/length of the device on screen (perpendicular to width) (mm)
+        float offsetFromTrackEdgeMm;        // Perpendicular distance from track's outer edge to device's nearest edge (mm)
+    };
+    static const std::vector<PredefinedDeviceLayout> s_deviceLayouts;
 };
 
 #endif // WAREHOUSE_RENDERER_HPP

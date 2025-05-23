@@ -99,6 +99,7 @@ void createSimpleBMP(const std::string &filename, uint8_t r, uint8_t g, uint8_t 
     }
 }
 
+/* // Comment out the main function to avoid multiple definitions
 int main(int argc, char **argv)
 {
     // 创建图标目录
@@ -112,3 +113,4 @@ int main(int argc, char **argv)
 
     return 0;
 }
+*/

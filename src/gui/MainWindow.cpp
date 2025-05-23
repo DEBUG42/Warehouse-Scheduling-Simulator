@@ -35,7 +35,7 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
 
     // 初始化子组件
     m_simView = std::make_unique<SimulationView>(m_globalFont);
-    m_simView->initialize(m_globalFont, m_simInterface);
+    m_simView->initialize(m_globalFont, m_simInterface, sf::Vector2f(static_cast<float>(m_initialSize.x), static_cast<float>(m_initialSize.y)));
 
     m_statusPanel = std::make_unique<StatusPanel>(m_globalFont);
     m_toolbar = std::make_unique<Toolbar>(m_globalFont, m_toolbarHeight, m_initialSize.x);
@@ -237,4 +237,61 @@ void MainWindow::onDeviceUpdate(const std::vector<gui::DeviceState> &devices)
 {
     // 通知仿真视图更新设备状态
     m_simView->updateDevices(devices);
+}
+
+// New methods for testing
+void MainWindow::processEvent(const sf::Event &event)
+{
+    // Call the existing comprehensive event handler
+    handleSystemEvent(event);
+
+    // Explicitly handle TaskListView events if not covered by handleSystemEvent
+    // or if it needs direct calls. Assuming handleSystemEvent is sufficient for now
+    // or that TaskListView handles its own events when its region is interacted with.
+    // Example if TaskListView needed explicit event forwarding for specific types:
+    // if (m_taskListViewLeft) {
+    //     // Convert window mouse coordinates to be relative to TaskListView if its handleEvent expects that
+    //     // sf::Vector2f mousePosView = mapPixelToCoords(sf::Mouse::getPosition(*this), getView());
+    //     // if (m_taskListViewLeft->getGlobalBounds().contains(mousePosView)) {
+    //     //     m_taskListViewLeft->handleEvent(event, *this); // Or appropriate arguments
+    //     // }
+    // }
+}
+
+void MainWindow::renderFrame()
+{
+    clear(m_backgroundColor); // Use internal background color
+
+    // Draw components in a plausible order
+    // This order should ideally match or be consistent with runEventLoop if it was decomposed
+
+    if (m_toolbar)
+    {
+        m_toolbar->render(*this, sf::Vector2f(0, 0));
+    }
+
+    if (m_taskListViewLeft)
+    {
+        // TaskListView is drawn directly, implying its position is managed internally or set during layout
+        draw(*m_taskListViewLeft);
+    }
+
+    if (m_simView)
+    {
+        // SimulationView rendering as in runEventLoop
+        // m_simView->updateViewTransforms(deltaTime); // deltaTime is not available here without passing it
+        // or simView managing its own time for smooth transforms.
+        // For a test frame, static transforms are often acceptable.
+        m_simView->renderWorld(*this);
+        // m_simView->renderUI(*this); // If SimulationView has a separate UI layer to render on top
+    }
+
+    if (m_statusPanel)
+    {
+        // StatusPanel render call as in runEventLoop
+        // Use getSize() for current window dimensions to correctly position panel
+        sf::Vector2f statusPanelPos(static_cast<float>(getSize().x) - m_statusPanel->getPanelWidth(), m_toolbarHeight);
+        m_statusPanel->render(*this, statusPanelPos);
+    }
+    // Note: display() is NOT called here. The external loop (GUITestMain) will call it.
 }

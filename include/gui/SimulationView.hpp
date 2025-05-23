@@ -39,8 +39,12 @@ private:
     std::shared_ptr<SimulationInterface> m_simInterface; // 新版接口
 
     // 轨道参数
-    float m_trackLength = 40000.0f; // 单个直轨段长度(mm)，根据文档
-    float m_curveRadius = 2500.0f;  // 弯道半径(mm)，根据文档
+    float m_trackLength = 40000.0f; // 单个直轨段长度(mm)，根据文档. Used by VehicleRenderer too.
+    float m_curveRadius = 2500.0f;  // 弯道半径(mm)，根据文档. Used by VehicleRenderer too.
+
+    // Define the visual origin for the track and warehouses within the view
+    // This is where the (0,0) of your track's coordinate system will be placed in the world view.
+    sf::Vector2f m_worldOriginOffsetPx; // Offset of the track's (0,0) from the view's (0,0)
 
     // 选择系统
     std::shared_ptr<gui::SimObject> m_selectedObject; // 存储的状态数据
@@ -57,8 +61,9 @@ public:
      * @brief 初始化仿真视图（使用新版接口）
      * @param font 字体引用
      * @param simInterface 仿真接口
+     * @param initialViewSize The initial size of the viewport for this view in pixels
      */
-    void initialize(sf::Font &font, std::shared_ptr<SimulationInterface> simInterface);
+    void initialize(sf::Font &font, std::shared_ptr<SimulationInterface> simInterface, const sf::Vector2f &initialViewSize);
 
     /**
      * @brief 更新视图变换参数
