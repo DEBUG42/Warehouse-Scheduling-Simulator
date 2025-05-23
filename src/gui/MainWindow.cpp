@@ -202,7 +202,7 @@ void MainWindow::updateLayout()
                               simViewHeight / m_initialSize.y);
     m_simView->updateViewport(simViewport);
 
-    float taskListWidth = 250.f;
+    // 移除未使用的变量 taskListWidth
     if (m_taskListViewLeft)
     {
         m_taskListViewLeft->setViewHeight(m_initialSize.y - m_toolbarHeight);

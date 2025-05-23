@@ -1,6 +1,7 @@
 #include "gui/TaskListView.hpp"
-#include <sstream> // 用于格式化字符串
-#include <iomanip> // 用于 std::setw, std::setfill
+#include <sstream>  // 用于格式化字符串
+#include <iomanip>  // 用于 std::setw, std::setfill
+#include <iostream> // 用于 handleClick 调试输出
 
 /**
  * @brief 构造函数
@@ -12,7 +13,10 @@ TaskListView::TaskListView(sf::Font &font, float width)
 {
     m_titleText.setFont(m_font);
     m_titleText.setCharacterSize(16); // Title font size
-    m_titleText.setFillColor(sf::Color::White);
+
+    // m_titleText.setFillColor(sf::Color::White);
+    m_titleText.setFillColor(sf::Color(50, 50, 50)); // 确保其背景透明或与 StatusPanel 的背景色协调。
+
     m_titleText.setString("Task Queue");
     // m_height 将由 StatusPanel 通过 setViewHeight 设置，或者使用默认值
 }
@@ -84,39 +88,92 @@ void TaskListView::draw(sf::RenderTarget &target, sf::RenderStates states) const
     target.draw(currentTitle, states);
 
     // 创建一个剪裁区域，只显示视图范围内的任务项
-    // 这需要知道 TaskListView 在窗口中的绝对位置和尺寸
-    // 简单的实现方式是使用 sf::View，但这里我们手动计算和剪裁
-    // 或者，更简单的方式是不做像素级剪裁，而是只绘制可见范围内的项
-
-    float yPos = 20.0f; // 标题下方的起始Y偏移，相对于TaskListView的 (0,0)
+    // (当前实现是只绘制可见项，而不是严格的像素剪裁)
+    float titleHeight = 20.0f; // 标题区域的高度，需要与绘制时的 yPos 初始值匹配
+    float yPos = titleHeight;  // 任务项从标题下方开始绘制，相对于TaskListView的(0,0)
     int drawnCount = 0;
 
     for (const auto &task : m_tasks)
     {
-        float itemTopY = yPos - m_scrollOffset;
-        float itemBottomY = itemTopY + m_itemHeight;
+        float itemTopY_local = yPos - m_scrollOffset;            // 任务项顶部在TaskListView滚动视图内的Y坐标
+        float itemBottomY_local = itemTopY_local + m_itemHeight; // 任务项底部
 
-        // 只绘制在可视区域内的任务项 (m_height 是可视区域高度，顶部从 yPos 开始算，但要考虑标题高度)
-        // 简单的可见性判断：项的顶部在视图底部之上，项的底部在视图顶部之下
-        // 这里的视图顶部是标题下方，视图底部是 m_height - 标题高度区域
-        if (itemBottomY > 20.0f && itemTopY < m_height)
+        // 只绘制在可视区域内的任务项
+        // 可视区域的顶部是 titleHeight，底部是 m_height
+        if (itemBottomY_local > titleHeight && itemTopY_local < m_height)
         {
             std::ostringstream taskLine;
-            taskLine << "ID: " << task.id
-                     << " Type: " << (task.type == Core::TaskType::INPUT ? "Input" : (task.type == Core::TaskType::OUTPUT ? "Output" : "Move"))
-                     << " Material: " << task.materialId
-                     << " Start: " << task.startDeviceId
-                     << " -> End: " << task.endDeviceId;
+            // 保持任务信息简洁，避免过长
+            taskLine << "ID: " << std::setw(3) << std::setfill(' ') << task.id
+                     << " T: " << (task.type == Core::TaskType::INPUT ? "IN" : (task.type == Core::TaskType::OUTPUT ? "OUT" : "MV"))
+                     // << " M: " << task.materialId // 暂时注释掉物料ID以节省空间
+                     << " S: " << task.startDeviceId
+                     << "->E: " << task.endDeviceId;
 
             sf::Text taskText(taskLine.str(), m_font, 12); // 任务文本字号
-            taskText.setFillColor(sf::Color::White);
+            taskText.setFillColor(sf::Color(70, 70, 70));  // 深灰色任务文本 (原为White)
 
             sf::RenderStates itemStates = states;
-            itemStates.transform.translate(5.0f, itemTopY); // 5px的左边距
-            target.draw(taskText, itemStates);
+            // itemStates.transform.translate(5.0f, itemTopY_local); // 应用相对于TaskListView原点的变换
+            // 注意：这里 itemTopY_local 已经是相对于 TaskListView 左上角（考虑了标题和滚动）的Y坐标
+            // 因此，绘制时直接使用这个Y坐标
+            taskText.setPosition(states.transform.getInverse().transformPoint(itemStates.transform.transformPoint(5.0f, itemTopY_local)));
+            // 我们需要将 itemTopY_local (已经是相对TaskListView的Y) 和 5.0f (X偏移) 应用到 states 上
+            // 但是 sf::Text 的 setPosition 是相对于其父变换的。states.transform 已经是 TaskListView 的全局变换。
+            // 正确做法：直接设置相对于 TaskListView 原点的位置，然后让 states.transform 处理全局定位
+            taskText.setPosition(5.0f, itemTopY_local);
+
+            target.draw(taskText, states); // 注意：这里使用 states，因为 taskText 的位置是相对于 TaskListView 的
             drawnCount++;
         }
-        yPos += m_itemHeight; // 移动到下一个任务项的位置
+        yPos += m_itemHeight; // 移动到下一个任务项的绘制基准线 (无滚动时的位置)
     }
     // 如果需要，可以绘制滚动条指示器，这里暂时省略
+    // std::cout << "[调试] TaskListView drawn items: " << drawnCount << " / " << m_tasks.size() << std::endl;
+}
+
+/**
+ * @brief 处理对任务列表的点击事件
+ * @param localMousePos 鼠标点击位置 (相对于 TaskListView 的局部坐标)
+ * @return 如果点击了某个任务项则返回 true，否则 false
+ */
+bool TaskListView::handleClick(const sf::Vector2f &localMousePos)
+{
+    // 遍历所有任务项，检查点击位置是否在某个任务项的边界内
+    // 需要考虑滚动偏移 m_scrollOffset 和标题 m_titleText 的高度
+
+    float titleHeight = 20.0f; // 与 draw 方法中使用的标题高度一致
+    if (localMousePos.y < titleHeight)
+    {
+        // 点击在了标题区域，不处理或作其他响应
+        // std::cout << "[调试] TaskListView: Clicked on title area." << std::endl;
+        return false;
+    }
+
+    float currentItemY = titleHeight; // 第一个任务项的顶部Y坐标（无滚动时）
+    for (const auto &task : m_tasks)
+    {
+        // 计算当前任务项在视图中的实际显示边界 (考虑滚动)
+        float itemTopInView = currentItemY - m_scrollOffset;
+        float itemBottomInView = itemTopInView + m_itemHeight;
+
+        // 构建该任务项的局部边界框 (相对于TaskListView的0,0)
+        // X从0到m_width，Y从itemTopInView到itemBottomInView
+        sf::FloatRect itemBounds(0.f, itemTopInView, m_width, m_itemHeight);
+
+        // 只检查在可视区域内的项 (itemBottomInView > titleHeight && itemTopInView < m_height)
+        // 并且鼠标点击在该项的边界内
+        if (itemBottomInView > titleHeight && itemTopInView < m_height && itemBounds.contains(localMousePos))
+        {
+            std::cout << "[调试] TaskListView: Clicked on Task ID: " << task.id
+                      << " (Mouse Y: " << localMousePos.y << ", Item Top: " << itemTopInView << ")"
+                      << std::endl;
+            // TODO: 在这里可以触发更复杂的操作，例如通知外部监听器，或改变任务项的显示状态
+            return true; // 事件被消耗
+        }
+        currentItemY += m_itemHeight; // 移动到下一个任务项的基准Y坐标
+    }
+
+    // std::cout << "[调试] TaskListView: Clicked on empty area or outside visible items." << std::endl;
+    return false; // 没有点击到任何任务项
 }

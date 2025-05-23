@@ -12,7 +12,7 @@ ObjectInspector::ObjectInspector(sf::Font &font, float width)
 {
     m_titleText.setFont(m_font);
     m_titleText.setCharacterSize(m_characterSize + 2); // 标题稍大
-    m_titleText.setFillColor(sf::Color::White);
+    m_titleText.setFillColor(sf::Color(50, 50, 50));   // 深灰色标题
     m_titleText.setStyle(sf::Text::Bold);
     rebuildDisplay(); // 初始显示 "未选中对象"
 }
@@ -113,6 +113,11 @@ void ObjectInspector::draw(sf::RenderTarget &target, sf::RenderStates states) co
 {
     states.transform *= getTransform(); // 应用 ObjectInspector 自身的位置变换
 
+    // 背景 (可选，如果需要与StatusPanel背景区分或有边框)
+    // sf::RectangleShape background(sf::Vector2f(m_width, m_height)); // m_height需要有效
+    // background.setFillColor(sf::Color(220, 220, 220)); // 比StatusPanel稍深一点的背景？
+    // target.draw(background, states);
+
     target.draw(m_titleText, states);
 
     sf::RenderStates detailStates = states; // 复制一份用于绘制详情
@@ -192,9 +197,40 @@ void ObjectInspector::addDetailLine(const std::string &label, const std::string 
     sf::Text lineText;
     lineText.setFont(m_font);
     lineText.setCharacterSize(m_characterSize);
-    lineText.setFillColor(sf::Color(200, 200, 200)); // 浅灰色细节
+    lineText.setFillColor(sf::Color(70, 70, 70)); // 深灰色细节文本 (原为200,200,200)
     lineText.setString(label + value);
     lineText.setPosition(m_padding, currentY);
     m_detailLines.push_back(lineText);
     currentY += m_lineSpacing;
+}
+
+/**
+ * @brief 处理对象检视器范围内的输入事件
+ * @param event SFML事件对象
+ * @param localMousePos 相对检视器左上角的鼠标位置
+ * @return 如果事件被消耗则返回 true，否则 false
+ */
+bool ObjectInspector::handleEvent(const sf::Event &event, const sf::Vector2f &localMousePos)
+{
+    // 当前对象检视器主要用于显示信息，尚无复杂交互
+    // 若将来添加可点击元素（例如，按钮跳转到车辆日志），可在此处处理
+    if (event.type == sf::Event::MouseButtonPressed)
+    {
+        if (event.mouseButton.button == sf::Mouse::Left)
+        {
+            // 示例：检查是否点击了标题区域 (简单示例，实际应用中可能需要更精确的边界框)
+            sf::FloatRect titleBounds = m_titleText.getGlobalBounds();
+            // 注意：getGlobalBounds() 返回的是变换后的全局坐标，而 localMousePos 是局部的
+            // 要正确比较，需要将 m_titleText 的 bounds 转换到局部坐标系，或者将 localMousePos 转换到全局
+            // 简单起见，如果 m_titleText 的位置是 (m_padding, m_padding)，可以这样构造局部边界：
+            sf::FloatRect localTitleBounds(m_padding, m_padding, m_titleText.getLocalBounds().width, m_titleText.getLocalBounds().height);
+
+            if (localTitleBounds.contains(localMousePos))
+            {
+                std::cout << "[调试] ObjectInspector: 标题被点击! (位置: " << localMousePos.x << ", " << localMousePos.y << ")" << std::endl;
+                // return true; // 如果消耗了事件
+            }
+        }
+    }
+    return false; // 默认不消耗事件
 }

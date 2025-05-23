@@ -58,6 +58,13 @@ public:
     void setViewHeight(float height) { m_height = height; }
 
     /**
+     * @brief 处理对任务列表的点击事件
+     * @param localMousePos 鼠标点击位置 (相对于 TaskListView 的局部坐标)
+     * @return 如果点击了某个任务项则返回 true，否则 false
+     */
+    bool handleClick(const sf::Vector2f &localMousePos);
+
+    /**
      * @brief 绘制任务列表视图
      * @param target 渲染目标
      * @param states 渲染状态

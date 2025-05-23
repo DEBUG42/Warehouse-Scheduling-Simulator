@@ -7,6 +7,17 @@
 #include "gui/SimObject.hpp"
 
 /**
+ * @brief 构造函数，传入全局字体，确保VehicleRenderer等成员能正确初始化
+ */
+SimulationView::SimulationView(sf::Font &font)
+    : m_vehicleRenderer(font)
+{
+    // 预先分配容器内存，避免频繁重新分配
+    m_vehicles.reserve(20); // 预估最大车辆数
+    m_devices.reserve(20);  // 预估最大设备数
+}
+
+/**
  * @brief 初始化仿真视图（使用新版接口）
  * @param font 字体引用
  * @param simInterface 仿真接口
@@ -14,7 +25,6 @@
 void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterface> simInterface)
 {
     m_simInterface = simInterface;
-    // m_engine = nullptr; // 已移除，无需此行
 
     // 初始化视图变换
     m_viewCenter = sf::Vector2f(0.0f, 0.0f);
@@ -31,6 +41,7 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
     // 初始化轨道渲染器
     float straightTrackSegmentLength = 40000.0f; // 根据文档，单个直道段长度40米
     m_curveRadius = 2500.0f;                     // 弯道半径2.5米，与文档一致
+    m_trackLength = straightTrackSegmentLength;  // 存储轨道长度供后续使用
 
     m_trackRenderer.setTrackWidth(600.0f); // 轨道宽度600mm (视觉效果)
     m_trackRenderer.generateGeometry(straightTrackSegmentLength, m_curveRadius);
@@ -41,6 +52,7 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
     // 获取初始车辆和设备状态
     if (m_simInterface)
     {
+        // 获取模拟接口中的车辆和设备状态
         m_vehicles = m_simInterface->getVehicleStates();
         m_devices = m_simInterface->getDeviceStates();
 
@@ -131,27 +143,54 @@ void SimulationView::renderWarehouses(sf::RenderTarget &target)
  */
 void SimulationView::renderVehicles(sf::RenderTarget &target)
 {
-    // 遍历所有车辆
-    for (const auto &vehicle : m_vehicles)
+    // 创建临时数组存储车辆位置和旋转角度，避免重复计算
+    struct VehiclePositionData
     {
-        // 计算车辆位置和朝向
         sf::Vector2f position;
         float rotation;
+    };
 
-        // 使用车辆渲染器计算位置
-        m_vehicleRenderer.calculatePosition(vehicle, m_trackLength, m_curveRadius, position, rotation);
+    std::vector<VehiclePositionData> vehiclePositions(m_vehicles.size());
+    static float lastCalculatedTime = 0.0f;
+    static sf::Clock positionUpdateClock;
 
-        // 渲染车辆（增强3D效果）
-        m_vehicleRenderer.renderVehicle(target, vehicle, position, rotation);
+    // 如果车辆数量大于0且自上次计算以来至少过了16.67ms (60fps)，则重新计算位置
+    float currentTime = positionUpdateClock.getElapsedTime().asSeconds();
+    bool shouldRecalculate = (currentTime - lastCalculatedTime) > 0.01667f || vehiclePositions.empty();
+
+    if (shouldRecalculate)
+    {
+        // 先计算所有车辆的位置和朝向
+        for (size_t i = 0; i < m_vehicles.size(); ++i)
+        {
+            // 使用车辆渲染器计算位置
+            m_vehicleRenderer.calculatePosition(
+                m_vehicles[i],
+                m_trackLength,
+                m_curveRadius,
+                vehiclePositions[i].position,
+                vehiclePositions[i].rotation);
+        }
+        lastCalculatedTime = currentTime;
     }
 
-    // 绘制车辆阴影（增强3D效果）
-    for (const auto &vehicle : m_vehicles)
+    // 先绘制所有车辆阴影（增强3D效果），确保阴影在车辆下方
+    for (size_t i = 0; i < m_vehicles.size(); ++i)
     {
-        sf::Vector2f position;
-        float rotation;
-        m_vehicleRenderer.calculatePosition(vehicle, m_trackLength, m_curveRadius, position, rotation);
-        m_vehicleRenderer.renderShadow(target, position, rotation);
+        m_vehicleRenderer.renderShadow(
+            target,
+            vehiclePositions[i].position,
+            vehiclePositions[i].rotation);
+    }
+
+    // 然后绘制所有车辆
+    for (size_t i = 0; i < m_vehicles.size(); ++i)
+    {
+        m_vehicleRenderer.renderVehicle(
+            target,
+            m_vehicles[i],
+            vehiclePositions[i].position,
+            vehiclePositions[i].rotation);
     }
 }
 
@@ -164,9 +203,26 @@ void SimulationView::renderUI(sf::RenderTarget &target)
     // 如果有选中对象，显示选择框或高亮效果
     if (m_selectedObject)
     {
+        // 对象为车辆
         if (m_selectedObject->getType() == gui::SimObjectType::Vehicle)
         {
             std::string vehicleId = m_selectedObject->getId();
+
+            // 常量设置，避免重复创建
+            static const float selectionWidth = 50.0f;
+            static const float selectionHeight = 25.0f;
+            static sf::RectangleShape selectionRect(sf::Vector2f(selectionWidth, selectionHeight));
+            static bool shapeInitialized = false;
+
+            // 只初始化一次形状属性
+            if (!shapeInitialized)
+            {
+                selectionRect.setOrigin(selectionWidth / 2, selectionHeight / 2);
+                selectionRect.setFillColor(sf::Color::Transparent);
+                selectionRect.setOutlineColor(sf::Color::Yellow);
+                selectionRect.setOutlineThickness(2.0f);
+                shapeInitialized = true;
+            }
 
             // 查找对应车辆
             for (const auto &vehicle : m_vehicles)
@@ -175,23 +231,17 @@ void SimulationView::renderUI(sf::RenderTarget &target)
                 {
                     sf::Vector2f position;
                     float rotation;
+
+                    // 计算车辆位置
                     m_vehicleRenderer.calculatePosition(vehicle, m_trackLength, m_curveRadius, position, rotation);
 
-                    // 将世界坐标转换为屏幕坐标
+                    // 将世界坐标转换为屏幕坐标 - 使用快捷方法
                     sf::Vector2i screenPos = target.mapCoordsToPixel(position, m_worldView);
                     sf::Vector2f screenPosF(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
 
-                    // 绘制选择框
-                    sf::RectangleShape selectionRect(sf::Vector2f(50, 25));
-                    selectionRect.setOrigin(25, 12.5f);
+                    // 更新选择框位置并绘制
                     selectionRect.setPosition(screenPosF);
-                    selectionRect.setFillColor(sf::Color::Transparent);
-                    selectionRect.setOutlineColor(sf::Color::Yellow);
-                    selectionRect.setOutlineThickness(2.0f);
                     target.draw(selectionRect);
-
-                    // 显示车辆详细信息
-                    // TODO: 显示更多信息
                     break;
                 }
             }
@@ -210,48 +260,63 @@ void SimulationView::renderUI(sf::RenderTarget &target)
  */
 void SimulationView::handleViewEvent(const sf::Event &event, const sf::Vector2f &mousePos)
 {
-    // 处理鼠标滚轮事件（缩放）
-    if (event.type == sf::Event::MouseWheelScrolled)
+    // 使用switch语句处理不同类型的事件，比if-else更高效
+    switch (event.type)
     {
-        // 每次滚动改变0.1的缩放级别
-        m_zoomLevel += event.mouseWheelScroll.delta * 0.1f;
+    case sf::Event::MouseWheelScrolled:
+        // 处理鼠标滚轮事件（缩放）
+        {
+            // 每次滚动改变0.1的缩放级别
+            m_zoomLevel += event.mouseWheelScroll.delta * 0.1f;
 
-        // 限制缩放范围
-        m_zoomLevel = std::max(-2.0f, std::min(m_zoomLevel, 3.0f));
-    }
+            // 限制缩放范围
+            m_zoomLevel = std::max(-2.0f, std::min(m_zoomLevel, 3.0f));
+        }
+        break;
 
-    // 处理鼠标按下事件（开始拖动）
-    if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
-    {
-        m_isDragging = true;
-        m_lastMousePos = mousePos;
+    case sf::Event::MouseButtonPressed:
+        if (event.mouseButton.button == sf::Mouse::Left)
+        {
+            // 处理鼠标按下事件（开始拖动）
+            m_isDragging = true;
+            m_lastMousePos = mousePos;
 
-        // 选择对象
-        selectObjectAt(screenToWorld(mousePos));
-    }
+            // 选择对象
+            selectObjectAt(screenToWorld(mousePos));
+        }
+        break;
 
-    // 处理鼠标释放事件（停止拖动）
-    if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left)
-    {
-        m_isDragging = false;
-    }
+    case sf::Event::MouseButtonReleased:
+        if (event.mouseButton.button == sf::Mouse::Left)
+        {
+            // 处理鼠标释放事件（停止拖动）
+            m_isDragging = false;
+        }
+        break;
 
-    // 处理鼠标移动事件（拖动视图）
-    if (event.type == sf::Event::MouseMoved && m_isDragging)
-    {
-        // 计算鼠标移动距离
-        sf::Vector2f delta = m_lastMousePos - mousePos;
+    case sf::Event::MouseMoved:
+        if (m_isDragging)
+        {
+            // 处理鼠标移动事件（拖动视图）
+            // 计算鼠标移动距离
+            sf::Vector2f delta = m_lastMousePos - mousePos;
 
-        // 根据当前缩放级别调整拖动灵敏度
-        float zoomFactor = std::pow(2.0f, m_zoomLevel);
-        delta.x *= 1.0f / zoomFactor;
-        delta.y *= 1.0f / zoomFactor;
+            // 根据当前缩放级别调整拖动灵敏度
+            float zoomFactor = std::pow(2.0f, m_zoomLevel);
+            delta.x *= 1.0f / zoomFactor;
+            delta.y *= 1.0f / zoomFactor;
 
-        // 更新视图中心
-        m_viewCenter += delta;
+            // 更新视图中心
+            m_viewCenter += delta;
 
-        // 更新上次鼠标位置
-        m_lastMousePos = mousePos;
+            // 更新上次鼠标位置
+            m_lastMousePos = mousePos;
+        }
+        break;
+
+    default:
+        // 忽略其他类型的事件
+        break;
     }
 }
 
@@ -267,14 +332,44 @@ void SimulationView::updateViewport(const sf::FloatRect &viewport)
 }
 
 /**
- * @brief 将屏幕坐标转换为世界坐标
+ * @brief 将屏幕坐标转换为世界坐标 - 优化版本
  * @param screenPos 屏幕坐标
  * @return 世界坐标
  */
 sf::Vector2f SimulationView::screenToWorld(const sf::Vector2f &screenPos) const
 {
-    // 获取当前视图的变换矩阵
-    sf::Transform transform = sf::Transform().translate(m_worldView.getCenter()).scale(1.0f / std::pow(2.0f, m_zoomLevel), 1.0f / std::pow(2.0f, m_zoomLevel)).translate(-m_worldView.getSize().x / 2.0f, -m_worldView.getSize().y / 2.0f);
+    // 缓存计算结果以提升性能
+    static float lastZoomLevel = -1.0f;
+    static sf::Vector2f lastViewCenter(0, 0);
+    static sf::Vector2f lastViewSize(0, 0);
+    static sf::FloatRect lastViewport(0, 0, 0, 0);
+    static sf::Transform cachedTransform;
+    static sf::Vector2f cachedViewSize;
+
+    // 检查是否需要重新计算变换矩阵
+    bool needsUpdate =
+        lastZoomLevel != m_zoomLevel ||
+        lastViewCenter != m_worldView.getCenter() ||
+        lastViewSize != m_worldView.getSize() ||
+        lastViewport != m_worldView.getViewport();
+
+    if (needsUpdate)
+    {
+        // 更新缓存的变量
+        lastZoomLevel = m_zoomLevel;
+        lastViewCenter = m_worldView.getCenter();
+        lastViewSize = m_worldView.getSize();
+        lastViewport = m_worldView.getViewport();
+        cachedViewSize = m_worldView.getSize();
+
+        // 计算新的变换矩阵
+        float zoomFactor = std::pow(2.0f, m_zoomLevel);
+
+        cachedTransform = sf::Transform()
+                              .translate(m_worldView.getCenter())
+                              .scale(1.0f / zoomFactor, 1.0f / zoomFactor)
+                              .translate(-cachedViewSize.x / 2.0f, -cachedViewSize.y / 2.0f);
+    }
 
     // 应用视口变换
     sf::FloatRect viewport = m_worldView.getViewport();
@@ -282,10 +377,10 @@ sf::Vector2f SimulationView::screenToWorld(const sf::Vector2f &screenPos) const
         (screenPos.x - viewport.left * 1280) / (viewport.width * 1280),
         (screenPos.y - viewport.top * 720) / (viewport.height * 720));
 
-    sf::Vector2f viewSize = m_worldView.getSize();
-    sf::Vector2f worldPos = transform.transformPoint(
-        normalizedPos.x * viewSize.x,
-        normalizedPos.y * viewSize.y);
+    // 使用缓存的视图大小
+    sf::Vector2f worldPos = cachedTransform.transformPoint(
+        normalizedPos.x * cachedViewSize.x,
+        normalizedPos.y * cachedViewSize.y);
 
     return worldPos;
 }
@@ -366,7 +461,6 @@ void SimulationView::updateDevices(const std::vector<gui::DeviceState> &devices)
     m_devices = devices;
     m_warehouseRenderer.updateDeviceStates(devices);
 }
-
 void SimulationView::resize(unsigned int width, unsigned int height)
 {
     // 更新UI视图
@@ -377,10 +471,4 @@ void SimulationView::resize(unsigned int width, unsigned int height)
     float aspectRatio = static_cast<float>(width) / height;
     m_worldView.setSize(m_trackLength * aspectRatio, m_trackLength);
     m_worldView.setCenter(0.f, 0.f);
-}
-
-SimulationView::SimulationView(sf::Font &font)
-    : m_vehicleRenderer(font)
-{
-    // 其它成员用默认初始化
 }

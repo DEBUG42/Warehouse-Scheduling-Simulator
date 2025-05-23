@@ -5,7 +5,7 @@
 
 // Button 实现
 Button::Button(const sf::FloatRect &bounds, const sf::Font &font, const std::string &label)
-    : m_fontRef(font), m_onClick(nullptr)
+    : m_onClick(nullptr), m_fontRef(font)
 {
     // 设置按钮范围
     m_bounds = bounds;
@@ -176,7 +176,8 @@ void TimeDisplay::render(sf::RenderTarget &target, const sf::Vector2f &position)
 }
 
 // SpeedControl 实现
-SpeedControl::SpeedControl(const sf::FloatRect &bounds, const sf::Font &font)
+SpeedControl::SpeedControl(const sf::FloatRect &bounds, const sf::Font &font, float minValue, float maxValue, float initialValue)
+    : m_minValue(minValue), m_maxValue(maxValue), m_currentValue(initialValue)
 {
     m_bounds = bounds;
 
@@ -196,14 +197,14 @@ SpeedControl::SpeedControl(const sf::FloatRect &bounds, const sf::Font &font)
     m_labelText.setString("速度: ");
     m_labelText.setCharacterSize(12);
     m_labelText.setFillColor(sf::Color::White);
-    m_labelText.setPosition(bounds.left, bounds.top);
+    m_labelText.setPosition(bounds.left, bounds.top + (bounds.height - m_labelText.getLocalBounds().height) / 2.f - 2.f);
 
-    // 设置值文本
+    // 设置数值文本
     m_valueText.setFont(font);
     m_valueText.setCharacterSize(12);
     m_valueText.setFillColor(sf::Color::White);
     updateValueText();
-    m_valueText.setPosition(bounds.left + 40, bounds.top);
+    m_valueText.setPosition(bounds.left + m_labelText.getLocalBounds().width + 5.f, bounds.top + (bounds.height - m_valueText.getLocalBounds().height) / 2.f - 2.f);
 }
 
 void SpeedControl::setValue(float value)
@@ -266,26 +267,27 @@ bool SpeedControl::handleEvent(const sf::Event &event, const sf::Vector2f &mouse
 
 void SpeedControl::render(sf::RenderTarget &target, const sf::Vector2f &position)
 {
-    // 更新控件的全局边界
     m_bounds.left = position.x;
     m_bounds.top = position.y;
 
-    // 设置速度控制各组件的位置，相对于 position 参数
-    m_labelText.setPosition(position.x, position.y);
-    m_valueText.setPosition(position.x + m_labelText.getLocalBounds().width + 5.f, position.y); // 值文本在标签旁边
+    // 更新轨道和手柄的绝对位置
+    m_track.setPosition(position.x + 10, position.y + m_bounds.height / 2 - m_track.getSize().y / 2);
+    updateHandlePosition(); // 手柄位置依赖于 m_currentValue 和 m_track 的位置
 
-    // 滑块轨道位置，在标签下方
-    float trackYOffset = m_labelText.getCharacterSize() + 5.f; // 标签下方一点
-    m_track.setPosition(position.x + 10.f, position.y + trackYOffset + m_bounds.height / 2.f - m_track.getSize().y / 2.f);
+    // 更新标签文本位置
+    m_labelText.setPosition(position.x, position.y + (m_bounds.height - m_labelText.getLocalBounds().height) / 2.f - 2.f);
 
-    // 更新手柄位置，手柄应该基于 m_track 的位置和 m_currentValue
-    updateHandlePosition(); // 这个函数内部会使用 m_track 的位置
+    // 更新数值文本位置 (在标签右侧)
+    float valueTextX = position.x + m_labelText.getLocalBounds().width + 5.f;
+    // 如果轨道在数值文本之后，则数值文本放在轨道右侧
+    // 简单起见，我们也可以将数值文本固定在整个控件的右侧
+    // float valueTextX = position.x + m_bounds.width - m_valueText.getLocalBounds().width - 5.f;
+    m_valueText.setPosition(valueTextX, position.y + (m_bounds.height - m_valueText.getLocalBounds().height) / 2.f - 2.f);
 
-    // 绘制
-    target.draw(m_labelText);
-    target.draw(m_valueText);
     target.draw(m_track);
     target.draw(m_handle);
+    target.draw(m_labelText);
+    target.draw(m_valueText);
 }
 
 void SpeedControl::updateHandlePosition()
@@ -300,30 +302,22 @@ void SpeedControl::updateHandlePosition()
 
 void SpeedControl::updateValueText()
 {
-    std::ostringstream oss;
-    oss << std::fixed << std::setprecision(1) << m_currentValue << "x";
-    m_valueText.setString(oss.str());
+    std::ostringstream ss;
+    ss << "x" << std::fixed << std::setprecision(1) << m_currentValue;
+    m_valueText.setString(ss.str());
+
+    // 更新文本后，重新调整其在轨道右侧的位置
+    // 这部分逻辑也可以移到 render 函数中，如果 bounds.left 经常变动
+    // sf::FloatRect labelBounds = m_labelText.getLocalBounds();
+    // m_valueText.setPosition(m_bounds.left + labelBounds.width + 5.f, m_bounds.top + (m_bounds.height - m_valueText.getLocalBounds().height) / 2.f - 2.f);
 }
 
 void SpeedControl::updateValueFromPosition(float mouseX)
 {
-    // 鼠标X坐标相对于滑块轨道的起点
-    float relativeMouseX = mouseX - m_track.getPosition().x;
+    float trackStart = m_track.getPosition().x;
     float trackWidth = m_track.getSize().x;
+    float relativeX = mouseX - trackStart;
 
-    // 将鼠标位置映射到滑块的值域
-    float newValueRatio = std::max(0.0f, std::min(1.0f, relativeMouseX / trackWidth));
-    m_currentValue = m_minValue + newValueRatio * (m_maxValue - m_minValue);
-
-    setValue(m_currentValue); // 调用setValue以确保更新手柄和文本，并触发回调
-
-    // 触发回调 (如果存在)
-    if (m_callback)
-    {
-        m_callback(m_currentValue);
-    }
-    if (m_onValueChanged)
-    { // 兼容旧回调
-        m_onValueChanged(m_currentValue);
-    }
+    float newValue = m_minValue + (relativeX / trackWidth) * (m_maxValue - m_minValue);
+    setValue(newValue); // setValue 会处理 clamp 和回调
 }

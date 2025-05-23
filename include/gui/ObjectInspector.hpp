@@ -67,4 +67,12 @@ public:
     virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override;
 
     // void setHeight(float height) { m_height = height; } // 如果需要显式高度控制
+
+    /**
+     * @brief 处理对象检视器范围内的输入事件
+     * @param event SFML事件对象
+     * @param localMousePos 相对检视器左上角的鼠标位置
+     * @return 如果事件被消耗则返回 true，否则 false
+     */
+    bool handleEvent(const sf::Event &event, const sf::Vector2f &localMousePos);
 };

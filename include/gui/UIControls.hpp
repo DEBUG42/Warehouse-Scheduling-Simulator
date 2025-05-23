@@ -108,7 +108,7 @@ private:
     std::function<void(float)> m_onValueChanged = nullptr; // 值变化回调（兼容旧接口）
 
 public:
-    SpeedControl(const sf::FloatRect &bounds, const sf::Font &font);
+    SpeedControl(const sf::FloatRect &bounds, const sf::Font &font, float minValue = 0.1f, float maxValue = 15.0f, float initialValue = 1.0f);
 
     // 设置当前值
     void setValue(float value);

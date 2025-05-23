@@ -86,8 +86,12 @@ namespace gui
         DeviceState() : SimObject(SimObjectType::Device, ""),
                         deviceType(gui::DeviceType::UNKNOWN_DEVICE_TYPE),
                         status(gui::DeviceStatus::UNKNOWN_DEVICE_STATUS),
-                        capacity(1), currentLoad(0), materialId(-1),
-                        processingProgress(0.0f), queuedTaskCount(0),
+                        capacity(1),
+                        currentLoad(0),
+                        materialId(-1),
+                        processingProgress(0.0f),
+                        queuedTaskCount(0),
+                        boundVehicleId(""),
                         position(sf::Vector2f(0, 0))
         {
         }
@@ -98,9 +102,12 @@ namespace gui
             : SimObject(SimObjectType::Device, _id, _pos),
               deviceType(_deviceType),
               status(_status),
+              capacity(1),
+              currentLoad(0),
+              materialId(-1),
+              processingProgress(0.0f),
+              queuedTaskCount(0),
               boundVehicleId(_boundVehicleId),
-              capacity(1), currentLoad(0), materialId(-1),
-              processingProgress(0.0f), queuedTaskCount(0),
               position(_pos) {}
 
         // 新增构造函数：从 Core::DeviceBase 构建

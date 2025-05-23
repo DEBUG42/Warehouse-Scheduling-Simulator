@@ -3,9 +3,8 @@
 #include <iostream>
 
 Toolbar::Toolbar(sf::Font &font, float height, float width)
-    : m_font(font), m_height(height), m_width(width)
+    : m_height(height), m_width(width), m_font(font)
 {
-
     // Initialize toolbar background
     m_background.setSize(sf::Vector2f(width, height));
     m_background.setFillColor(sf::Color(50, 50, 50));
@@ -20,7 +19,7 @@ Toolbar::Toolbar(sf::Font &font, float height, float width)
 
     // Create speed control slider
     sf::FloatRect speedControlBounds(200, 5, 150, 20);
-    m_speedControl = std::make_unique<SpeedControl>(speedControlBounds, font);
+    m_speedControl = std::make_unique<SpeedControl>(speedControlBounds, font, 0.1f, 15.0f, 1.0f);
 
     // Create extra function buttons
     createFunctionButtons();

@@ -19,11 +19,11 @@ class StatusPanel
 {
 private:
     // 布局参数
-    const float m_panelWidth = 300.0f;             // 面板宽度
-    float m_panelHeight = 600.0f;                  // 面板高度（可调整）
-    const sf::Color m_backgroundColor{35, 40, 45}; // 背景色
-    const float m_padding = 10.0f;                 // 内部边距
-    const float m_lineSpacing = 18.0f;             // 行间距
+    const float m_panelWidth = 300.0f;                // 面板宽度
+    float m_panelHeight = 600.0f;                     // 面板高度（可调整）
+    const sf::Color m_backgroundColor{230, 240, 230}; // 背景色 - 更改为浅绿色
+    const float m_padding = 10.0f;                    // 内部边距
+    const float m_lineSpacing = 18.0f;                // 行间距
 
     // 字体引用
     sf::Font &m_font;

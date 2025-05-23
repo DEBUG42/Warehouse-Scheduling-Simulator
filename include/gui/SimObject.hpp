@@ -98,13 +98,16 @@ namespace gui
         // 默认构造函数
         VehicleState()
             : SimObject(SimObjectType::Vehicle, ""),
+              position(sf::Vector2f(0, 0)), // 先初始化position，因为它在类定义中首先声明
               rawTrackPositionMm(0.0f),
               speed(0.0f),
               status(gui::VehicleStatus::UNKNOWN),
               currentTaskId(""),
               isLoaded(false),
-              batteryLevel(1.0f),
-              position(sf::Vector2f(0, 0)) {}
+              cargo(),
+              batteryLevel(1.0f)
+        {
+        }
 
         // 测试/手动创建用构造函数
         VehicleState(const std::string &_id, const sf::Vector2f &_pos, // _pos is render position
@@ -112,25 +115,28 @@ namespace gui
                      const std::string &_taskId, bool _isLoaded,
                      const gui::CargoDisplayInfo &_cargoDetails, float _batteryLevel)
             : SimObject(gui::SimObjectType::Vehicle, _id, _pos),
+              position(_pos), // 先初始化position
               rawTrackPositionMm(_rawTrackPosMm),
-              speed(_speed), status(_status), currentTaskId(_taskId),
-              isLoaded(_isLoaded), cargo(_cargoDetails), batteryLevel(_batteryLevel),
-              position(_pos)
+              speed(_speed),
+              status(_status),
+              currentTaskId(_taskId),
+              isLoaded(_isLoaded),
+              cargo(_cargoDetails),
+              batteryLevel(_batteryLevel)
         {
         }
 
         // 从 Core::Vehicle 构建的构造函数
         VehicleState(const Core::Vehicle &coreVehicle, const sf::Vector2f &worldPos)
             : SimObject(SimObjectType::Vehicle, coreVehicle.getId(), worldPos),
+              position(worldPos),                                   // 先初始化position
               rawTrackPositionMm(coreVehicle.getTrackPositionMm()), // 假设 Core::Vehicle 有 getTrackPositionMm()
               speed(coreVehicle.getSpeed()),
-              // status 的转换需要更多逻辑，暂时使用 coreMotionToGuiStatus
               status(coreMotionToGuiStatus(coreVehicle.getMotionState())),
               currentTaskId(coreVehicle.getCurrentTaskId()),
               isLoaded(coreVehicle.getIsLoaded()),
               cargo(coreVehicle.getCargoInfo()), // 直接从 Core::CargoInfo 转换/构造
-              batteryLevel(coreVehicle.getBatteryLevel()),
-              position(worldPos)
+              batteryLevel(coreVehicle.getBatteryLevel())
         {
             // 此处可以根据 coreVehicle.getCurrentTask() 的类型来细化 status
             // 例如，如果任务是去取货，且状态是移动，则 status = MOVING_TO_LOAD
