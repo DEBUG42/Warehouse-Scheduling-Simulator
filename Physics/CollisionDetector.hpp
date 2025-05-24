@@ -130,57 +130,55 @@ private:
 
 class MotionController3 {
 public:
-Vehicle myvehicle[3];
-VehicleStateMachine vsm1,vsm2,vsm3;
-MotionController3() {
-	myvehicle={
+Vehicle myvehicle[3]={
 	Vehicle(26.000f,0.0f,Vehicle::MotionState::Accelerating),
 	Vehicle(23.800f,0.0f,Vehicle::MotionState::Accelerating),
 	Vehicle(21.600f,0.0f,Vehicle::MotionState::Accelerating)
 };
+VehicleStateMachine vsm1,vsm2,vsm3;
+MotionController3() {
+
 	vsm1 = VehicleStateMachine(&myvehicle[0]);
 	vsm2 = VehicleStateMachine(&myvehicle[1]);
 	vsm3 = VehicleStateMachine(&myvehicle[2]);
 }
-void updateVehicles(){
-	vsm1.update(1.0f/60.0f,&myvehicle[2]);
-	vsm2.update(1.0f/60.0f,&myvehicle[0]);
-	vsm3.update(1.0f/60.0f,&myvehicle[1]);
-}
+//void updateVehicles(){
+//	vsm1.update(1.0f/60.0f,&myvehicle[2]);
+//	vsm2.update(1.0f/60.0f,&myvehicle[0]);
+//	vsm3.update(1.0f/60.0f,&myvehicle[1]);
+//}
 };
-class MotionController5{
+class MotionController5 {
 public:
-Vehicle myvehicle[5];
-VehicleStateMachine vsm1,vsm2,vsm3,vsm4,vsm5;
-MotionController5() {
-	myvehicle={
-	Vehicle(26.000f,0.0f,Vehicle::MotionState::Accelerating),
-	Vehicle(23.800f,0.0f,Vehicle::MotionState::Accelerating),
-	Vehicle(21.600f,0.0f,Vehicle::MotionState::Accelerating),
-	Vehicle(19.400f,0.0f,Vehicle::MotionState::Accelerating),
-	Vehicle(17.200f,0.0f,Vehicle::MotionState::Accelerating)
-};
-	vsm1 = VehicleStateMachine(&myvehicle[0]);
-	vsm2 = VehicleStateMachine(&myvehicle[1]);
-	vsm3 = VehicleStateMachine(&myvehicle[2]);
-	vsm4 = VehicleStateMachine(&myvehicle[3]);
-	vsm5 = VehicleStateMachine(&myvehicle[4]);
-}
-void updateVehicles(){
-	vsm1.update(1.0f/60.0f,&myvehicle[4]);
-	vsm2.update(1.0f/60.0f,&myvehicle[0]);
-	vsm3.update(1.0f/60.0f,&myvehicle[1]);
-	vsm4.update(1.0f/60.0f,&myvehicle[2]);
-	vsm5.update(1.0f/60.0f,&myvehicle[3]);
-}
+    Vehicle myvehicle[5] = {
+        Vehicle(26.000f, 0.0f, Vehicle::MotionState::Accelerating),
+        Vehicle(23.800f, 0.0f, Vehicle::MotionState::Accelerating),
+        Vehicle(21.600f, 0.0f, Vehicle::MotionState::Accelerating),
+        Vehicle(19.400f, 0.0f, Vehicle::MotionState::Accelerating),
+        Vehicle(17.200f, 0.0f, Vehicle::MotionState::Accelerating)
+    };
+    VehicleStateMachine vsm1, vsm2, vsm3, vsm4, vsm5;
+
+    MotionController5() {
+        vsm1 = VehicleStateMachine(&myvehicle[0]);
+        vsm2 = VehicleStateMachine(&myvehicle[1]);
+        vsm3 = VehicleStateMachine(&myvehicle[2]);
+        vsm4 = VehicleStateMachine(&myvehicle[3]);
+        vsm5 = VehicleStateMachine(&myvehicle[4]);
+    }
+
+//void updateVehicles(){
+//	vsm1.update(1.0f/60.0f,&myvehicle[4]);
+//	vsm2.update(1.0f/60.0f,&myvehicle[0]);
+//	vsm3.update(1.0f/60.0f,&myvehicle[1]);
+//	vsm4.update(1.0f/60.0f,&myvehicle[2]);
+//	vsm5.update(1.0f/60.0f,&myvehicle[3]);
+//}
 };
 
 class MotionController7{
 public:
-Vehicle myvehicle[7];
-VehicleStateMachine vsm1,vsm2,vsm3,vsm4,vsm5,vsm6,vsm7;
-MotionController7() {
-	myvehicle={
+Vehicle myvehicle[7]={
 	Vehicle(26.000f,0.0f,Vehicle::MotionState::Accelerating),
 	Vehicle(23.800f,0.0f,Vehicle::MotionState::Accelerating),
 	Vehicle(21.600f,0.0f,Vehicle::MotionState::Accelerating),
@@ -189,6 +187,9 @@ MotionController7() {
 	Vehicle(15.000f,0.0f,Vehicle::MotionState::Accelerating),
 	Vehicle(12.800f,0.0f,Vehicle::MotionState::Accelerating)
 };
+VehicleStateMachine vsm1,vsm2,vsm3,vsm4,vsm5,vsm6,vsm7;
+
+MotionController7() {
 	vsm1 = VehicleStateMachine(&myvehicle[0]);
 	vsm2 = VehicleStateMachine(&myvehicle[1]);
 	vsm3 = VehicleStateMachine(&myvehicle[2]);
@@ -197,13 +198,13 @@ MotionController7() {
 	vsm6 = VehicleStateMachine(&myvehicle[5]);
 	vsm7 = VehicleStateMachine(&myvehicle[6]);
 }
-void updateVehicles(){
-	vsm1.update(1.0f/60.0f,&myvehicle[6]);
-	vsm2.update(1.0f/60.0f,&myvehicle[0]);
-	vsm3.update(1.0f/60.0f,&myvehicle[1]);
-	vsm4.update(1.0f/60.0f,&myvehicle[2]);
-	vsm5.update(1.0f/60.0f,&myvehicle[3]);
-	vsm6.update(1.0f/60.0f,&myvehicle[4]);
-	vsm7.update(1.0f/60.0f,&myvehicle[5]);
-}
+//void updateVehicles(){
+//	vsm1.update(1.0f/60.0f,&myvehicle[6]);
+//	vsm2.update(1.0f/60.0f,&myvehicle[0]);
+//	vsm3.update(1.0f/60.0f,&myvehicle[1]);
+//	vsm4.update(1.0f/60.0f,&myvehicle[2]);
+//	vsm5.update(1.0f/60.0f,&myvehicle[3]);
+//	vsm6.update(1.0f/60.0f,&myvehicle[4]);
+//	vsm7.update(1.0f/60.0f,&myvehicle[5]);
+//}
 };
