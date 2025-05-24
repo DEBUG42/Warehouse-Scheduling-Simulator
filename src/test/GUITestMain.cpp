@@ -39,49 +39,12 @@ int main()
 
     // 5. 初始化 MainWindow 并传入仿真接口
     //    MainWindow::initialize 将创建子视图并设置回调
-    mainWindow.initialize(mockSimInterface);
-
-    // 6. 运行主事件循环
-    //    MainWindow::runEventLoop 将处理窗口事件、更新和渲染
-    //    它内部会调用 sf::RenderWindow 的 display() 和 pollEvent()
-    //    以及我们 mock 的 update() 方法通过回调机制
-
-    sf::Clock deltaClock;
-    std::cout << "Starting main loop..." << std::endl;
-
-    while (mainWindow.isOpen())
-    {
-        sf::Time dt = deltaClock.restart();
-
-        // Event processing
-        sf::Event event;
-        while (mainWindow.pollEvent(event)) // Use mainWindow's pollEvent
-        {
-            if (event.type == sf::Event::Closed)
-            {
-                mainWindow.close();
-            }
-            // Pass event to MainWindow for its components
-            mainWindow.processEvent(event);
-
-            if (event.type == sf::Event::Resized)
-            {
-                // Optional: Inform MainWindow or recalculate layout if necessary.
-                // MainWindow's handleSystemEvent (called by processEvent)
-                // already calls updateLayout on resize.
-                // sf::FloatRect visibleArea(0, 0, static_cast<float>(event.size.width), static_cast<float>(event.size.height));
-                // mainWindow.setView(sf::View(visibleArea));
-            }
-        }
-
-        // Update simulation state
-        mockSimInterface->update(dt);
-
-        // Render
-        mainWindow.renderFrame(); // Calls clear() and draws components
-        mainWindow.display();     // Swaps buffers
-
-    } // End of main while loop
+    mainWindow.initialize(mockSimInterface); // 6. 运行主事件循环
+                                             //    MainWindow::runEventLoop 将处理窗口事件、更新和渲染
+                                             //    它内部会调用 sf::RenderWindow 的 display() 和 pollEvent()
+                                             //    以及我们 mock 的 update() 方法通过回调机制
+    std::cout << "Starting main loop using standard event loop..." << std::endl;
+    mainWindow.runEventLoop();
 
     std::cout << "GUITestMain finished." << std::endl;
     return 0;

@@ -12,17 +12,17 @@ int main()
     TrackRenderer trackRenderer;
 
     // 设置缩放系数，使轨道适合图片中的形状
-    trackRenderer.setScaleFactor(0.25f); // 原为0.01f, 调整以使初始轨道显示更大
+    // trackRenderer.setScaleFactor(0.25f); // 原为0.01f, 调整以使初始轨道显示更大 <-- 移除此行，TrackRenderer 没有 setScaleFactor
     trackRenderer.setMmToPxRatio(0.04f); // 调整毫米到像素比例
 
     // !!! 重要：先设置轨道宽度，再生成几何形状 !!!
-    trackRenderer.setTrackWidth(1200.0f); // 设置为实际宽度1200毫米
+    trackRenderer.setTrackWidthMm(1200.0f); // 设置为实际宽度1200毫米 <-- 修改: setTrackWidth -> setTrackWidthMm
 
     // 生成轨道几何形状 - 使用参考图片中的真实尺寸
     trackRenderer.generateGeometry(40000.0f, 2500.0f); // 直轨长度和弯道半径，单位：毫米
 
     // 设置轨道颜色 (可以在generateGeometry之后，因为它不影响几何形状)
-    trackRenderer.setStraightColor(sf::Color(100, 100, 100)); // 轨道颜色 - 略深一点
+    trackRenderer.setTrackColor(sf::Color(100, 100, 100)); // 轨道颜色 - 略深一点 <-- 修改: setStraightColor -> setTrackColor
 
     // 设置初始视图
     sf::View view = window.getDefaultView();
