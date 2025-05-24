@@ -22,14 +22,13 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
     setFramerateLimit(60);
 
     // 加载全局字体
-    if (!m_globalFont.loadFromFile("resources/fonts/simhei.ttf"))
+    // Try loading a preferred English font first, then fallback to Arial.
+    if (!m_globalFont.loadFromFile("assets/fonts/Roboto-Regular.ttf")) // Assuming this is a desired path
     {
-        if (!m_globalFont.loadFromFile("GUI/resources/fonts/simhei.ttf"))
+        // If Roboto-Regular is not found, try arial.ttf from a more standard assets path
+        if (!m_globalFont.loadFromFile("assets/fonts/arial.ttf"))
         {
-            if (!m_globalFont.loadFromFile("assets/fonts/arial.ttf"))
-            {
-                std::cerr << "警告：MainWindow无法加载字体文件！" << std::endl;
-            }
+            std::cerr << "Warning: Failed to load global font. Some text may not display correctly." << std::endl;
         }
     }
 

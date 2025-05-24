@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <cmath>
 // TaskList.hpp 已经在 StatusPanel.hpp 中包含
 
 // 辅助调试函数：打印sf::FloatRect
@@ -265,27 +266,29 @@ void StatusPanel::resize(float height)
 
 void StatusPanel::setSimulationTime(float time)
 {
-    std::ostringstream oss;
+    std::ostringstream ss;
+    // Format time as H:MM:SS
     int hours = static_cast<int>(time / 3600);
-    int minutes = static_cast<int>((time - hours * 3600) / 60);
-    int seconds = static_cast<int>(time) % 60;
-    oss << "仿真时间: " << std::setw(2) << std::setfill('0') << hours << ":"
-        << std::setw(2) << std::setfill('0') << minutes << ":"
-        << std::setw(2) << std::setfill('0') << seconds;
-    m_simTimeDisplay.setString(oss.str());
+    int minutes = static_cast<int>(::fmod(time, 3600.0f) / 60);
+    int seconds = static_cast<int>(::fmod(time, 60.0f));
+    ss << "Sim Time: "
+       << std::setw(2) << std::setfill('0') << hours << ":"
+       << std::setw(2) << std::setfill('0') << minutes << ":"
+       << std::setw(2) << std::setfill('0') << seconds;
+    m_simTimeDisplay.setString(ss.str());
 }
 
 void StatusPanel::setVehicleCount(size_t count)
 {
-    m_vehicleCountDisplay.setString("车辆总数: " + std::to_string(count));
+    m_vehicleCountDisplay.setString("Vehicles: " + std::to_string(count));
 }
 
 void StatusPanel::setCompletedTaskCount(size_t count)
 {
-    m_completedTasksDisplay.setString("已完成任务: " + std::to_string(count));
+    m_completedTasksDisplay.setString("Completed Tasks: " + std::to_string(count));
 }
 
 void StatusPanel::setPendingTaskCount(size_t count)
 {
-    m_pendingTasksDisplay.setString("待处理任务: " + std::to_string(count));
+    m_pendingTasksDisplay.setString("Pending Tasks: " + std::to_string(count));
 }

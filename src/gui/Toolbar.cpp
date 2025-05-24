@@ -11,7 +11,7 @@ Toolbar::Toolbar(sf::Font &font, float height, float width)
 
     // Create play/pause button
     sf::FloatRect playBtnBounds(10, 5, 20, 20);
-    m_playPauseButton = std::make_unique<Button>(playBtnBounds, font, "▶");
+    m_playPauseButton = std::make_unique<Button>(playBtnBounds, font, "Play");
 
     // Create time display
     sf::FloatRect timeDisplayBounds(40, 5, 150, 20);

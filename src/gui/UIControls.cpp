@@ -137,7 +137,7 @@ void TimeDisplay::updateTime(float simTime, float realTime)
     int simSeconds = static_cast<int>(simTime) % 60;
 
     std::ostringstream simTimeStr;
-    simTimeStr << "仿真时间: "
+    simTimeStr << "Sim Time: "
                << std::setw(2) << std::setfill('0') << simHours << ":"
                << std::setw(2) << std::setfill('0') << simMinutes << ":"
                << std::setw(2) << std::setfill('0') << simSeconds;
@@ -148,7 +148,7 @@ void TimeDisplay::updateTime(float simTime, float realTime)
     int realSeconds = static_cast<int>(realTime) % 60;
 
     std::ostringstream realTimeStr;
-    realTimeStr << "运行时间: "
+    realTimeStr << "Real Time: "
                 << std::setw(2) << std::setfill('0') << realMinutes << ":"
                 << std::setw(2) << std::setfill('0') << realSeconds;
     m_realTimeText.setString(realTimeStr.str());
@@ -194,7 +194,7 @@ SpeedControl::SpeedControl(const sf::FloatRect &bounds, const sf::Font &font, fl
 
     // 设置标签文本
     m_labelText.setFont(font);
-    m_labelText.setString("速度: ");
+    m_labelText.setString("Speed: ");
     m_labelText.setCharacterSize(12);
     m_labelText.setFillColor(sf::Color::White);
     m_labelText.setPosition(bounds.left, bounds.top + (bounds.height - m_labelText.getLocalBounds().height) / 2.f - 2.f);
