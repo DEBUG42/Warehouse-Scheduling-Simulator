@@ -51,6 +51,9 @@ private:
     std::vector<gui::VehicleState> m_vehicles;        // 车辆状态
     std::vector<gui::DeviceState> m_devices;          // 设备状态（旧接口）
 
+    // 视图控制参数
+    sf::Vector2f m_unzoomedWorldViewSize; // 世界视图在 m_zoomLevel = 0 时的基础大小
+
 public:
     /**
      * @brief 构造函数，传入全局字体，确保VehicleRenderer等成员能正确初始化

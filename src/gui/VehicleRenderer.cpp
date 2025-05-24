@@ -66,74 +66,92 @@ VehicleRenderer::VehicleRenderer(const sf::Font &font) : m_font(font)
  * @param outRenderRotationDeg 输出参数，返回计算后的角度
  */
 void VehicleRenderer::calculatePosition(const gui::VehicleState &vehicle,
-                                        float totalStraightLengthMm, // 改为总直线长度
-                                        float curveRadiusMm,
-                                        sf::Vector2f &outRenderPosition, // 改名以更清晰
-                                        float &outRenderRotationDeg)     // 改名以更清晰
+                                        TrackRenderer& trackRenderer, // 新增参数
+                                        const sf::Vector2f& worldOriginOffsetPx, // 新增参数
+                                        sf::Vector2f &outRenderPosition,
+                                        float &outRenderRotationDeg)
 {
     // 使用车辆原始轨道位置
     float currentTrackPosMm = vehicle.rawTrackPositionMm;
 
-    // 轨道几何
-    float singleStraightLengthMm = totalStraightLengthMm / 2.0f; // 假设对称轨道，两段等长直线
-    float curveLengthMm = M_PI * curveRadiusMm;
-    float fullTrackPerimeterMm = totalStraightLengthMm + 2.0f * curveLengthMm;
-
-    // 确保位置在轨道长度范围内 (0 to fullTrackPerimeterMm)
-    currentTrackPosMm = fmod(currentTrackPosMm, fullTrackPerimeterMm);
-    if (currentTrackPosMm < 0)
+    // 从 TrackRenderer 获取点和方向
+    // Corrected: vehicle.id to vehicle.getId()
+    if (!trackRenderer.getPointAndOrientationOnCenterLine(currentTrackPosMm, outRenderPosition, outRenderRotationDeg, worldOriginOffsetPx))
     {
-        currentTrackPosMm += fullTrackPerimeterMm;
+        // 处理获取失败的情况，例如设置默认位置或打印错误
+        std::cerr << "Error: Failed to get point and orientation from TrackRenderer for vehicle " << vehicle.getId() << std::endl;
+        outRenderPosition = sf::Vector2f(0,0); // 默认位置
+        outRenderRotationDeg = 0; // 默认角度
+        return;
     }
 
-    // 段1: 下方直道 (0 ~ singleStraightLengthMm)
-    // 段2: 右侧弯道 (singleStraightLengthMm ~ singleStraightLengthMm + curveLengthMm)
-    // 段3: 上方直道 (singleStraightLengthMm + curveLengthMm ~ 2*singleStraightLengthMm + curveLengthMm)
-    // 段4: 左侧弯道 (2*singleStraightLengthMm + curveLengthMm ~ fullTrackPerimeterMm)
+    // getPointAndOrientationOnCenterLine 返回的是弧度，需要转换为角度
+    outRenderRotationDeg = outRenderRotationDeg * 180.f / M_PI;
 
-    float renderX = 0.0f, renderY = 0.0f;
-    float angleDeg = 0.0f;
+    // 注意：原始的 calculatePosition 方法中的复杂轨道几何计算现在由 TrackRenderer::getPointAndOrientationOnCenterLine 处理
+    // 因此，下方所有关于轨道分段、弯道计算的逻辑都可以移除或注释掉
 
-    float curveRadiusPx = curveRadiusMm * MM_TO_PIXEL;
-    float singleStraightPx = singleStraightLengthMm * MM_TO_PIXEL;
+    /*
+    // 轨道几何 (这部分现在由 Track Renderer 处理)
+    // float singleStraightLengthMm = totalStraightLengthMm / 2.0f; 
+    // float curveLengthMm = M_PI * curveRadiusMm;
+    // float fullTrackPerimeterMm = totalStraightLengthMm + 2.0f * curveLengthMm;
 
-    if (currentTrackPosMm < singleStraightLengthMm)
-    {
-        // 段1: 下方直道 (原点在左弯道中心，轨道从左下角开始向右)
-        renderX = (currentTrackPosMm * MM_TO_PIXEL) - singleStraightPx / 2.0f; // 调整，使轨道中心在 (0,0) 附近
-        renderY = curveRadiusPx;                                               // Y向下为正，下方直道在 +curveRadiusPx
-        angleDeg = 0.0f;                                                       // 朝右
-    }
-    else if (currentTrackPosMm < singleStraightLengthMm + curveLengthMm)
-    {
-        // 段2: 右侧弯道
-        float angleRad = (currentTrackPosMm - singleStraightLengthMm) / curveRadiusMm;
-        // 右侧弯道中心: (singleStraightPx / 2.0f, 0)
-        renderX = (singleStraightPx / 2.0f) + curveRadiusPx * sin(angleRad);
-        renderY = curveRadiusPx * cos(angleRad); // Y从+curveRadiusPx变到-curveRadiusPx (cos从1到-1)
-        angleDeg = angleRad * 180.0f / M_PI;
-    }
-    else if (currentTrackPosMm < 2 * singleStraightLengthMm + curveLengthMm)
-    {
-        // 段3: 上方直道
-        float posOnSegment = currentTrackPosMm - (singleStraightLengthMm + curveLengthMm);
-        renderX = (singleStraightPx / 2.0f) - (posOnSegment * MM_TO_PIXEL); // 从右向左
-        renderY = -curveRadiusPx;
-        angleDeg = 180.0f; // 朝左
-    }
-    else
-    {
-        // 段4: 左侧弯道
-        float angleRad = (currentTrackPosMm - (2 * singleStraightLengthMm + curveLengthMm)) / curveRadiusMm;
-        // 左侧弯道中心: (-singleStraightPx / 2.0f, 0)
-        renderX = (-singleStraightPx / 2.0f) - curveRadiusPx * sin(angleRad);
-        renderY = -curveRadiusPx * cos(angleRad); // Y从-curveRadiusPx变到+curveRadiusPx (sin从0到1再到0, cos从-1到1)
-        angleDeg = 180.0f + angleRad * 180.0f / M_PI;
-    }
+    // // 确保位置在轨道长度范围内 (0 to fullTrackPerimeterMm)
+    // currentTrackPosMm = fmod(currentTrackPosMm, fullTrackPerimeterMm);
+    // if (currentTrackPosMm < 0)
+    // {
+    //     currentTrackPosMm += fullTrackPerimeterMm;
+    // }
 
-    outRenderPosition.x = renderX;
-    outRenderPosition.y = renderY;
-    outRenderRotationDeg = angleDeg;
+    // // 段1: 下方直道 (0 ~ singleStraightLengthMm)
+    // // 段2: 右侧弯道 (singleStraightLengthMm ~ singleStraightLengthMm + curveLengthMm)
+    // // 段3: 上方直道 (singleStraightLengthMm + curveLengthMm ~ 2*singleStraightLengthMm + curveLengthMm)
+    // // 段4: 左侧弯道 (2*singleStraightLengthMm + curveLengthMm ~ fullTrackPerimeterMm)
+
+    // float renderX = 0.0f, renderY = 0.0f;
+    // float angleDeg = 0.0f;
+
+    // float curveRadiusPx = curveRadiusMm * MM_TO_PIXEL;
+    // float singleStraightPx = singleStraightLengthMm * MM_TO_PIXEL;
+
+    // if (currentTrackPosMm < singleStraightLengthMm) // 段1: 下方直道
+    // {
+    //     renderX = currentTrackPosMm * MM_TO_PIXEL;
+    //     renderY = curveRadiusPx; // Y坐标在下方直道时固定为弯道半径处
+    //     angleDeg = 0.0f;
+    // }
+    // else if (currentTrackPosMm < singleStraightLengthMm + curveLengthMm) // 段2: 右侧弯道
+    // {
+    //     float angleRad = (currentTrackPosMm - singleStraightLengthMm) / curveRadiusMm - (M_PI / 2.0f);
+    //     renderX = singleStraightPx + curveRadiusPx * cos(angleRad);
+    //     renderY = curveRadiusPx + curveRadiusPx * sin(angleRad);
+    //     angleDeg = (angleRad + M_PI / 2.0f) * 180.0f / M_PI;
+    // }
+    // else if (currentTrackPosMm < 2 * singleStraightLengthMm + curveLengthMm) // 段3: 上方直道
+    // {
+    //     renderX = singleStraightPx - (currentTrackPosMm - singleStraightLengthMm - curveLengthMm) * MM_TO_PIXEL;
+    //     renderY = -curveRadiusPx; // Y坐标在上方直道时固定为负弯道半径处
+    //     angleDeg = 180.0f;
+    // }
+    // else // 段4: 左侧弯道
+    // {
+    //     float angleRad = (currentTrackPosMm - 2 * singleStraightLengthMm - curveLengthMm) / curveRadiusMm + (M_PI / 2.0f);
+    //     renderX = curveRadiusPx * cos(angleRad);
+    //     renderY = -curveRadiusPx + curveRadiusPx * sin(angleRad);
+    //     angleDeg = (angleRad - M_PI / 2.0f) * 180.0f / M_PI + 180.0f; // 确保角度连续
+    // }
+
+    // // 将原点从左弯道中心移到世界坐标系原点 (通常是左上角，但这里我们假设与TrackRenderer一致，原点在 (curveRadiusPx, curveRadiusPx))
+    // // TrackRenderer 的原点是 (0,0) 在渲染窗口的中心，但其内部几何计算可能基于不同的参考点。
+    // // 这里的转换需要与 TrackRenderer::draw 和 SimulationView::drawGridAndAxes 的坐标系对齐。
+    // // 假设 TrackRenderer 的 (0,0) 对应弯道中心，并且它在绘制时已经应用了到屏幕中心的变换。
+    // // 车辆位置也需要应用相同的变换。
+
+    // // 之前这里的变换是相对于 (curveRadiusPx, curveRadiusPx) 的，现在由 TrackRenderer 处理，所以直接使用其返回的坐标
+    // outRenderPosition = sf::Vector2f(renderX, renderY);
+    // outRenderRotationDeg = angleDeg;
+    */
 }
 
 /**
@@ -320,12 +338,13 @@ sf::Color VehicleRenderer::getColorForStatus(gui::VehicleStatus status) const
     }
 }
 
-void VehicleRenderer::updateState(const gui::VehicleState &state, float totalStraightLengthMm, float curveRadiusMm)
+void VehicleRenderer::updateState(const gui::VehicleState &state, TrackRenderer& trackRenderer, const sf::Vector2f& worldOriginOffsetPx)
 {
     m_currentState = state;
     sf::Vector2f renderPos;
     float renderRotDeg;
-    calculatePosition(state, totalStraightLengthMm, curveRadiusMm, renderPos, renderRotDeg);
+    // Updated call to calculatePosition
+    calculatePosition(state, trackRenderer, worldOriginOffsetPx, renderPos, renderRotDeg);
     this->setPosition(renderPos);
     this->setRotation(renderRotDeg);
     m_statusBounds.setFillColor(getColorForStatus(state.status));

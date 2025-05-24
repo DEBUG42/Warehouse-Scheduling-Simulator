@@ -2,6 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include "SimObject.hpp"
 #include <SFML/Graphics/Transformable.hpp>
+#include "gui/TrackRenderer.hpp" // Added include for TrackRenderer
 
 /**
  * @brief 车辆渲染器类
@@ -61,14 +62,14 @@ public:
     /**
      * @brief 更新车辆位置，根据轨道路程计算实际坐标和朝向
      * @param vehicle 车辆状态
-     * @param trackLength 轨道总长度(mm)
-     * @param curveRadius 弯道半径(mm)
+     * @param trackRenderer 轨道渲染器引用
+     * @param worldOriginOffsetPx 世界坐标原点偏移量
      * @param position 输出参数，返回计算后的位置
      * @param rotation 输出参数，返回计算后的角度
      */
     void calculatePosition(const gui::VehicleState &vehicle,
-                           float trackLength,
-                           float curveRadius,
+                           TrackRenderer& trackRenderer,
+                           const sf::Vector2f& worldOriginOffsetPx,
                            sf::Vector2f &position,
                            float &rotation);
 
@@ -103,12 +104,12 @@ public:
     virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override;
 
     /**
-     * @brief 更新渲染器的内部状态以匹配提供的车辆状态
-     * @param state 最新的车辆状态
-     * @param trackLengthMm 轨道的总直线段长度 (mm)
-     * @param curveRadiusMm 轨道的弯道半径 (mm)
+     * @brief 更新车辆状态，同时传递 TrackRenderer 和 worldOriginOffsetPx
+     * @param state 车辆状态
+     * @param trackRenderer 轨道渲染器引用
+     * @param worldOriginOffsetPx 世界坐标原点偏移量
      */
-    void updateState(const gui::VehicleState &state, float trackLengthMm, float curveRadiusMm);
+    void updateState(const gui::VehicleState &state, TrackRenderer& trackRenderer, const sf::Vector2f& worldOriginOffsetPx);
 
 private:
     // ... existing code ...

@@ -28,55 +28,48 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
 {
     m_simInterface = simInterface;
 
-    // Use a consistent MM_TO_PX ratio. Get it from TrackRenderer's default or a shared const.
-    // float mmToPxRatio = m_trackRenderer.getMmToPxRatio(); // If TrackRenderer is already constructed with a default.
-    // For now, let's assume TrackRenderer uses its internal default (0.04f as per its hpp change)
-    // or we can set it explicitly if needed.
-    float mmToPxRatio = 0.04f; // Default as specified in TrackRenderer.hpp for now.
+    float mmToPxRatio = 0.04f; 
+    float trackWidthMm = 1200.0f; 
 
-    // Track parameters in MM (m_trackLength and m_curveRadius are already members)
-    float trackWidthMm = 1200.0f; // As per user spec and test file
-
-    // Set the world origin offset. For now, track's (0,0) doc origin is at world (0,0).
-    // This means the view will need to be panned/zoomed to see it.
+    // The track's (0,0) doc origin is at world (0,0) for now.
     m_worldOriginOffsetPx = sf::Vector2f(0.0f, 0.0f);
 
     // Initialize Track Renderer
-    m_trackRenderer.setMmToPxRatio(mmToPxRatio);                    // Set the ratio
-    m_trackRenderer.setTrackWidthMm(trackWidthMm);                  // Set actual width in mm (Corrected from setTrackWidth)
+    m_trackRenderer.setMmToPxRatio(mmToPxRatio);
+    m_trackRenderer.setTrackWidth(trackWidthMm);
     m_trackRenderer.generateGeometry(m_trackLength, m_curveRadius); // Pass MM dimensions
 
     // Initialize Warehouse Renderer
-    // It needs the trackRenderer to know where to place items and the world origin offset.
     m_warehouseRenderer.initialize(m_trackRenderer, m_worldOriginOffsetPx, "resources/icons/");
 
-    // Initial view settings
-    m_worldView.setSize(initialViewSize);
-    // Center the view initially to show a good overview of the track
-    // Track total width (approx): (Straight L + 2*Radius) * ratio
-    // Track total height (approx): (2*Radius) * ratio
-    // Center of this bounding box, offset by m_worldOriginOffsetPx
-    float estimatedTrackSystemWidthPx = (m_trackLength + 2.0f * m_curveRadius) * mmToPxRatio;
-    float estimatedTrackSystemHeightPx = (2.0f * m_curveRadius + 2.0f * trackWidthMm + 2.0f * 1500.0f /*approx device depth*/) * mmToPxRatio; // Rough estimate including devices
-
-    m_viewCenter = m_worldOriginOffsetPx + sf::Vector2f(estimatedTrackSystemWidthPx / 2.0f, estimatedTrackSystemHeightPx / 2.0f);
-    m_zoomLevel = 1.0f / 0.25f;                                             // Match the 0.25f scaleFactor from test initially (smaller number = more zoomed out, so 1/scaleFactor)
-                                                                            // Let's try to set a zoom that makes the track fit well. Test: 0.25f scale
-                                                                            // A zoomLevel of 1.0f means m_worldView.zoom(1.0f / 1.0f) which is no zoom from its setSize.
-                                                                            // To achieve a similar effect to scaleFactor 0.25 from test (which makes things LARGER on screen for same world units),
-                                                                            // we need m_worldView.zoom(0.25). So m_zoomLevel should be 1.0f / 0.25f = 4.0f. No, wait.
-                                                                            // m_worldView.zoom(factor) -> factor < 1 zooms in, factor > 1 zooms out.
-                                                                            // setScaleFactor(0.25f) in test meant 1 unit of track geometry became 0.25 display units. This is confusing.
-                                                                            // Let's use m_zoomLevel directly. Larger m_zoomLevel means more zoomed IN.
-                                                                            // The formula used is m_worldView.zoom(1.0f / m_zoomLevel) IF m_zoomLevel means a scale factor.
-                                                                            // If m_zoomLevel is an abstract level: pow(base, m_zoomLevel). Example uses pow(2.0f, m_zoomLevel).
-                                                                            // For now, let's find a zoom that roughly fits the track width in the view width.
-    float desiredViewWidthForTrackPx = initialViewSize.x * 0.9f;            // Show track in 90% of view width
-    m_zoomLevel = estimatedTrackSystemWidthPx / desiredViewWidthForTrackPx; // This is the factor for worldView.zoom()
-                                                                            // So, if track is 2000px wide, view is 1000px, zoom factor is 2.0 (zoom out by 2)
-
+    // Store the initial size as the base size for zoom level 0
+    m_unzoomedWorldViewSize = initialViewSize;
+    m_worldView.setSize(m_unzoomedWorldViewSize); // Set initial size
+    
+    m_viewCenter = m_worldOriginOffsetPx;
     m_worldView.setCenter(m_viewCenter);
-    m_worldView.zoom(m_zoomLevel); // Directly use calculated zoom factor. If >1, zooms out.
+
+    // Calculate the zoom factor needed to fit the track into 90% of the view width
+    float estimatedTrackSystemWidthPx = (m_trackLength + 2.0f * m_curveRadius) * mmToPxRatio;
+    float desiredViewWidthForTrackPx = initialViewSize.x * 0.9f;
+    float targetZoomFactor = 1.0f; // This is the factor for sf::View::zoom()
+
+    if (desiredViewWidthForTrackPx > 0 && estimatedTrackSystemWidthPx > 0) {
+        targetZoomFactor = estimatedTrackSystemWidthPx / desiredViewWidthForTrackPx;
+    }
+
+    // Apply this initial zoom directly
+    m_worldView.zoom(targetZoomFactor);
+
+    // Set m_zoomLevel (abstract, for mouse wheel) based on this targetZoomFactor
+    // targetZoomFactor = 1.0f / pow(2.0f, m_zoomLevel_abstract)
+    // pow(2.0f, m_zoomLevel_abstract) = 1.0f / targetZoomFactor
+    // m_zoomLevel_abstract = log2(1.0f / targetZoomFactor)
+    if (targetZoomFactor > 0.0001f) {
+        m_zoomLevel = -std::log2(targetZoomFactor);
+    } else {
+        m_zoomLevel = 0.0f; // Default if targetZoomFactor is problematic
+    }
 
     m_uiView.setSize(initialViewSize);
     m_uiView.setCenter(initialViewSize.x / 2.0f, initialViewSize.y / 2.0f);
@@ -98,10 +91,16 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
  */
 void SimulationView::updateViewTransforms(float deltaTime)
 {
-    // 更新世界视图
+    // Update world view
     m_worldView.setCenter(m_viewCenter);
-    float zoomFactor = std::pow(2.0f, m_zoomLevel); // 指数缩放
-    m_worldView.zoom(1.0f / zoomFactor);
+    // Reset the view size to its unzoomed state before applying the new zoom factor
+    m_worldView.setSize(m_unzoomedWorldViewSize);
+    
+    float zoomMethodFactor = std::pow(2.0f, m_zoomLevel);
+    // sf::View::zoom(factor): factor < 1 zooms IN, factor > 1 zooms OUT.
+    // If m_zoomLevel increases (scroll up, want to zoom IN), viewZoomMethodFactor increases.
+    // Then 1.0f / viewZoomMethodFactor decreases, which correctly tells sf::View::zoom to zoom IN.
+    m_worldView.zoom(1.0f / zoomMethodFactor);
 }
 
 /**
@@ -187,8 +186,8 @@ void SimulationView::renderVehicles(sf::RenderTarget &target)
             // 使用车辆渲染器计算位置
             m_vehicleRenderer.calculatePosition(
                 m_vehicles[i],
-                m_trackLength,
-                m_curveRadius,
+                m_trackRenderer, // Pass TrackRenderer reference
+                m_worldOriginOffsetPx, // Pass world origin offset
                 vehiclePositions[i].position,
                 vehiclePositions[i].rotation);
         }
@@ -246,7 +245,13 @@ void SimulationView::renderUI(sf::RenderTarget &target)
                 {
                     sf::Vector2f position;
                     float rotation;
-                    m_vehicleRenderer.calculatePosition(vehicle, m_trackRenderer.getTotalTrackLengthMm(), m_trackRenderer.getCurveRadiusMm(), position, rotation);
+                    // Updated call to calculatePosition
+                    m_vehicleRenderer.calculatePosition(
+                        vehicle, 
+                        m_trackRenderer, 
+                        m_worldOriginOffsetPx, 
+                        position, 
+                        rotation);
                     sf::Vector2i screenPos = target.mapCoordsToPixel(position, m_worldView);
                     sf::Vector2f screenPosF(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
                     selectionRect.setPosition(screenPosF);
@@ -429,7 +434,13 @@ void SimulationView::selectObjectAt(const sf::Vector2f &worldPos)
     {
         sf::Vector2f vehicleRenderPosPx;
         float vehicleRotation;
-        m_vehicleRenderer.calculatePosition(vehicle_state_obj, m_trackRenderer.getTotalTrackLengthMm(), m_trackRenderer.getCurveRadiusMm(), vehicleRenderPosPx, vehicleRotation);
+        // Updated call to calculatePosition
+        m_vehicleRenderer.calculatePosition(
+            vehicle_state_obj, 
+            m_trackRenderer, 
+            m_worldOriginOffsetPx, 
+            vehicleRenderPosPx, 
+            vehicleRotation);
 
         float clickRadiusMm = 500.f;
         float clickRadiusPx = clickRadiusMm * m_trackRenderer.getMmToPxRatio();
@@ -478,11 +489,19 @@ void SimulationView::updateDevices(const std::vector<gui::DeviceState> &devices)
 void SimulationView::resize(unsigned int width, unsigned int height)
 {
     // 更新UI视图
-    m_uiView.setSize(width, height);
-    m_uiView.setCenter(width / 2.f, height / 2.f);
+    m_uiView.setSize(static_cast<float>(width), static_cast<float>(height));
+    m_uiView.setCenter(static_cast<float>(width) / 2.f, static_cast<float>(height) / 2.f);
 
     // 更新世界视图
     float aspectRatio = static_cast<float>(width) / height;
-    m_worldView.setSize(m_trackLength * aspectRatio, m_trackLength);
-    m_worldView.setCenter(0.f, 0.f);
+    m_unzoomedWorldViewSize = sf::Vector2f(static_cast<float>(width), static_cast<float>(height));
+    // The aspect ratio change is handled by setSize. Center remains the same unless explicitly changed.
+    // updateViewTransforms will correctly apply the zoom to the new base size.
+    // No need to directly call m_worldView.setSize here if updateViewTransforms is called in the main loop.
+    // However, if called standalone, ensure the view is updated:
+    m_worldView.setSize(m_unzoomedWorldViewSize);
+    m_worldView.setCenter(m_viewCenter); // Ensure center is maintained
+    float zoomMethodFactor = std::pow(2.0f, m_zoomLevel);
+    m_worldView.zoom(1.0f / zoomMethodFactor); // Re-apply zoom to the new size
+
 }

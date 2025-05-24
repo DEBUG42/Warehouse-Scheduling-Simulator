@@ -68,10 +68,10 @@ WarehouseRenderer::WarehouseRenderer()
     }
 }
 
-void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vector2f &worldOriginOffsetPx, const std::string &iconBasePath)
+void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vector2f &worldOriginOffset, const std::string &iconBasePath)
 {
     m_trackRendererRef = &trackRenderer;
-    m_worldOriginOffsetPx = worldOriginOffsetPx;
+    m_worldOriginOffsetPx = worldOriginOffset; // Store the world origin offset
     m_interfaces.clear();
     m_labels.clear();
 
@@ -128,7 +128,7 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         m_iconTextures[gui::DeviceType::STORAGE_STATION] = defaultTexture; // Generic storage as fallback
     }
 
-    float trackOuterEdgeOffsetMm = m_trackRendererRef->getTrackWidthMm() / 2.0f;
+    float trackOuterEdgeOffsetMm = m_trackRendererRef->getTrackWidth() / 2.0f;
     float mmToPx = m_trackRendererRef->getMmToPxRatio();
 
     for (const auto &layout : s_deviceLayouts)
@@ -143,7 +143,7 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         sf::Vector2f trackCenterPointPx;
         float trackAngleRad;
 
-        if (!m_trackRendererRef->getPointAndOrientationOnTrack(layout.trackDistanceMm, trackCenterPointPx, trackAngleRad, m_worldOriginOffsetPx))
+        if (!m_trackRendererRef->getPointAndOrientationOnCenterLine(layout.trackDistanceMm, trackCenterPointPx, trackAngleRad, m_worldOriginOffsetPx))
         {
             std::cerr << "WarehouseRenderer Error: Could not get track point for device ID " << layout.id << " at " << layout.trackDistanceMm << "mm." << std::endl;
             continue;

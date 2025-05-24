@@ -1,7 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
-#include <cmath>
+#include <cmath> // Added for M_PI if not defined elsewhere, and for std::cos, std::sin
 
 /**
  * @brief 轨道渲染器类
@@ -10,39 +10,29 @@
  * 继承自sf::Drawable，可直接作为绘制对象传递给SFML渲染目标
  * 轨道采用单线表示法，显示轨道的内外边界
  */
-class TrackRenderer : public sf::Drawable, public sf::Transformable
+class TrackRenderer : public sf::Drawable, public sf::Transformable // Added sf::Transformable back
 {
 private:
-    sf::VertexArray m_trackShape;
-    sf::VertexArray m_centerLineVisual;
+    // 轨道几何数据 - Aligned with TrackRenderer.cpp
+    sf::VertexArray m_innersTrack;            // 内轨道线条
+    sf::VertexArray m_outerTrack;             // 外轨道线条
+    std::vector<sf::Vector2f> m_centerPoints; // 中心线点
 
-    sf::Color m_trackColor = sf::Color(120, 120, 120);
-    sf::Color m_borderColor = sf::Color(80, 80, 80);
-    sf::Color m_centerLineColor = sf::Color(200, 200, 200, 100);
+    // 样式参数
+    // float m_trackWidth = 30.0f;                  // Replaced by m_trackWidth (default 1200.0f in .hpp, set via setTrackWidth)
+    sf::Color m_trackColor{120, 120, 120}; // Renamed from m_straightColor, used for both inner and outer tracks
+    // sf::Color m_curveColor{120, 120, 120};       // Not used in current cpp
+    // sf::Color m_centerLineColor{200, 200, 200};  // Not used in current cpp for drawing track lines
+    // sf::Color m_outerBorderColor{100, 100, 100}; // Not used in current cpp
 
+    // 轨道几何参数 - Aligned with TrackRenderer.cpp usage
+    float m_trackLength = 40000.0f; // 轨道直线段长度 (set in generateGeometry)
+    float m_curveRadius = 2500.0f;  // 弯道半径 (set in generateGeometry)
+    float m_trackWidth = 1200.0f;   // Actual physical track width in mm, used in cpp, with a default
+
+    // 缩放参数
+    float m_scaleFactor = 1.0f;  // Default scale factor, was 0.7f, now 1.0f to match cpp logic better initially
     float m_mmToPxRatio = 0.02f; // 毫米到像素的转换比例 (1mm = 0.02px)
-    float m_straightLengthMm = 40000.0f;
-    float m_curveRadiusMm = 2500.0f;
-    float m_trackWidthMm = 1200.0f; // Actual physical track width in mm
-
-    struct TrackSegment
-    {
-        enum Type
-        {
-            STRAIGHT,
-            CURVE
-        } type;
-        float startDistanceMm;
-        float lengthMm;
-        sf::Vector2f startCoordMm;
-        float startAngleRad;
-        sf::Vector2f curveCenterMm;
-        float curveStartAngleRad;
-        bool clockwise;
-    };
-    std::vector<TrackSegment> m_trackSegments;
-    float m_totalTrackLengthMm = 0.0f;
-    bool m_drawCenterLine = true;
 
 public:
     /**
@@ -50,54 +40,67 @@ public:
      */
     TrackRenderer();
 
-    // Generates or regenerates the track's mathematical and visual geometry
-    // based on the provided physical dimensions in millimeters.
-    void generateGeometry(float straightLengthMm, float curveRadiusMm);
+    /**
+     * @brief 根据物理参数生成轨道几何形状
+     * @param trackLength 轨道直线段长度（毫米）
+     * @param curveRadius 弯道半径（毫米）
+     */
+    void generateGeometry(float trackLength, float curveRadius);
 
-    // Sets the track's physical width in millimeters.
-    // This will trigger a regeneration of the visual geometry.
-    void setTrackWidthMm(float widthMm);
+    // 设置轨道宽度 (mm)
+    void setTrackWidth(float width) { m_trackWidth = width; /* Potentially needs regeneration */ }
+    // 获取轨道宽度 (mm)
+    float getTrackWidth() const { return m_trackWidth; }
 
-    // Sets the conversion ratio from millimeters to pixels.
-    // This will trigger a regeneration of the visual geometry.
-    void setMmToPxRatio(float ratio);
+    // 设置缩放因子
+    void setScaleFactor(float scale) { m_scaleFactor = scale; /* Potentially needs regeneration */ }
+    // 获取缩放因子
+    float getScaleFactor() const { return m_scaleFactor; }
 
-    // Gets the current conversion ratio from millimeters to pixels.
-    float getMmToPxRatio() const;
+    // 设置毫米到像素的转换比例
+    void setMmToPxRatio(float ratio) { m_mmToPxRatio = ratio; /* Potentially needs regeneration */ }
+    // 获取毫米到像素的转换比例
+    float getMmToPxRatio() const { return m_mmToPxRatio; }
 
-    // Sets the main color of the track surface.
-    void setTrackColor(const sf::Color &color);
+    // 设置轨道颜色
+    void setTrackColor(const sf::Color &color) { m_trackColor = color; }
+    // 获取轨道颜色
+    const sf::Color &getTrackColor() const { return m_trackColor; }
 
-    // Sets the color of the track's border lines.
-    void setBorderColor(const sf::Color &color);
+    // 获取轨道中心线点 (for GUITest)
+    const std::vector<sf::Vector2f> &getCenterPoints() const { return m_centerPoints; }
 
-    // Sets the color of the track's centerline.
-    void setCenterLineColor(const sf::Color &color);
+    // 获取轨道的中心线总长度（毫米）
+    float getTotalCenterLineLengthMm() const; // 新增方法，用于计算总长度
 
-    // Enables or disables drawing of the track's centerline.
-    void enableCenterLineDrawing(bool enable);
+    // 根据距离计算轨道中心线上的一个点及其方向（切线角度）
+    // distanceMm：距离（毫米）
+    // pointPx：计算得到的点（像素）
+    // angleRadians：计算得到的角度（弧度）
+    // worldOriginOffsetPx：最终点的偏移量（像素）
+    bool getPointAndOrientationOnCenterLine(float distanceMm, sf::Vector2f &pointPx, float &angleRadians, const sf::Vector2f &worldOriginOffsetPx) const;
 
-    // Calculates a point and orientation (tangent angle) on the track's centerline
-    // for a given distance along the track from its origin.
-    // worldOriginOffsetPx is added to the final pointPx.
-    bool getPointAndOrientationOnTrack(float distanceMm, sf::Vector2f &pointPx, float &angleRadians, const sf::Vector2f &worldOriginOffsetPx) const;
+    // 获取轨道直线段长度 (mm)
+    float getTrackLength() const { return m_trackLength; }
+    // 获取弯道半径 (mm)
+    float getCurveRadius() const { return m_curveRadius; }
 
-    // Gets the total length of the track's centerline in millimeters.
-    float getTotalTrackLengthMm() const;
+    // 渲染轨道（可选位置偏移）
+    void render(sf::RenderTarget &target, const sf::Vector2f &position);
 
-    // Gets the length of one straight segment of the track in millimeters.
-    float getStraightLengthMm() const;
+    /**
+     * @brief 将后端坐标系（左下角弯道与直道交汇点为原点）转换为渲染坐标系（轨道中心为原点）
+     * @param backendPoint 后端坐标系中的点
+     * @return 渲染坐标系中的点
+     */
+    sf::Vector2f backendToRenderTransform(const sf::Vector2f &backendPoint) const;
 
-    // Gets the radius of the curved segments of the track in millimeters.
-    float getCurveRadiusMm() const;
-
-    // Gets the physical width of the track in millimeters.
-    float getTrackWidthMm() const;
-
-    // Backend to Render transform (Obsolete, or needs re-evaluation)
-    // sf::Vector2f backendToRenderTransform(const sf::Vector2f &backendPoint) const;
-    // Render to Backend transform (Obsolete, or needs re-evaluation)
-    // sf::Vector2f renderToBackendTransform(const sf::Vector2f &renderPoint) const;
+    /**
+     * @brief 将渲染坐标系（轨道中心为原点）转换为后端坐标系（左下角弯道与直道交汇点为原点）
+     * @param renderPoint 渲染坐标系中的点
+     * @return 后端坐标系中的点
+     */
+    sf::Vector2f renderToBackendTransform(const sf::Vector2f &renderPoint) const;
 
 protected:
     /**
@@ -105,10 +108,16 @@ protected:
      * @param target 渲染目标
      * @param states 渲染状态
      */
-    void draw(sf::RenderTarget &target, sf::RenderStates states) const override;
+    virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override;
 
-    // Calculates the mathematical definition of track segments (centerline path).
-    void calculateMathematicalSegments();
-    // Updates the visual geometry (vertices for drawing) based on mathematical segments and visual properties.
-    void updateVisualTrackGeometry();
+private:
+    // Commented out unused private helper methods from the previous .hpp version
+    /*
+    void addCurveSegment(float centerX, float centerY, float radius, float halfWidth,
+                         float startAngle, float endAngle, int segments);
+    void addCurveOutline(float centerX, float centerY, float radius,
+                         float startAngle, float endAngle, int segments);
+    void addCurveBorder(float centerX, float centerY, float radius,
+                        float startAngle, float endAngle, int segments);
+    */
 };

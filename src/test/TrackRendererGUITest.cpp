@@ -5,32 +5,29 @@
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(1280, 720), "TrackRenderer GUI 测试");
+    sf::RenderWindow window(sf::VideoMode(1280, 720), "TrackRenderer GUI Test");
     window.setFramerateLimit(60);
 
     // 创建轨道渲染器
     TrackRenderer trackRenderer;
 
     // 设置缩放系数，使轨道适合图片中的形状
-    // trackRenderer.setScaleFactor(0.25f); // 原为0.01f, 调整以使初始轨道显示更大 <-- 移除此行，TrackRenderer 没有 setScaleFactor
+    trackRenderer.setScaleFactor(0.25f); // 调整缩放因子
     trackRenderer.setMmToPxRatio(0.04f); // 调整毫米到像素比例
-
-    // !!! 重要：先设置轨道宽度，再生成几何形状 !!!
-    trackRenderer.setTrackWidthMm(1200.0f); // 设置为实际宽度1200毫米 <-- 修改: setTrackWidth -> setTrackWidthMm
 
     // 生成轨道几何形状 - 使用参考图片中的真实尺寸
     trackRenderer.generateGeometry(40000.0f, 2500.0f); // 直轨长度和弯道半径，单位：毫米
 
     // 设置轨道颜色 (可以在generateGeometry之后，因为它不影响几何形状)
-    trackRenderer.setTrackColor(sf::Color(100, 100, 100)); // 轨道颜色 - 略深一点 <-- 修改: setStraightColor -> setTrackColor
+    trackRenderer.setTrackColor(sf::Color(0, 0, 0)); // 轨道颜色 - 略深一点
 
     // 设置初始视图
     sf::View view = window.getDefaultView();
     view.setCenter(0, 0); // 轨道中心为原点
-    view.zoom(0.8f);      // 调整缩放以使初始轨道显示更大 (原为1.5f)
+    view.zoom(1.0f);      // 初始缩小一点，显示整个轨道
     window.setView(view);
 
-    float zoomLevel = 1.0f; // 这个 zoomLevel 变量似乎是用于鼠标滚轮的相对缩放，初始设为1.0f是合理的
+    float zoomLevel = 1.0f; // 初始缩放比例
     bool isDragging = false;
     sf::Vector2f dragStart;
     bool showGrid = false; // 控制是否显示网格
@@ -168,10 +165,9 @@ int main()
                 sf::Vertex(sf::Vector2f(0, 5000), sf::Color(255, 0, 0, 150))};
             window.draw(originCrossV, 2, sf::Lines);
 
-            /*
             // 在轨道中心点处绘制加粗的点
-            const std::vector<sf::Vector2f>& centerPoints = trackRenderer.getCenterPoints();
-            for (const auto& point : centerPoints)
+            const std::vector<sf::Vector2f> &centerPoints = trackRenderer.getCenterPoints();
+            for (const auto &point : centerPoints)
             {
                 // 绘制加粗点
                 sf::CircleShape centerPointDot(2.0f);
@@ -180,7 +176,6 @@ int main()
                 centerPointDot.setPosition(point);
                 window.draw(centerPointDot);
             }
-            */
         }
 
         // 绘制轨道
