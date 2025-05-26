@@ -27,19 +27,6 @@ public:
         Stopped        // 静止状态
     };
 
-    // 默认构造函数
-    // 输入: 无
-    // 输出: 无
-    Vehicle() 
-        : id(-1), towards_device(-1), position_m(0.0), next_available_time(0.0), 
-          is_executing(false), is_loaded(false), velocity_mps(0.0), max_speed(0.0), 
-          target_position(0.0) {
-        m_state.position = 0.0;
-        m_state.currentSpeed = 0.0;
-        m_state.motionState = MotionState::Stopped;
-        m_state.currentTask = nullptr;
-        m_state.operationTimer.restart();
-    }
 
 
     // 固有属性
@@ -63,7 +50,7 @@ public:
         float position;               // 轨道位置（0~trackLength）
         float currentSpeed;           // 当前速度（米/秒）
         MotionState motionState;      // 当前运动状态
-        Task* currentTask;          // 当前执行的任务
+        const Task* currentTask = nullptr; // 当前执行的任务
         sf::Clock operationTimer;     // 装卸货操作计时器
     } m_state;
 };
