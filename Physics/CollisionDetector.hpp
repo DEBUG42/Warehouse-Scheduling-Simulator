@@ -191,6 +191,7 @@ MotionController3() {
 //	vsm1.update(1.0f/60.0f,&myvehicle[2]);
 //	vsm2.update(1.0f/60.0f,&myvehicle[0]);
 //	vsm3.update(1.0f/60.0f,&myvehicle[1]);
+
 //}
 };
 class MotionController5 {
