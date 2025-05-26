@@ -121,7 +121,7 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
     m_iconTextures[gui::DeviceType::CORE_WORKSTATION_IN] = workInTexture;
     m_iconTextures[gui::DeviceType::CORE_WORKSTATION_OUT] = workOutTexture;
     m_iconTextures[gui::DeviceType::CHARGER] = chargeTexture;
-    if (defaultTexture.getSize().x > 0)
+    if (defaultTexture.getSize().x > 0) // sf::Texture::getSize 是一个常量成员函数，返回纹理的大小，类型为 sf::Vector2u，表示纹理的宽度和高度（以像素为单位）
     {
         m_iconTextures[gui::DeviceType::UNKNOWN_DEVICE_TYPE] = defaultTexture;
         m_iconTextures[gui::DeviceType::WORK_STATION] = defaultTexture;    // Generic work station as fallback
@@ -149,14 +149,28 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
             continue;
         }
 
-        float normalAngleRad = trackAngleRad - (M_PI / 2.0f);
+        float normalAngleRad = trackAngleRad - (M_PI / 2.0f); // Default normal (e.g., "right" or "down" side of track travel)
+
+        // Adjust normal direction based on position category
+        if (layout.positionCategory == WarehousePosition::TOP) {
+            normalAngleRad += M_PI; // Flip direction for TOP devices (e.g. "left" or "up" side)
+        }
+
         float totalOffsetFromCenterlineMm = trackOuterEdgeOffsetMm + layout.offsetFromTrackEdgeMm + (layout.visualDepthMm / 2.0f);
         sf::Vector2f offsetVectorPx(
             totalOffsetFromCenterlineMm * std::cos(normalAngleRad) * mmToPx,
-            totalOffsetFromCenterlineMm * std::sin(normalAngleRad) * mmToPx);
+            totalOffsetFromCenterlineMm * std::sin(normalAngleRad) * mmToPx); // offsetVectorPx.y is a Y-up delta
 
-        interface_element.worldCenterPx = trackCenterPointPx + offsetVectorPx;
-        interface_element.worldRotationDegrees = trackAngleRad * (180.0f / M_PI);
+        // trackCenterPointPx is Y-down (render coordinates from TrackRenderer)
+        // offsetVectorPx is calculated with Y-up math conventions (sin gives Y-up delta for y)
+        // To apply a Y-up y-offset to a Y-down base y-coordinate, we subtract the offset's y-component.
+        interface_element.worldCenterPx.x = trackCenterPointPx.x + offsetVectorPx.x;
+        interface_element.worldCenterPx.y = trackCenterPointPx.y - offsetVectorPx.y; 
+
+        // trackAngleRad is Y-up (CCW from +X axis is positive)
+        // SFML's setRotation uses degrees, with positive values rotating clockwise.
+        // Therefore, the Y-up angle must be negated for SFML.
+        interface_element.worldRotationDegrees = -trackAngleRad * (180.0f / M_PI); 
 
         float wPx = interface_element.widthMm * mmToPx;
         float hPx = interface_element.depthMm * mmToPx;

@@ -20,7 +20,8 @@ private:
 
     // 样式参数
     // float m_trackWidth = 30.0f;                  // Replaced by m_trackWidth (default 1200.0f in .hpp, set via setTrackWidth)
-    sf::Color m_trackColor{120, 120, 120}; // Renamed from m_straightColor, used for both inner and outer tracks
+    sf::Color m_trackColor{0, 0, 0};      // Renamed from m_straightColor, used for both inner and outer tracks
+    sf::Color m_testColor{255, 255, 255}; // Test color for debugging, can be removed later
     // sf::Color m_curveColor{120, 120, 120};       // Not used in current cpp
     // sf::Color m_centerLineColor{200, 200, 200};  // Not used in current cpp for drawing track lines
     // sf::Color m_outerBorderColor{100, 100, 100}; // Not used in current cpp
