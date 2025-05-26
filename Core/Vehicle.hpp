@@ -36,9 +36,10 @@ public:
     // 固有属性
     int id;                      // 车辆编号
     float m_length = 0.02;            // 车辆长度（米）
-    float m_maxStraightSpeed = (8 / 3) * TimeScale();   // 直轨最大速度（米/秒）
-    float m_maxCurveSpeed = (2 / 3) * TimeScale();     // 弯轨最大速度（米/秒）
-    float m_acceleration = 0.5 * TimeScale() * TimeScale();       // 加减速度（米/秒²）
+    float m_maxStraightSpeed = (8 / 3); // 直轨最大速度（米/秒）
+    float m_maxCurveSpeed = (2 / 3) ;     // 弯轨最大速度（米/秒）
+    float m_acceleration = 0.5 ;       // 加减速度（米/秒²）
+	float m_loadTime=7.5; // 装卸货时间（秒）
 
     int towards_device;          // 要前往的设备编号
     float position_m;           // 在轨道上的位置
@@ -56,16 +57,7 @@ public:
     } m_state;
 
 
-    Vehicle(int id, int current_device, double position_m, double available_time, bool is_executing, bool is_loaded,
-            float position, float currentSpeed, MotionState motionState) :
-            id(id), current_device(current_device), position_m(position_m), available_time(available_time),
-            is_executing(is_executing), is_loaded(is_loaded) {
-        m_state.position = position;
-        m_state.currentSpeed = currentSpeed;
-        m_state.motionState = motionState;
-        m_state.currentTask = nullptr;
-        m_state.operationTimer.restart();
-    }
+
 };
 
 

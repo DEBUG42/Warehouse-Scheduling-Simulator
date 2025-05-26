@@ -46,8 +46,8 @@ public:
     const int m_id;                   // 设备唯一标识
     std::queue<Task> m_taskQueue;     // 任务等待队列
 
-    float m_storageIn =30.0/TimeScale(); // 入库时间（秒）
-    float m_storageOut =25.0/TimeScale(); // 出库时间（秒）
+    float m_storageIn =30.0; // 入库时间（秒）
+    float m_storageOut =25.0; // 出库时间（秒）
 	DeviceBase(int id, DeviceType type);
     DeviceStatus m_status;
 };
