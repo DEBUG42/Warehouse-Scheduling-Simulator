@@ -5,34 +5,51 @@
 /*
 每一个仓库对应在弯道上的位置，
 根据开发界面信息规定的将整个轨道左下角弯道与直道的交汇点作为原点，
+以中心线作为一位的distance单位，
+每个仓库接口的距离单位为毫米，
 计算出每个仓库接口应该对应的位置
 
-弯道半径=2500mm
-pi=3.14159265358979323846
-18 8000mm
-17 11000mm
-16 14000mm
-15 26000mm
-14 29000mm
-13 32000mm
-12 40000+2500pi+3800=43800+7500pi=   51635.981634mm
-11 40000+2500pi+6200=46200+7500pi=   54035.981634mm
-10 40000+2500pi+9800=49800+7500pi=   57635.981634mm
-9  40000+2500pi+12200=52200+7500pi=   60035.981634mm
-8  40000+2500pi+15800=55800+7500pi=   63635.981634mm
-7  40000+2500pi+18200=58200+7500pi=   66035.981634mm
-6  40000+2500pi+21800=61800+7500pi=   69635.981634mm
-5  40000+2500pi+24200=64200+7500pi=   72035.981634mm
-4  40000+2500pi+27800=67800+7500pi=   75635.981634mm
-3  40000+2500pi+30200=70200+7500pi=   78035.981634mm
-2  40000+2500pi+33800=73800+7500pi=   81635.981634mm
-1  40000+2500pi+36200=76200+7500pi=   84035.981634mm
+轨道参数:
+- 直道长度 (L_straight): 40000mm
+- 内弯道半径 (R_inner): 2500mm
+- 轨道宽度 (W_track): 1200mm
+- 中心线弯道半径 (R_center): R_inner + W_track/2 = 2500mm + 600mm = 3100mm
+- PI: 3.14159265358979323846
+
+仓库距离计算 (基于中心线):
+- 底部直道仓库 (ID 13-18): 直接使用距离值。
+- 上部弯道+直道仓库 (ID 1-12):
+  - 距离 = L_straight (底部直道) + PI * R_center (右侧弯道中心线弧长) + L_upper_segment (上部直道段)
+  - 例如 WH12 (用户提供公式): 40000 + 2500pi [实际应为 3100pi] + 3800 = 最终值 53520.9372261538mm
+  - 注：用户提供的计算过程中的 "2500pi" 项，其最终结果值是基于中心线半径 3100mm 计算得出的。
+  - 因此，s_deviceLayouts 中存储的 trackDistanceMm 均为中心线距离。
+
+提供的中心线距离数据 (最终值):
+ID 18: 8000.0f
+ID 17: 11000.0f
+ID 16: 14000.0f
+ID 15: 26000.0f
+ID 14: 29000.0f
+ID 13: 32000.0f
+ID 12: 53520.9372261538f
+ID 11: 55920.9372261538f
+ID 10: 59520.9372261538f
+ID 9:  61920.9372261538f
+ID 8:  65520.9372261538f
+ID 7:  67920.9372261538f
+ID 6:  71520.9372261538f
+ID 5:  73920.9372261538f
+ID 4:  77520.9372261538f
+ID 3:  79920.9372261538f
+ID 2:  83520.9372261538f
+ID 1:  85920.9372261538f
 */
 
 // Define the fixed layout based on comments and image from user
+// All TrackDist MM are CENTERLINE distances.
 const std::vector<WarehouseRenderer::PredefinedDeviceLayout> WarehouseRenderer::s_deviceLayouts = {
-    // Bottom track devices (IDs 13-18)
-    // Device ID, TrackDist MM, Type, PositionHint, VisualWidth MM, VisualDepth MM, OffsetFromTrackEdge MM
+    // Bottom track devices (IDs 13-18) - Centerline Distances
+    // Device ID, TrackDist MM (Centerline), Type, PositionHint, VisualWidth MM, VisualDepth MM, OffsetFromTrackEdge MM
     {18, 8000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
     {17, 11000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
     {16, 14000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
@@ -40,21 +57,20 @@ const std::vector<WarehouseRenderer::PredefinedDeviceLayout> WarehouseRenderer::
     {14, 29000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
     {13, 32000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
 
-    // Top track devices (IDs 1-12)
-    // User provided distances: 12:51635.98, 11:54035.98, 10:57635.98, 9:60035.98, 8:63635.98, 7:66035.98, 6:69635.98, 5:72035.98, 4:75635.98, 3:78035.98, 2:81635.98, 1:84035.98
+    // Top track devices (IDs 1-12) - Centerline Distances
     // Image: Odd IDs are INPUT_STATION (arrow in), Even IDs are OUTPUT_STATION (arrow out) for top row.
-    {12, 51635.981634f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {11, 54035.981634f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {10, 57635.981634f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {9, 60035.981634f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {8, 63635.981634f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {7, 66035.981634f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {6, 69635.981634f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {5, 72035.981634f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {4, 75635.981634f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {3, 78035.981634f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {2, 81635.981634f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {1, 84035.981634f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {12, 53520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {11, 55920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {10, 59520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {9, 61920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {8, 65520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {7, 67920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {6, 71520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {5, 73920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {4, 77520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {3, 79920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {2, 83520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {1, 85920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
 };
 
 WarehouseRenderer::WarehouseRenderer()
