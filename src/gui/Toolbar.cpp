@@ -45,7 +45,7 @@ void Toolbar::createFunctionButtons()
     auto resetViewBtn = std::make_unique<Button>(resetViewBounds, m_font, "Reset View");
     resetViewBtn->setCallback([this]()
                               {
-        if (m_onResetView) m_onResetView(); });
+        if (m_onResetView) m_onResetView(); });//如果确定含有回调函数，则调用它
     m_buttons.push_back(std::move(resetViewBtn));
 
     // Switch Mode button

@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 #include "SimObject.hpp"   // 包含 VehicleState 和 ObjectType
-#include "DeviceState.hpp" // 包含 DeviceState
+// #include "DeviceState.hpp" // 包含 DeviceState
 
 /**
  * @brief 对象检视器类

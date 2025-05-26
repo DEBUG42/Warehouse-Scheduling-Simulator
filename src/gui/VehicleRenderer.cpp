@@ -4,6 +4,10 @@
 #include <cmath>
 #include <SFML/Graphics/Transformable.hpp>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 // 定义车体和状态框的尺寸 (假设是后端坐标系下的毫米)
 const float BODY_WIDTH_MM = 2000.0f;
 const float BODY_HEIGHT_MM = 1000.0f;
@@ -25,20 +29,16 @@ VehicleRenderer::VehicleRenderer(const sf::Font &font) : m_font(font)
     // else
     // {
     //     std::cerr << "警告：传入 VehicleRenderer 的字体无效，车辆标签可能无法正确显示" << std::endl;
-    // }
-
-    // 车体尺寸 (转换为像素)
-    float bodyWidthPx = BODY_WIDTH_MM * MM_TO_PIXEL;   // 使用成员 MM_TO_PIXEL
-    float bodyHeightPx = BODY_HEIGHT_MM * MM_TO_PIXEL; // 使用成员 MM_TO_PIXEL
+    // }    // 车体尺寸 (转换为像素)
+    float bodyWidthPx = BODY_WIDTH_MM * m_mmToPxRatio;   // 使用成员 m_mmToPxRatio
+    float bodyHeightPx = BODY_HEIGHT_MM * m_mmToPxRatio; // 使用成员 m_mmToPxRatio
     m_body.setSize(sf::Vector2f(bodyWidthPx, bodyHeightPx));
-    m_body.setOrigin(bodyWidthPx / 2.f, bodyHeightPx / 2.f); // 中心原点
-    m_body.setFillColor(sf::Color(0, 120, 255));             // 默认蓝色车体
-    m_body.setOutlineThickness(1.f);                         // 给车体一个细边框
-    m_body.setOutlineColor(sf::Color::Black);
-
-    // 状态框尺寸 (转换为像素)
-    float statusWidthPx = (BODY_WIDTH_MM + 2 * STATUS_BORDER_MM) * MM_TO_PIXEL;   // 使用成员 MM_TO_PIXEL
-    float statusHeightPx = (BODY_HEIGHT_MM + 2 * STATUS_BORDER_MM) * MM_TO_PIXEL; // 使用成员 MM_TO_PIXEL
+    m_body.setOrigin(bodyWidthPx / 2.f, bodyHeightPx / 2.f);                        // 中心原点
+    m_body.setFillColor(sf::Color(0, 120, 255));                                    // 默认蓝色车体
+    m_body.setOutlineThickness(1.f);                                                // 给车体一个细边框
+    m_body.setOutlineColor(sf::Color::Black);                                       // 状态框尺寸 (转换为像素)
+    float statusWidthPx = (BODY_WIDTH_MM + 2 * STATUS_BORDER_MM) * m_mmToPxRatio;   // 使用成员 m_mmToPxRatio
+    float statusHeightPx = (BODY_HEIGHT_MM + 2 * STATUS_BORDER_MM) * m_mmToPxRatio; // 使用成员 m_mmToPxRatio
     m_statusBounds.setSize(sf::Vector2f(statusWidthPx, statusHeightPx));
     m_statusBounds.setOrigin(statusWidthPx / 2.f, statusHeightPx / 2.f); // 中心原点
 
@@ -66,8 +66,8 @@ VehicleRenderer::VehicleRenderer(const sf::Font &font) : m_font(font)
  * @param outRenderRotationDeg 输出参数，返回计算后的角度
  */
 void VehicleRenderer::calculatePosition(const gui::VehicleState &vehicle,
-                                        TrackRenderer& trackRenderer, // 新增参数
-                                        const sf::Vector2f& worldOriginOffsetPx, // 新增参数
+                                        TrackRenderer &trackRenderer,            // 新增参数
+                                        const sf::Vector2f &worldOriginOffsetPx, // 新增参数
                                         sf::Vector2f &outRenderPosition,
                                         float &outRenderRotationDeg)
 {
@@ -80,8 +80,8 @@ void VehicleRenderer::calculatePosition(const gui::VehicleState &vehicle,
     {
         // 处理获取失败的情况，例如设置默认位置或打印错误
         std::cerr << "Error: Failed to get point and orientation from TrackRenderer for vehicle " << vehicle.getId() << std::endl;
-        outRenderPosition = sf::Vector2f(0,0); // 默认位置
-        outRenderRotationDeg = 0; // 默认角度
+        outRenderPosition = sf::Vector2f(0, 0); // 默认位置
+        outRenderRotationDeg = 0;               // 默认角度
         return;
     }
 
@@ -93,7 +93,7 @@ void VehicleRenderer::calculatePosition(const gui::VehicleState &vehicle,
 
     /*
     // 轨道几何 (这部分现在由 Track Renderer 处理)
-    // float singleStraightLengthMm = totalStraightLengthMm / 2.0f; 
+    // float singleStraightLengthMm = totalStraightLengthMm / 2.0f;
     // float curveLengthMm = M_PI * curveRadiusMm;
     // float fullTrackPerimeterMm = totalStraightLengthMm + 2.0f * curveLengthMm;
 
@@ -338,7 +338,7 @@ sf::Color VehicleRenderer::getColorForStatus(gui::VehicleStatus status) const
     }
 }
 
-void VehicleRenderer::updateState(const gui::VehicleState &state, TrackRenderer& trackRenderer, const sf::Vector2f& worldOriginOffsetPx)
+void VehicleRenderer::updateState(const gui::VehicleState &state, TrackRenderer &trackRenderer, const sf::Vector2f &worldOriginOffsetPx)
 {
     m_currentState = state;
     sf::Vector2f renderPos;
@@ -371,4 +371,28 @@ void VehicleRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) co
     target.draw(m_body, states);
     target.draw(m_directionIndicator, states);
     target.draw(m_idText, states);
+}
+
+void VehicleRenderer::setMmToPxRatio(float mmToPxRatio)
+{
+    m_mmToPxRatio = mmToPxRatio;
+
+    // 重新计算车体尺寸
+    float bodyWidthPx = BODY_WIDTH_MM * m_mmToPxRatio;
+    float bodyHeightPx = BODY_HEIGHT_MM * m_mmToPxRatio;
+    m_body.setSize(sf::Vector2f(bodyWidthPx, bodyHeightPx));
+    m_body.setOrigin(bodyWidthPx / 2.f, bodyHeightPx / 2.f);
+
+    // 重新计算状态框尺寸
+    float statusWidthPx = (BODY_WIDTH_MM + 2 * STATUS_BORDER_MM) * m_mmToPxRatio;
+    float statusHeightPx = (BODY_HEIGHT_MM + 2 * STATUS_BORDER_MM) * m_mmToPxRatio;
+    m_statusBounds.setSize(sf::Vector2f(statusWidthPx, statusHeightPx));
+    m_statusBounds.setOrigin(statusWidthPx / 2.f, statusHeightPx / 2.f);
+
+    // 重新计算方向指示器
+    m_directionIndicator.setRadius(std::max(1.f, bodyHeightPx * 0.15f));
+    m_directionIndicator.setOrigin(m_directionIndicator.getRadius(), m_directionIndicator.getRadius());
+
+    // 重新计算文字大小
+    m_idText.setCharacterSize(static_cast<unsigned int>(std::max(8.f, bodyHeightPx * 0.3f)));
 }

@@ -10,24 +10,30 @@ TrackRenderer::TrackRenderer()
 {
 }
 
-void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
+void TrackRenderer::generateGeometry(float trackLength, float curveRadius) // curveRadius is now inner radius
 {
     // 保存轨道参数以便后续坐标转换
     m_trackLength = trackLength;
-    m_curveRadius = curveRadius;
+    m_curveRadius = curveRadius; // m_curveRadius now stores the INNER radius
 
     // 清除现有顶点
     m_innersTrack.clear();
     m_outerTrack.clear();
-    m_centerPoints.clear(); //    std::vector<sf::Vector2f> m_centerPoints; // 中心线点
+    m_centerPoints.clear();
+
+    // 根据现在的实验显示，长度占了40*2=80的格子，圆的半径占了5个格子
 
     // 将真实尺寸（毫米）转换为像素
     float scaledTrackLength = trackLength * m_mmToPxRatio * m_scaleFactor;
-    float scaledCurveRadius = curveRadius * m_mmToPxRatio * m_scaleFactor;
+    // 'curveRadius' (and thus m_curveRadius) is the inner radius.
+    float scaledInnerCurveRadius = m_curveRadius * m_mmToPxRatio * m_scaleFactor;
+    float scaledFullTrackWidth = m_trackWidth * m_mmToPxRatio * m_scaleFactor; // Full track width in pixels
+    // Calculate the radius for the actual center line (path for vehicles)
+    float scaledCenterLineCurveRadius = scaledInnerCurveRadius + (scaledFullTrackWidth / 2.0f);
 
-    // 轨道宽度计算 - 转换为像素
-    float trackOffset = m_trackWidth * m_mmToPxRatio * m_scaleFactor;
-    float innerDefaultOffset = 0.0f; // 内轨道偏移
+    // 轨道宽度计算 - 转换为像素 (this variable is effectively scaledFullTrackWidth)
+    // float trackOffset = m_trackWidth * m_mmToPxRatio * m_scaleFactor; // This is scaledFullTrackWidth
+    // float innerDefaultOffset = 0.0f; // 内轨道偏移 (Unused by current inner/outer track generation)
 
     // ============= 生成中心线坐标点 =============
     // 赛道由四段组成：上直道、右弯道、下直道、左弯道
@@ -44,39 +50,36 @@ void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
                 cx + r * std::cos(angle),
                 cy - r * std::sin(angle))); // Inverted Y-axis: use -r*sin(angle) for Y-up
         }
-    };
-
-    // 各弯道中心
+    }; // 各弯道中心
     float rightCurveX = scaledTrackLength / 2;
     float rightCurveY = 0.0f;
     float leftCurveX = -scaledTrackLength / 2;
-    float leftCurveY = 0.0f;
-
-    // 1. 从右上开始，沿轨道中心线顺时针生成点
-    // 生成右弯道点 (-90° ~ 90°)
-    generateCurve(rightCurveX, rightCurveY, scaledCurveRadius, -M_PI / 2, M_PI / 2);
+    float leftCurveY = 0.0f; // 修改轨道生成顺序：从左下角开始（距离0对应左下角位置）
+    // 1. 从左弯道270°位置开始，沿轨道中心线顺时针生成点
+    // 先生成左下角点 (270°)
+    float leftBottomX = leftCurveX + scaledCenterLineCurveRadius * std::cos(3 * M_PI / 2);
+    float leftBottomY = leftCurveY - scaledCenterLineCurveRadius * std::sin(3 * M_PI / 2);
+    m_centerPoints.push_back(sf::Vector2f(leftBottomX, leftBottomY));
 
     // 2. 生成下直道点
-    sf::Vector2f rightBottom = m_centerPoints.back();   // 右弯道最后一点
-    sf::Vector2f leftBottom(leftCurveX, rightBottom.y); // 左弯道底部点
-    m_centerPoints.push_back(leftBottom);
+    sf::Vector2f rightBottom(rightCurveX, leftBottomY); // 右弯道底部点
+    m_centerPoints.push_back(rightBottom);
 
-    // 3. 生成左弯道点 (90° ~ 270°)
-    generateCurve(leftCurveX, leftCurveY, scaledCurveRadius, M_PI / 2, 3 * M_PI / 2);
+    // 3. 生成右弯道点 (-90° ~ 90°)
+    generateCurve(rightCurveX, rightCurveY, scaledCenterLineCurveRadius, -M_PI / 2, M_PI / 2);
 
     // 4. 生成上直道点
-    sf::Vector2f leftTop = m_centerPoints.back();  // 左弯道最后一点
-    sf::Vector2f rightTop(rightCurveX, leftTop.y); // 右弯道顶部点
-    m_centerPoints.push_back(rightTop);
+    sf::Vector2f rightTop = m_centerPoints.back(); // 右弯道最后一点
+    sf::Vector2f leftTop(leftCurveX, rightTop.y);  // 左弯道顶部点
+    m_centerPoints.push_back(leftTop);
+
+    // 5. 生成左弯道点 (90° ~ 270°)
+    generateCurve(leftCurveX, leftCurveY, scaledCenterLineCurveRadius, M_PI / 2, 3 * M_PI / 2);
 
     // 不再添加起始点重复点，防止线条连接处出现交叉
 
     // ============= 生成轨道内外轮廓 =============
     // 根据中心线生成平行偏移的轨道线
-
-    // sf::VertexArray 是一个表示二维图形顶点数组的类，用于存储和管理一组顶点及其相关的图元类型。它支持顶点的添加、访问、清除、调整大小，以及计算边界矩形，并可用于绘制点、线、三角形等基本图元。
-
-    // 用于根据给定的中心线（centerLine）和偏移量（offset），生成轨道的顶点数组（sf::VertexArray），并为其指定颜色（sf::Color）。该函数主要用于处理二维图形的顶点数据，适合绘制轨道或路径相关的图形元素
     auto generateTrack = [](const std::vector<sf::Vector2f> &centerLine, float offset,
                             sf::VertexArray &track, const sf::Color &color)
     {
@@ -177,49 +180,14 @@ void TrackRenderer::generateGeometry(float trackLength, float curveRadius)
         }
     };
 
+    // Correctly define halfScaledTrackWidth using scaledFullTrackWidth before its use.
+    float halfScaledTrackWidth = scaledFullTrackWidth / 2.0f;
+
     // 生成内轨道线
-    generateTrack(m_centerPoints, innerDefaultOffset, m_innersTrack, m_trackColor); // Positive offset for inner (left side of Y-up path)
+    generateTrack(m_centerPoints, halfScaledTrackWidth, m_innersTrack, m_trackColor); // Inner edge
 
     // 生成外轨道线 - 使用对称的负偏移量
-    generateTrack(m_centerPoints, trackOffset, m_outerTrack, m_trackColor); // Negative offset for outer (right side of Y-up path) -> actually this should be positive for outer if normal points left. Let's verify offset meaning.
-    // If trackOffset is half of m_trackWidth (positive value):
-    // Inner track should be to the left (e.g., +trackOffset/2 with normal pointing left)
-    // Outer track should be to the right (e.g., -trackOffset/2 with normal pointing left)
-    // The original code had: generateTrack(m_centerPoints, innerDefaultOffset, m_innersTrack, m_trackColor);
-    // generateTrack(m_centerPoints, -trackOffset, m_outerTrack, m_trackColor);
-    // Assuming innerDefaultOffset is 0 or small positive for inner edge, and -trackOffset for outer edge.
-    // If normal (-dy, dx) points left of the segment direction for Y-up:
-    // To get inner track (left): offset should be positive.
-    // To get outer track (right): offset should be negative.
-    // So, the original -trackOffset for m_outerTrack seems correct if trackOffset is positive width.
-    // And innerDefaultOffset for m_innersTrack (if it's meant to be the center or slightly to one side).
-
-    // Let's clarify the trackOffset meaning. m_trackWidth is total width.
-    // trackOffset in generateGeometry was m_trackWidth * ... / 2.0f (this was removed, now it's full m_trackWidth * ...)
-    // No, it's still: float trackOffset = m_trackWidth * m_mmToPxRatio * m_scaleFactor; (this is the full width in px)
-    // And then: float innerDefaultOffset = 0.0f;
-    // generateTrack(m_centerPoints, innerDefaultOffset, m_innersTrack, m_trackColor);
-    // generateTrack(m_centerPoints, -trackOffset, m_outerTrack, m_trackColor);
-    // This means m_innersTrack is at the center line (offset 0), and m_outerTrack is offset by -totalWidth.
-    // This is not right for inner/outer edges. It should be +/- halfWidth.
-
-    // Re-evaluating based on the user's previous selection: `float trackOffset = m_trackWidth * m_mmToPxRatio * m_scaleFactor / 2.0f;`
-    // If that was the case, then `innerDefaultOffset` (if 0) is the center, and `trackOffset` is half width.
-    // Then `generateTrack(m_centerPoints, trackOffset, m_innersTrack, m_trackColor);` // Inner edge (e.g. left)
-    // And `generateTrack(m_centerPoints, -trackOffset, m_outerTrack, m_trackColor);` // Outer edge (e.g. right)
-    // This seems more logical for inner/outer edges if the normal points left.
-
-    // Let's assume the current `trackOffset` is full width and `innerDefaultOffset` is 0.
-    // The code is `generateTrack(m_centerPoints, innerDefaultOffset, m_innersTrack, m_trackColor);` -> center line
-    // `generateTrack(m_centerPoints, -trackOffset, m_outerTrack, m_trackColor);` -> one edge (offset by full width)
-    // This needs to be inner edge and outer edge based on m_trackWidth.
-    // Let halfScaledTrackWidth = m_trackWidth * m_mmToPxRatio * m_scaleFactor / 2.0f;
-    // generateTrack(m_centerPoints, halfScaledTrackWidth, m_innersTrack, m_trackColor); // Inner edge
-    // generateTrack(m_centerPoints, -halfScaledTrackWidth, m_outerTrack, m_trackColor); // Outer edge
-
-    float halfScaledTrackWidth = m_trackWidth * m_mmToPxRatio * m_scaleFactor / 2.0f;
-    generateTrack(m_centerPoints, halfScaledTrackWidth, m_innersTrack, m_trackColor);  // Inner edge (positive offset if normal points left)
-    generateTrack(m_centerPoints, -halfScaledTrackWidth, m_outerTrack, m_trackColor); // Outer edge (negative offset if normal points left)
+    generateTrack(m_centerPoints, -halfScaledTrackWidth, m_outerTrack, m_trackColor); // Outer edge
 }
 
 float TrackRenderer::getTotalCenterLineLengthMm() const
@@ -346,18 +314,23 @@ sf::Vector2f TrackRenderer::backendToRenderTransform(const sf::Vector2f &backend
     float scaledX = backendPoint.x * m_mmToPxRatio * m_scaleFactor;
     float scaledY = backendPoint.y * m_mmToPxRatio * m_scaleFactor;
 
-    // 计算轨道的整体尺寸（像素）
+    // 计算轨道参数的像素尺寸
     float scaledTrackLength = m_trackLength * m_mmToPxRatio * m_scaleFactor;
-    float scaledCurveRadius = m_curveRadius * m_mmToPxRatio * m_scaleFactor;
-    float totalWidth = scaledTrackLength + 2 * scaledCurveRadius;
-    float totalHeight = 2 * scaledCurveRadius;
-    float halfTotalWidth = totalWidth / 2.0f;
-    float halfTotalHeight = totalHeight / 2.0f;
+    // m_curveRadius is inner radius, m_trackWidth is full width
+    float scaledInnerCurveRadius = m_curveRadius * m_mmToPxRatio * m_scaleFactor;
+    float scaledFullTrackWidth = m_trackWidth * m_mmToPxRatio * m_scaleFactor;
+    // Calculate the center-line radius in pixels, which defines the backend coordinate system's reference path
+    float scaledCenterLineRadius_forTransform = scaledInnerCurveRadius + scaledFullTrackWidth / 2.0f;
+
+    // The X offset needed to align backend origin (start of straight section on center line) with render origin (track center)
+    float x_offset_to_render_origin = scaledTrackLength / 2.0f;
+    // The Y offset needed (for Y-up backend coords) based on center-line radius
+    float y_offset_to_render_origin_Yup = scaledCenterLineRadius_forTransform;
 
     // 转换坐标系
     return sf::Vector2f(
-        scaledX - (halfTotalWidth - scaledCurveRadius),
-        -(scaledY - halfTotalHeight) // Invert Y for render (Y-down) from internal (Y-up)
+        scaledX - x_offset_to_render_origin,
+        -(scaledY - y_offset_to_render_origin_Yup) // Invert Y for render (Y-down) and apply Y shift
     );
 }
 
@@ -365,25 +338,36 @@ sf::Vector2f TrackRenderer::backendToRenderTransform(const sf::Vector2f &backend
 // renderPoint is Y-down from SFML
 sf::Vector2f TrackRenderer::renderToBackendTransform(const sf::Vector2f &renderPoint) const
 {
-    // 计算轨道的整体尺寸（像素）
+    // 计算轨道参数的像素尺寸
     float scaledTrackLength = m_trackLength * m_mmToPxRatio * m_scaleFactor;
-    float scaledCurveRadius = m_curveRadius * m_mmToPxRatio * m_scaleFactor;
-    float totalWidth = scaledTrackLength + 2 * scaledCurveRadius;
-    float totalHeight = 2 * scaledCurveRadius;
-    float halfTotalWidth = totalWidth / 2.0f;
-    float halfTotalHeight = totalHeight / 2.0f;
+    // m_curveRadius is inner radius, m_trackWidth is full width
+    float scaledInnerCurveRadius = m_curveRadius * m_mmToPxRatio * m_scaleFactor;
+    float scaledFullTrackWidth = m_trackWidth * m_mmToPxRatio * m_scaleFactor;
+    // Calculate the center-line radius in pixels
+    float scaledCenterLineRadius_forTransform = scaledInnerCurveRadius + scaledFullTrackWidth / 2.0f;
+
+    // The X offset from render origin (track center) to backend origin (start of straight section on center line)
+    float x_offset_from_render_origin = scaledTrackLength / 2.0f;
+    // The Y offset (for Y-up internal coords) based on center-line radius
+    float y_offset_from_render_origin_Yup = scaledCenterLineRadius_forTransform;
 
     // 从渲染坐标系转换到后端坐标系（像素）
     // renderPoint.y is Y-down. To convert to internal Y-up for backend calculation:
-    float internalRenderY = -renderPoint.y;
+    float internalRenderY_Yup = -renderPoint.y;
 
-    float scaledX = renderPoint.x + (halfTotalWidth - scaledCurveRadius);
-    float scaledY = internalRenderY + halfTotalHeight; // Now using Y-up internalRenderY
+    float scaled_BackendX_relative_pixels = renderPoint.x + x_offset_from_render_origin;
+    float scaled_BackendY_relative_pixels = internalRenderY_Yup + y_offset_from_render_origin_Yup;
 
     // 转换回毫米单位
+    if (m_mmToPxRatio == 0.0f || m_scaleFactor == 0.0f)
+    {
+        // Avoid division by zero, return a sensible default or handle error
+        return sf::Vector2f(0.0f, 0.0f);
+    }
+
     return sf::Vector2f(
-        scaledX / (m_mmToPxRatio * m_scaleFactor),
-        scaledY / (m_mmToPxRatio * m_scaleFactor) // Resulting backend Y is Y-up
+        scaled_BackendX_relative_pixels / (m_mmToPxRatio * m_scaleFactor),
+        scaled_BackendY_relative_pixels / (m_mmToPxRatio * m_scaleFactor) // Resulting backend Y is Y-up
     );
 }
 

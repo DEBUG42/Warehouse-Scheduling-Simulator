@@ -17,7 +17,7 @@ class VehicleRenderer : public sf::Drawable, public sf::Transformable
 private:
     const sf::Vector2f m_baseSize{40.0f, 16.0f}; // 基础尺寸（2000mm车长、800mm车宽对应的像素）
     const float m_height = 10.0f;                // 车辆高度（像素单位）
-    const float MM_TO_PIXEL = 0.05f;             // 单位转换系数: 1mm = 0.05px (与TrackRenderer保持一致)
+    float m_mmToPxRatio = 0.05f;                 // 单位转换系数: 1mm = 0.05px (可配置以与TrackRenderer保持一致)
 
     // 状态样式
     sf::Color m_colorEmpty{80, 130, 200};     // 空载状态
@@ -31,7 +31,7 @@ private:
     // 渲染参数
     float m_vehicleLength = 2000.0f; // 车辆长度(mm)
     float m_vehicleWidth = 800.0f;   // 车辆宽度(mm)
-    float m_trackWidth = 1000.0f;    // 轨道宽度(mm)
+    float m_trackWidth = 1200.0f;    // 轨道宽度(mm)
     float m_curveRadius = 2500.0f;   // 弯道半径(mm)
 
     // 颜色设置
@@ -68,8 +68,8 @@ public:
      * @param rotation 输出参数，返回计算后的角度
      */
     void calculatePosition(const gui::VehicleState &vehicle,
-                           TrackRenderer& trackRenderer,
-                           const sf::Vector2f& worldOriginOffsetPx,
+                           TrackRenderer &trackRenderer,
+                           const sf::Vector2f &worldOriginOffsetPx,
                            sf::Vector2f &position,
                            float &rotation);
 
@@ -101,7 +101,17 @@ public:
      */
     void updateVehicleStates(const std::vector<gui::VehicleState> &vehicles);
 
-    virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override;
+    virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override; /**
+                                                                                          * @brief 设置毫米到像素的转换比例，以与TrackRenderer保持一致
+                                                                                          * @param mmToPxRatio 转换比例
+                                                                                          */
+    void setMmToPxRatio(float mmToPxRatio);
+
+    /**
+     * @brief 获取当前的毫米到像素转换比例
+     * @return 当前的转换比例
+     */
+    float getMmToPxRatio() const { return m_mmToPxRatio; }
 
     /**
      * @brief 更新车辆状态，同时传递 TrackRenderer 和 worldOriginOffsetPx
@@ -109,7 +119,7 @@ public:
      * @param trackRenderer 轨道渲染器引用
      * @param worldOriginOffsetPx 世界坐标原点偏移量
      */
-    void updateState(const gui::VehicleState &state, TrackRenderer& trackRenderer, const sf::Vector2f& worldOriginOffsetPx);
+    void updateState(const gui::VehicleState &state, TrackRenderer &trackRenderer, const sf::Vector2f &worldOriginOffsetPx);
 
 private:
     // ... existing code ...

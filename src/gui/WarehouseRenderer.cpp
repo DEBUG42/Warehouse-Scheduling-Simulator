@@ -152,7 +152,8 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         float normalAngleRad = trackAngleRad - (M_PI / 2.0f); // Default normal (e.g., "right" or "down" side of track travel)
 
         // Adjust normal direction based on position category
-        if (layout.positionCategory == WarehousePosition::TOP) {
+        if (layout.positionCategory == WarehousePosition::TOP)
+        {
             normalAngleRad += M_PI; // Flip direction for TOP devices (e.g. "left" or "up" side)
         }
 
@@ -165,12 +166,12 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         // offsetVectorPx is calculated with Y-up math conventions (sin gives Y-up delta for y)
         // To apply a Y-up y-offset to a Y-down base y-coordinate, we subtract the offset's y-component.
         interface_element.worldCenterPx.x = trackCenterPointPx.x + offsetVectorPx.x;
-        interface_element.worldCenterPx.y = trackCenterPointPx.y - offsetVectorPx.y; 
+        interface_element.worldCenterPx.y = trackCenterPointPx.y - offsetVectorPx.y;
 
         // trackAngleRad is Y-up (CCW from +X axis is positive)
         // SFML's setRotation uses degrees, with positive values rotating clockwise.
         // Therefore, the Y-up angle must be negated for SFML.
-        interface_element.worldRotationDegrees = -trackAngleRad * (180.0f / M_PI); 
+        interface_element.worldRotationDegrees = -trackAngleRad * (180.0f / M_PI);
 
         float wPx = interface_element.widthMm * mmToPx;
         float hPx = interface_element.depthMm * mmToPx;
