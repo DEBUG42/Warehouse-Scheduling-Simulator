@@ -5,7 +5,7 @@
 // 定义一个常量函数以获取指定设备的状态
 // 输入: 设备ID (int device_id)
 // 输出: 设备状态引用 (const DeviceState&)
-const DeviceState& DeviceManager::getState(int device_id) const {
+DeviceState& DeviceManager::getState(int device_id) {
     // 在设备列表中查找指定ID的设备
     auto it = devices.find(device_id);
     // 如果找到，则返回该设备的状态
@@ -71,7 +71,7 @@ void DeviceManager::update(double current_time) {
 // 处理传入的事件
 // 输入: 事件对象 (const Event& e)
 // 输出: 无
-void DeviceManager::handleEvent(const Event& e) {
+void DeviceManager::handleEvent( Event& e) {
     // 获取指定ID的设备状态
     auto& state = devices[e.device_id];
 

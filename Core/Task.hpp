@@ -33,10 +33,9 @@ class TaskManager {
 public:
     void loadFromFile( std::string& filepath);     // 从文件中加载任务信息
     std::vector<Task*> getReadyTasks(double current_time,  DeviceManager& device_manager);     // 获取当前时间点可调度的任务
-    bool allTasksCompleted() const; // 是否所有任务都已完成
+    bool allTasksCompleted(); // 是否所有任务都已完成
     void markTaskAssigned(int task_id, int vehicle_id, double assign_time); // 标记任务已分配
-    
-    const std::vector<Task>& getTasks() const;
+
 
 private:
     std::vector<Task> tasks;

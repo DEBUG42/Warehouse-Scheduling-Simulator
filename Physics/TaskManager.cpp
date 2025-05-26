@@ -84,7 +84,7 @@ void TaskManager::loadFromFile(std::string& filepath) {
 // 获取当前时间可以执行的任务
 // 输入: 当前时间 (double current_time), 设备管理器引用 (const DeviceManager& device_manager)
 // 输出: 准备好执行的任务列表 (std::vector<Task*>)
-std::vector<Task*> TaskManager::getReadyTasks(double current_time, DeviceManager& device_manager) {
+std::vector<Task*> TaskManager::getReadyTasks(double current_time,  DeviceManager& device_manager) {
     std::vector<Task*> ready;
 
     // 遍历所有任务，检查哪些任务已经准备好执行
@@ -97,8 +97,8 @@ std::vector<Task*> TaskManager::getReadyTasks(double current_time, DeviceManager
         // 检查任务的就绪时间是否已经到达，并且设备状态是否允许任务执行
         if (task.ready_time > current_time) continue;
 
-        const auto& dev_start = device_manager.getState(task.start_device_id);
-        const auto& dev_end = device_manager.getState(task.end_device_id);
+        auto& dev_start = device_manager.getState(task.start_device_id);
+        auto& dev_end = device_manager.getState(task.end_device_id);
         if (dev_start.is_reserved || dev_end.is_reserved) continue;
 
         // 将满足条件的任务加入 ready 列表
@@ -110,9 +110,9 @@ std::vector<Task*> TaskManager::getReadyTasks(double current_time, DeviceManager
 // 检查所有任务是否已经完成
 // 输入: 无
 // 输出: 布尔值，指示所有任务是否已完成 (bool)
-bool TaskManager::allTasksCompleted() const {
+bool TaskManager::allTasksCompleted() {
     // 检查所有任务是否已经完成
-    for (const auto& task : tasks) {
+    for (auto& task : tasks) {
         if (!task.is_assigned || task.complete_time < 0) return false;
     }
     return true;
@@ -139,13 +139,6 @@ void TaskManager::markTaskAssigned(int task_id, int vehicle_id, double assign_ti
     }
 }
 
-// 返回所有任务的常量引用
-// 输入: 无
-// 输出: 所有任务的结构体列表 (const std::vector<Task>&)
-const std::vector<Task>& TaskManager::getTasks() const {
-    // 返回所有任务的常量引用
-    return tasks;
-}
 
 
 // 尝试分派任务给可用的车辆

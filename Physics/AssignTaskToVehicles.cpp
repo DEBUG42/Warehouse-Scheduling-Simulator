@@ -8,7 +8,7 @@
 constexpr double LOOP_LENGTH = 100.0;  // 环道总长度（可调）
 
 // 初始化指定数量的车辆
-// 输入: 车辆数量 (int count)
+// 输入: int count - 车辆数量
 // 输出: 无
 void VehicleManager::initializeVehicles(int count) {
     vehicles.clear();
@@ -33,6 +33,9 @@ void VehicleManager::initializeVehicles(int count) {
     }
 }
 
+// 更新所有车辆的状态
+// 输入: double current_time - 当前时间, double dt - 时间步长
+// 输出: 无
 void VehicleManager::updateAllVehicles(double current_time, double dt) {
     for (auto& vehicle : vehicles) {
         if (!vehicle.m_state.currentTask) continue;
@@ -101,12 +104,18 @@ void VehicleManager::updateAllVehicles(double current_time, double dt) {
     }
 }
 
+// 计算从一个位置到另一个位置的距离
+// 输入: double from - 起始位置, double to - 目标位置
+// 输出: double - 计算出的距离
 double VehicleManager::getDistance(double from, double to) {
     double d = to - from;
     if (d < 0) d += LOOP_LENGTH;
     return d;
 }
 
+// 获取当前可用的车辆（即空闲且没有任务的车辆）
+// 输入: Task& task - 任务, double current_time - 当前时间
+// 输出: std::vector<Vehicle*> - 可用车辆的指针列表
 std::vector<Vehicle*> VehicleManager::getAvailableVehicles(Task& task, double current_time) {
     std::vector<Vehicle*> result;
     for (auto& vehicle : vehicles) {
@@ -119,6 +128,9 @@ std::vector<Vehicle*> VehicleManager::getAvailableVehicles(Task& task, double cu
     return result;
 }
 
+// 从候选车辆中选择最佳车辆来执行任务
+// 输入: Task& task - 任务, std::vector<Vehicle*>& candidates - 候选车辆列表, double current_time - 当前时间
+// 输出: Vehicle* - 最佳车辆的指针
 Vehicle* VehicleManager::selectBestVehicle(Task& task, std::vector<Vehicle*>& candidates, double current_time) {
     double best_time = std::numeric_limits<double>::max();
     Vehicle* best_vehicle = nullptr;
@@ -137,6 +149,9 @@ Vehicle* VehicleManager::selectBestVehicle(Task& task, std::vector<Vehicle*>& ca
     return best_vehicle;
 }
 
+// 将任务分配给指定的车辆
+// 输入: Vehicle& vehicle - 车辆, Task& task - 任务, double current_time - 当前时间
+// 输出: 无
 void VehicleManager::applyTaskToVehicle(Vehicle& vehicle, Task& task, double current_time) {
     vehicle.m_state.currentTask = &task;                      // ✅ 修正为 m_state.currentTask
     vehicle.towards_device = task.start_device_id;
@@ -149,6 +164,9 @@ void VehicleManager::applyTaskToVehicle(Vehicle& vehicle, Task& task, double cur
     std::cout << "[Assign] Vehicle #" << vehicle.id << " → Task #" << task.id << "\n";
 }
 
+// 获取所有车辆
+// 输入: 无
+// 输出: std::vector<Vehicle>& - 所有车辆的引用列表
 std::vector<Vehicle>& VehicleManager::getVehicles()  {
     return vehicles;
 }

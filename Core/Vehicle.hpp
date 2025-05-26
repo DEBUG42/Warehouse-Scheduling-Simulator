@@ -50,7 +50,7 @@ public:
         float position;               // 轨道位置（0~trackLength）
         float currentSpeed;           // 当前速度（米/秒）
         MotionState motionState;      // 当前运动状态
-        const Task* currentTask = nullptr; // 当前执行的任务
+        Task* currentTask = nullptr; // 当前执行的任务
         sf::Clock operationTimer;     // 装卸货操作计时器
     } m_state;
 };
@@ -62,6 +62,9 @@ public:
     // 输入: 车辆数量 (int count)
     // 输出: 无
     void initializeVehicles(int count);
+
+    
+    static std::string motionStateToString(Vehicle::MotionState state); 
 
     // 更新所有车辆的状态
     // 输入: 当前时间 (double current_time), 时间步长 (double dt)
@@ -97,3 +100,13 @@ private:
     // 输出: 距离 (double)
     double getDistance(double from, double to);
 };
+ // 新增：将 MotionState 转换为字符串的辅助函数
+static std::string motionStateToString(Vehicle::MotionState state) {
+    switch (state) {
+        case Vehicle::MotionState::Accelerating: return "Accelerating";
+        case Vehicle::MotionState::Cruising:     return "Cruising";
+        case Vehicle::MotionState::Decelerating: return "Decelerating";
+        case Vehicle::MotionState::Stopped:      return "Stopped";
+        default:                        return "Unknown";
+    }
+    }
