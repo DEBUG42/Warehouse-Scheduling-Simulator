@@ -1,8 +1,7 @@
-#pragma once
-#include <SFML/Graphics.hpp>
-#include <map>
 #include <queue>
-#include <Taskscheduler.hpp>
+#include <map>
+#include <vector>
+#include <algorithm>
 /*
 p
 /*
@@ -34,33 +33,44 @@ enum class DeviceType {
     WorkstationOut  // 出库作业口（13,14,15）
 };
 
-enum class DeviceStatus {
-    working,        // 工作中
-    idle,           // 空闲中
-    preparing,      // 准备中
+struct DeviceState {
+    bool has_goods = false;       // 当前设备是否有货
+    bool is_reserved = false;     // 是否被任务锁定（调度后锁定）
+    int reserved_by = -1;         // 被哪个任务锁定
+    double reserved_until = 0.0;  // 预计释放时间
+
+    bool is_transferring = false; // 是否在搬运中（堆垛机或人工）
 };
+
 
 // 设备基类
 class DeviceBase {
 public:
     const int m_id;                   // 设备唯一标识
     std::queue<Task> m_taskQueue;     // 任务等待队列
+    float m_storageIn;                // 入库时间（秒）
+    float m_storageOut;               // 出库时间（秒）
+    DeviceState m_status;
 
-    float m_storageIn =30.0/TimeScale(); // 入库时间（秒）
-    float m_storageOut =25.0/TimeScale(); // 出库时间（秒）
-	DeviceBase(int id, DeviceType type);
-    DeviceStatus m_status;
+    DeviceBase(int id, DeviceType type)
+        : m_id(id),
+          m_taskQueue(),
+          m_storageIn(30.0),
+          m_storageOut(25.0),
+          m_status() {
+    }
 };
 
 
-//设备管理函数类
 class DeviceManager {
 public:
-    void updateDevice(double current_time);
+    void update(double current_time);
+
     const DeviceState& getState(int device_id) const;
-    void reserveDevice(int device_id, int task_id, double until_time);
-    void releaseDevice(int device_id, int task_id);
-    void handleEvent(const Event& e); // 在 Scheduler 中转发事件时使用
+    void reserve(int device_id, int task_id, double until_time);
+    void release(int device_id, int task_id);
+
+    void handleEvent(const Event& e); // 处理由 EventQueue 触发的事件
 
 private:
     std::map<int, DeviceState> devices;

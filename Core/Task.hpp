@@ -1,33 +1,44 @@
 // 包含必要的标准库头文件
+#pragma once
 #include <string>
 #include <map>
 #include <queue>
 #include <vector>
-#include <SFML/System.hpp>
+#include "Device.hpp"
 // 定义任务类型枚举，包括入库和出库两种类型
 enum TaskType { INBOUND, OUTBOUND };
 
 struct Task {
-    int id;                     // 任务唯一编号
+    int id;                          // 任务唯一编号
+    std::string material_id;                // 物料编号
     TaskType type;                   // 入库/出库任务
-    int materialId;                  // 物料编号
-    int startDeviceId;               // 起始设备ID
-    int endDeviceId;                 // 目标设备ID
-    double assign_time, pick_time, drop_time, complete_time; // 任务开始时间、取件时间、放件时间、完成时间
-    int assignedVehicleId = -1;      // 分配的车辆ID
+    int start_device_id;             // 起始设备ID
+    int end_device_id;               // 目标设备ID
+    
+    
+    //调度状态
+    int assigned_vehicle_id = -1;      // 分配的车辆ID
     bool is_assigned;                // 是否已分配
+
+    //时间戳
+    double ready_time = -1;
+    double assign_time = -1;
+    double pick_time = -1;
+    double drop_time = -1;
+    double complete_time = -1;
+
 };
 
-
-//最新的类
 class TaskManager {
 public:
-    void loadFromFile(const std::string& path);
-    std::vector<Task*> getReadyTasks(double current_time, const DeviceManager& device_manager);
-    bool allTasksCompleted() const;
-    void markTaskAssigned(int task_id, int car_id, double current_time);
+    void loadFromFile( std::string& filepath);     // 从文件中加载任务信息
+    std::vector<Task*> getReadyTasks(double current_time,  DeviceManager& device_manager);     // 获取当前时间点可调度的任务
+    bool allTasksCompleted() const; // 是否所有任务都已完成
+    void markTaskAssigned(int task_id, int vehicle_id, double assign_time); // 标记任务已分配
+    
+    const std::vector<Task>& getTasks() const;
 
 private:
     std::vector<Task> tasks;
-    std::map<int, int> next_task_id; // 设备编号 → 当前应执行任务编号
+    std::map<int, int> next_task_id; // 起始设备 → 当前待调度任务编号
 };

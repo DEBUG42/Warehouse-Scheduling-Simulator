@@ -1,14 +1,24 @@
-//CarManager 类（车辆推进器 + 调度支持）
 #pragma once
-#include <SFML/Graphics.hpp>
-#include <map>
-#include "Task.hpp"
 #include "Device.hpp"
 #include <vector>
+#include "Scheduler.hpp"
+#include "Task.hpp"
+#include "Event.hpp"
+#include <SFML/Graphics.hpp>
 
 
+// 定义车辆类
 class Vehicle {
 public:
+
+// 定义车辆状态枚举
+    enum class VehicleState {
+        IDLE,           // 空闲状态
+        MOVING_TO_PICK, // 移动到取货位置
+        PICKING,        // 取货状态
+        MOVING_TO_DROP, // 移动到卸货位置
+        DROPPING        // 卸货状态
+};
     // 运动状态枚举
     enum class MotionState {
         Accelerating,  // 加速阶段
@@ -17,54 +27,86 @@ public:
         Stopped        // 静止状态
     };
 
+    // 默认构造函数
+    // 输入: 无
+    // 输出: 无
+    Vehicle() 
+        : id(-1), towards_device(-1), position_m(0.0), next_available_time(0.0), 
+          is_executing(false), is_loaded(false), velocity_mps(0.0), max_speed(0.0), 
+          target_position(0.0) {
+        m_state.position = 0.0;
+        m_state.currentSpeed = 0.0;
+        m_state.motionState = MotionState::Stopped;
+        m_state.currentTask = nullptr;
+        m_state.operationTimer.restart();
+    }
 
 
     // 固有属性
     int id;                      // 车辆编号
-    float m_length = 0.02;            // 车辆长度（米）
-    float m_maxStraightSpeed = (8 / 3) * TimeScale();   // 直轨最大速度（米/秒）
-    float m_maxCurveSpeed = (2 / 3) * TimeScale();     // 弯轨最大速度（米/秒）
-    float m_acceleration = 0.5 * TimeScale() * TimeScale();       // 加减速度（米/秒²）
+    float m_length = 0.02;        // 车辆长度（米）
+    float m_maxStraightSpeed = (8 / 3);   // 直轨最大速度（米/秒）
+    float m_maxCurveSpeed = (2 / 3);    // 弯轨最大速度（米/秒）
+    float m_acceleration = 0.5;       // 加减速度（米/秒²）
 
     int towards_device;          // 要前往的设备编号
-    float position_m;           // 在轨道上的位置
-    float  next_available_time;         // 下一次空车时间
+    float position_m;            // 在轨道上的位置
+    float next_available_time;   // 下一次空车时间
     bool is_executing;           // 是否正在执行任务
     bool is_loaded;              // 是否装载货物
+    float velocity_mps;          // 当前速度（米/秒）
+    float max_speed;             // 最大速度（米/秒）
+    float target_position;       // 目标位置（米/秒）
 
     // 动态状态
     struct {
         float position;               // 轨道位置（0~trackLength）
         float currentSpeed;           // 当前速度（米/秒）
         MotionState motionState;      // 当前运动状态
-        const Task* currentTask = nullptr; // 当前执行的任务
+        Task* currentTask;          // 当前执行的任务
         sf::Clock operationTimer;     // 装卸货操作计时器
     } m_state;
-
-
-    Vehicle(int id, int current_device, double position_m, double available_time, bool is_executing, bool is_loaded,
-            float position, float currentSpeed, MotionState motionState) :
-            id(id), current_device(current_device), position_m(position_m), available_time(available_time),
-            is_executing(is_executing), is_loaded(is_loaded) {
-        m_state.position = position;
-        m_state.currentSpeed = currentSpeed;
-        m_state.motionState = motionState;
-        m_state.currentTask = nullptr;
-        m_state.operationTimer.restart();
-    }
 };
 
-
-//储存函数的车辆管理类
+// 储存和管理车辆的类
 class VehicleManager {
 public:
-    void initializeCars(int count);
-    void updateAllCars(double current_time, double dt); // 高频推进车辆
-    std::vector<Car*> getAvailableCars(const Task& task, double current_time);
-    Car* selectBestCar(const Task& task, const std::vector<Car*>&, double current_time);
-    void applyTaskToCar(Car& car, const Task& task, double current_time);
+    // 初始化指定数量的车辆
+    // 输入: 车辆数量 (int count)
+    // 输出: 无
+    void initializeVehicles(int count);
+
+    // 更新所有车辆的状态
+    // 输入: 当前时间 (double current_time), 时间步长 (double dt)
+    // 输出: 无
+    void updateAllVehicles(double current_time, double dt);
+
+    // 获取可用于执行指定任务的车辆列表
+    // 输入: 任务对象 (const Task& task), 当前时间 (double current_time)
+    // 输出: 可用车辆列表 (std::vector<Vehicle*>)
+    std::vector<Vehicle*> getAvailableVehicles(Task& task, double current_time);
+
+    // 选择最适合执行指定任务的车辆
+    // 输入: 任务对象 (const Task& task), 候选车辆列表 (const std::vector<Vehicle*>& candidates), 当前时间 (double current_time)
+    // 输出: 最佳车辆 (Vehicle*)
+    Vehicle* selectBestVehicle(Task& task, std::vector<Vehicle*>& candidates, double current_time);
+
+    // 将任务分配给指定的车辆
+    // 输入: 车辆对象 (Vehicle& vehicle), 任务对象 (Task& task), 当前时间 (double current_time)
+    // 输出: 无
+    void applyTaskToVehicle(Vehicle& vehicle, Task& task, double current_time);
+
+    // 返回所有车辆的常量引用
+    // 输入: 无
+    // 输出: 所有车辆的列表 (const std::vector<Vehicle>&)
+    std::vector<Vehicle>& getVehicles();
 
 private:
-    std::vector<Car> cars;
-    void applyMotion(Car& car, double dt); // 推进位置+速度
+    std::vector<Vehicle> vehicles; // 定义 vehicles 容器
+    constexpr static double LOOP_LENGTH = 100.0;  // 环道总长度（可调）
+
+    // 计算两个位置之间的距离
+    // 输入: 起始位置 (double from), 结束位置 (double to)
+    // 输出: 距离 (double)
+    double getDistance(double from, double to);
 };
