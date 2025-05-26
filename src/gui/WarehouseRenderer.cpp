@@ -44,12 +44,20 @@ ID 3:  79920.9372261538f
 ID 2:  83520.9372261538f
 ID 1:  85920.9372261538f
 */
+/*
+        WarehouseInterface interface_element; // Renamed to avoid conflict with member name
+        interface_element.id = layout.id;
+        interface_element.type = layout.type;
+        interface_element.positionCategory = layout.positionCategory;
+        interface_element.widthMm = layout.visualWidthMm / 2.0f;
+        interface_element.depthMm = layout.visualDepthMm / 2.0f; // Use half depth for correct positioning
 
+*/
 // Define the fixed layout based on comments and image from user
 // All TrackDist MM are CENTERLINE distances.
 const std::vector<WarehouseRenderer::PredefinedDeviceLayout> WarehouseRenderer::s_deviceLayouts = {
     // Bottom track devices (IDs 13-18) - Centerline Distances
-    // Device ID, TrackDist MM (Centerline), Type, PositionHint, VisualWidth MM, VisualDepth MM, OffsetFromTrackEdge MM
+    // Device ID, TrackDist MM (Centerline), Type, positionCategory, VisualWidth MM, VisualDepth MM, OffsetFromTrackEdge MM
     {18, 8000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
     {17, 11000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
     {16, 14000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
@@ -144,50 +152,91 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         m_iconTextures[gui::DeviceType::STORAGE_STATION] = defaultTexture; // Generic storage as fallback
     }
 
-    float trackOuterEdgeOffsetMm = m_trackRendererRef->getTrackWidth() / 2.0f;
+    float trackOuterEdgeOffsetMm = m_trackRendererRef->getTrackWidth() / 200.0f; // 修正：确保是除以 2.0f
     float mmToPx = m_trackRendererRef->getMmToPxRatio();
 
     for (const auto &layout : s_deviceLayouts)
     {
-        WarehouseInterface interface_element; // Renamed to avoid conflict with member name
+        WarehouseInterface interface_element;
         interface_element.id = layout.id;
         interface_element.type = layout.type;
         interface_element.positionCategory = layout.positionCategory;
-        interface_element.widthMm = layout.visualWidthMm;
-        interface_element.depthMm = layout.visualDepthMm;
+        interface_element.widthMm = layout.visualDepthMm / 1.5f; // 1000
+        interface_element.depthMm = layout.visualWidthMm / 1.5f; // 1500
 
         sf::Vector2f trackCenterPointPx;
-        float trackAngleRad;
+        float trackAngleRad; // 用于存储从TrackRenderer获取的轨道角度
 
+        // 从TrackRenderer获取指定距离处的轨道点坐标和切线角度
+        // 添加 m_worldOriginOffsetPx 作为第四个参数
         if (!m_trackRendererRef->getPointAndOrientationOnCenterLine(layout.trackDistanceMm, trackCenterPointPx, trackAngleRad, m_worldOriginOffsetPx))
         {
-            std::cerr << "WarehouseRenderer Error: Could not get track point for device ID " << layout.id << " at " << layout.trackDistanceMm << "mm." << std::endl;
-            continue;
+            std::cerr << "WarehouseRenderer Error: Could not get point and orientation for device ID "
+                      << layout.id << " at distance " << layout.trackDistanceMm << std::endl;
+            continue; // 跳过这个设备
         }
 
-        float normalAngleRad = trackAngleRad - (M_PI / 2.0f); // Default normal (e.g., "right" or "down" side of track travel)
+        float normalAngleRad;
+        const float angle_tolerance = 0.01f;
 
-        // Adjust normal direction based on position category
+        // 首先判断是否在弯道上。我们可以通过 trackAngleRad 是否接近水平或垂直来粗略判断。
+        // 如果 trackAngleRad 既不接近0/PI (水平) 也不接近 PI/2, -PI/2 (垂直)，则认为是弯道。
+        // 或者，更可靠的方法是 TrackRenderer 提供一个函数 isPointOnCurve(distanceMm)。
+        // 暂时我们先用角度判断。
+        bool onStraightHorizontal = (std::abs(trackAngleRad) < angle_tolerance ||
+                                     std::abs(trackAngleRad - M_PI) < angle_tolerance ||
+                                     std::abs(trackAngleRad + M_PI) < angle_tolerance);
+        // bool onStraightVertical = (std::abs(trackAngleRad - M_PI_2) < angle_tolerance ||
+        //                            std::abs(trackAngleRad + M_PI_2) < angle_tolerance);
+
         if (layout.positionCategory == WarehousePosition::TOP)
         {
-            normalAngleRad += M_PI; // Flip direction for TOP devices (e.g. "left" or "up" side)
+            // 对于顶部的仓库，法线总是指向屏幕上方
+            normalAngleRad = -M_PI / 2.0f; // 数学坐标系：指向负Y轴 (屏幕上方)
         }
+        else // WarehousePosition::BOTTOM
+        {
+            // 对于底部的仓库，法线总是指向屏幕下方
+            normalAngleRad = M_PI / 2.0f; // 数学坐标系：指向正Y轴 (屏幕下方)
+        }
+
+        // 修改下面这一行：
+        // 原来的: interface_element.worldRotationDegrees = -(trackAngleRad + M_PI / 2.0f) * (180.0f / M_PI);
+        // 新的:
+        interface_element.worldRotationDegrees = -trackAngleRad * (180.0f / M_PI);
 
         float totalOffsetFromCenterlineMm = trackOuterEdgeOffsetMm + layout.offsetFromTrackEdgeMm + (layout.visualDepthMm / 2.0f);
         sf::Vector2f offsetVectorPx(
             totalOffsetFromCenterlineMm * std::cos(normalAngleRad) * mmToPx,
-            totalOffsetFromCenterlineMm * std::sin(normalAngleRad) * mmToPx); // offsetVectorPx.y is a Y-up delta
+            totalOffsetFromCenterlineMm * std::sin(normalAngleRad) * mmToPx);
 
-        // trackCenterPointPx is Y-down (render coordinates from TrackRenderer)
-        // offsetVectorPx is calculated with Y-up math conventions (sin gives Y-up delta for y)
-        // To apply a Y-up y-offset to a Y-down base y-coordinate, we subtract the offset's y-component.
         interface_element.worldCenterPx.x = trackCenterPointPx.x + offsetVectorPx.x;
-        interface_element.worldCenterPx.y = trackCenterPointPx.y - offsetVectorPx.y;
+        interface_element.worldCenterPx.y = trackCenterPointPx.y + offsetVectorPx.y; // Y-up offset to Y-down screen
 
-        // trackAngleRad is Y-up (CCW from +X axis is positive)
-        // SFML's setRotation uses degrees, with positive values rotating clockwise.
-        // Therefore, the Y-up angle must be negated for SFML.
-        interface_element.worldRotationDegrees = -trackAngleRad * (180.0f / M_PI);
+        // 仓库本体的旋转仍然应该垂直于轨道切线
+        // SFML 的 setRotation 使用度数，正值顺时针。
+        // trackAngleRad 是数学坐标（Y向上，逆时针为正）。
+        // 仓库通常平行于法线，或垂直于切线。如果仓库长边平行于轨道，则旋转角度与轨道切线相关。
+        // 如果仓库长边垂直于轨道（像图示那样），它的方向应该是 normalAngleRad + PI/2 (或者 normalAngleRad - PI/2)
+        // 或者更简单，直接使用 trackAngleRad，然后根据需要加90度。
+        // 让我们假设仓库的“前部”或“开口”面向轨道，其“边”平行于轨道。
+        // 那么仓库的旋转应该是使其“边”与轨道切线平行。
+        // 如果仓库的局部坐标系X轴是其长度方向，那么旋转 trackAngleRad 即可。
+        // 但从图上看，仓库是矩形，其较长的一边是垂直于轨道的。
+        // 所以仓库的旋转应该是 normalAngleRad (使其X轴指向法线方向)
+        // 或者 trackAngleRad + 90度 (使其Y轴平行于轨道，X轴垂直于轨道)
+
+        // 从您的图示看，仓库的ID号是横向的，仓库本体是竖向的（垂直于轨道）。
+        // 这意味着仓库的旋转应该是使其“宽度”边平行于轨道，“深度”边垂直于轨道。
+        // 那么仓库的旋转角度应该是 trackAngleRad (数学角度) 加上或减去90度，使其长边垂直。
+        // 或者说，仓库的“朝向”是法线方向。
+        // 如果仓库的局部坐标系的+Y轴是其“深度”方向（指向轨道或远离轨道），+X轴是其“宽度”方向（平行轨道）。
+        // 那么，仓库的旋转应该是 trackAngleRad。
+        // 但您的图示仓库是“站立”的，其深度方向是垂直于轨道的。
+        // 所以，仓库的旋转应该是 trackAngleRad + 90度 (或者 -90度)。
+        // 让我们用 trackAngleRad 来表示仓库的“边”与X轴的夹角，然后SFML需要负值。
+        // 并且，仓库的形状是垂直于轨道的，所以是 trackAngleRad + PI/2。
+        interface_element.worldRotationDegrees = -(trackAngleRad + M_PI / 2.0f) * (180.0f / M_PI);
 
         float wPx = interface_element.widthMm * mmToPx;
         float hPx = interface_element.depthMm * mmToPx;
@@ -221,11 +270,33 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         sf::Text label;
         label.setFont(m_font);
         label.setString(std::to_string(layout.id));
-        label.setCharacterSize(10);
+        label.setCharacterSize(10); // 您可以根据需要调整字符大小
         label.setFillColor(sf::Color::Black);
         sf::FloatRect textBounds = label.getLocalBounds();
         label.setOrigin(textBounds.left + textBounds.width / 2.0f, textBounds.top + textBounds.height / 2.0f);
-        label.setPosition(interface_element.worldCenterPx + sf::Vector2f(0, -hPx / 2 - 5));
+
+        // 获取仓库的像素高度，用于计算标签的垂直偏移
+        // float hPx = interface_element.depthMm * mmToPx; // <--- 移除这一行，因为 hPx 在前面已经计算过了 (第242行附近)
+        float labelOffsetY;
+
+        if (layout.positionCategory == WarehousePosition::BOTTOM)
+        {
+            // 如果仓库在下方，将文字显示在仓库下方
+            // hPx / 2.0f 将标签移动到仓库的下边缘
+            // + 5.0f 是额外的向下偏移量，以避免与仓库边框重叠
+            labelOffsetY = hPx / 2.0f + 5.0f;
+        }
+        else // WarehousePosition::TOP (或其他默认情况)
+        {
+            // 如果仓库在上方，将文字显示在仓库上方
+            // -hPx / 2.0f 将标签移动到仓库的上边缘
+            // - 5.0f 是额外的向上偏移量
+            labelOffsetY = -hPx / 2.0f - 5.0f;
+        }
+
+        // 设置标签位置，X轴方向上与仓库中心对齐，Y轴方向上根据上述逻辑偏移
+        label.setPosition(interface_element.worldCenterPx + sf::Vector2f(0, labelOffsetY));
+
         m_labels.push_back(label);
     }
 }

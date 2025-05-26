@@ -49,7 +49,7 @@ void drawCoordinateSystemDebug(sf::RenderWindow &window, TrackRenderer &trackRen
     renderOriginDebug.setPosition(worldOriginOffset); // Use the passed worldOriginOffset
     window.draw(renderOriginDebug);
 
-    sf::Text renderLabel("Render Origin (Track)", font, 12);
+    sf::Text renderLabel("Render Origin (Track)", font, 6);
     renderLabel.setFillColor(sf::Color::Cyan);
     renderLabel.setPosition(renderOriginDebug.getPosition().x + 10.f, renderOriginDebug.getPosition().y - 20.f);
     window.draw(renderLabel);
@@ -391,7 +391,7 @@ int main()
             originMarker.setOrigin(originMarker.getRadius(), originMarker.getRadius());
             originMarker.setPosition(originPosPx);
             window.draw(originMarker);
-            drawText(window, "Path Origin (0mm)", originPosPx + sf::Vector2f(10, -10) * trackRenderer.getScaleFactor(), font, 12, sf::Color::Black);
+            drawText(window, "Path Origin (0mm)", originPosPx + sf::Vector2f(10, -10) * trackRenderer.getScaleFactor(), font, 9, sf::Color::Black);
         }
 
         window.setView(window.getDefaultView()); // 重置视图以绘制UI元素

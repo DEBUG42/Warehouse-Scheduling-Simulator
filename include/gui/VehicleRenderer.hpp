@@ -121,6 +121,12 @@ public:
      */
     void updateState(const gui::VehicleState &state, TrackRenderer &trackRenderer, const sf::Vector2f &worldOriginOffsetPx);
 
+    /**
+     * @brief 设置车辆视觉缩放比例
+     * @param scale 缩放比例
+     */
+    void setVehicleVisualScale(float scale);
+
 private:
-    // ... existing code ...
+    float m_vehicleVisualScale; // 车辆视觉缩放比例
 };
