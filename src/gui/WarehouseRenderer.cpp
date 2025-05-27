@@ -26,7 +26,7 @@
 
 提供的中心线距离数据 (最终值):
 ID 18: 8000.0f
-ID 17: 11000.0f
+ID 17: 11100.0f
 ID 16: 14000.0f
 ID 15: 26000.0f
 ID 14: 29000.0f
@@ -58,27 +58,27 @@ ID 1:  85920.9372261538f
 const std::vector<WarehouseRenderer::PredefinedDeviceLayout> WarehouseRenderer::s_deviceLayouts = {
     // Bottom track devices (IDs 13-18) - Centerline Distances
     // Device ID, TrackDist MM (Centerline), Type, positionCategory, VisualWidth MM, VisualDepth MM, OffsetFromTrackEdge MM
-    {18, 8000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
-    {17, 11000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
-    {16, 14000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
-    {15, 26000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
-    {14, 29000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
-    {13, 32000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1000, 1500, 200},
+    {18, 8000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
+    {17, 11100.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
+    {16, 14000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
+    {15, 26000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
+    {14, 29000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
+    {13, 32000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
 
     // Top track devices (IDs 1-12) - Centerline Distances
     // Image: Odd IDs are INPUT_STATION (arrow in), Even IDs are OUTPUT_STATION (arrow out) for top row.
-    {12, 53520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {11, 55920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {10, 59520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {9, 61920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {8, 65520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {7, 67920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {6, 71520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {5, 73920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {4, 77520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {3, 79920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {2, 83520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
-    {1, 85920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1000, 1500, 200},
+    {12, 53520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {11, 55920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {10, 59520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {9, 61920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {8, 65520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {7, 67920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {6, 71520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {5, 73920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {4, 77520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {3, 79920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {2, 83520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {1, 85920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
 };
 
 WarehouseRenderer::WarehouseRenderer()
@@ -152,8 +152,10 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         m_iconTextures[gui::DeviceType::STORAGE_STATION] = defaultTexture; // Generic storage as fallback
     }
 
-    float trackOuterEdgeOffsetMm = m_trackRendererRef->getTrackWidth() / 200.0f; // 修正：确保是除以 2.0f
-    float mmToPx = m_trackRendererRef->getMmToPxRatio();
+    float trackOuterEdgeOffsetMm = m_trackRendererRef->getTrackWidth() / 2.0f;
+    // float mmToPx = m_trackRendererRef->getMmToPxRatio(); // REMOVED - Will fetch fresh values in loop
+    // float currentMmToPx = m_trackRendererRef->getMmToPxRatio(); // REMOVED - Will fetch fresh values in loop
+    // float currentScaleFactor = m_trackRendererRef->getScaleFactor(); // REMOVED - Will fetch fresh values in loop
 
     for (const auto &layout : s_deviceLayouts)
     {
@@ -161,8 +163,9 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         interface_element.id = layout.id;
         interface_element.type = layout.type;
         interface_element.positionCategory = layout.positionCategory;
-        interface_element.widthMm = layout.visualDepthMm / 1.5f; // 1000
-        interface_element.depthMm = layout.visualWidthMm / 1.5f; // 1500
+        interface_element.widthMm = layout.visualDepthMm / 1.0f; // 1100
+        interface_element.depthMm = layout.visualWidthMm / 1.0f; // 2700
+        // 210行    float totalOffsetFromCenterlineMm = trackOuterEdgeOffsetMm + layout.offsetFromTrackEdgeMm + (layout.visualDepthMm / 2.0f);
 
         sf::Vector2f trackCenterPointPx;
         float trackAngleRad; // 用于存储从TrackRenderer获取的轨道角度
@@ -205,10 +208,14 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         // 新的:
         interface_element.worldRotationDegrees = -trackAngleRad * (180.0f / M_PI);
 
-        float totalOffsetFromCenterlineMm = trackOuterEdgeOffsetMm + layout.offsetFromTrackEdgeMm + (layout.visualDepthMm / 2.0f);
+        float totalOffsetFromCenterlineMm = trackOuterEdgeOffsetMm + layout.offsetFromTrackEdgeMm * 0.0f + (layout.visualDepthMm / 2.0f);
+
+        // Fetch current scaling factors from TrackRenderer for pixel calculations
+        float currentMmToPx = m_trackRendererRef->getMmToPxRatio();
+        float currentScaleFactor = m_trackRendererRef->getScaleFactor();
         sf::Vector2f offsetVectorPx(
-            totalOffsetFromCenterlineMm * std::cos(normalAngleRad) * mmToPx,
-            totalOffsetFromCenterlineMm * std::sin(normalAngleRad) * mmToPx);
+            totalOffsetFromCenterlineMm * std::cos(normalAngleRad) * currentMmToPx * currentScaleFactor,
+            totalOffsetFromCenterlineMm * std::sin(normalAngleRad) * currentMmToPx * currentScaleFactor);
 
         interface_element.worldCenterPx.x = trackCenterPointPx.x + offsetVectorPx.x;
         interface_element.worldCenterPx.y = trackCenterPointPx.y + offsetVectorPx.y; // Y-up offset to Y-down screen
@@ -238,8 +245,8 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         // 并且，仓库的形状是垂直于轨道的，所以是 trackAngleRad + PI/2。
         interface_element.worldRotationDegrees = -(trackAngleRad + M_PI / 2.0f) * (180.0f / M_PI);
 
-        float wPx = interface_element.widthMm * mmToPx;
-        float hPx = interface_element.depthMm * mmToPx;
+        float wPx = interface_element.widthMm * currentMmToPx * currentScaleFactor;
+        float hPx = interface_element.depthMm * currentMmToPx * currentScaleFactor;
         sf::Transform tx;
         tx.translate(interface_element.worldCenterPx);
         tx.rotate(interface_element.worldRotationDegrees);
@@ -270,7 +277,14 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         sf::Text label;
         label.setFont(m_font);
         label.setString(std::to_string(layout.id));
-        label.setCharacterSize(10); // 您可以根据需要调整字符大小
+        // label.setCharacterSize(10); // 您可以根据需要调整字符大小
+        // Scale character size with zoom, ensuring a minimum readable size
+        unsigned int baseCharSize = 10; // Base character size at scale 1.0
+        unsigned int minCharSize = 8;   // Minimum character size (pixels)
+        // Ensure currentScaleFactor is not zero or negative if it can be, though typically it's > 0
+        float effectiveScaleFactorForText = std::max(0.1f, m_trackRendererRef->getScaleFactor()); // Fetch fresh scale factor for text
+        unsigned int scaledCharSize = static_cast<unsigned int>(static_cast<float>(baseCharSize) * effectiveScaleFactorForText);
+        label.setCharacterSize(std::max(minCharSize, scaledCharSize));
         label.setFillColor(sf::Color::Black);
         sf::FloatRect textBounds = label.getLocalBounds();
         label.setOrigin(textBounds.left + textBounds.width / 2.0f, textBounds.top + textBounds.height / 2.0f);
@@ -360,9 +374,11 @@ void WarehouseRenderer::drawInterface(sf::RenderTarget &target, sf::RenderStates
     if (!m_trackRendererRef)
         return; // Should not happen if initialized
 
-    float mmToPx = m_trackRendererRef->getMmToPxRatio();
-    float visualWidthPx = interface_obj.widthMm * mmToPx;
-    float visualDepthPx = interface_obj.depthMm * mmToPx; // visualDepthMm is dimension perpendicular to track
+    // Fetch current scaling factors from TrackRenderer for this draw call
+    float currentMmToPx = m_trackRendererRef->getMmToPxRatio();
+    float currentScaleFactor = m_trackRendererRef->getScaleFactor();
+    float visualWidthPx = interface_obj.widthMm * currentMmToPx * currentScaleFactor;
+    float visualDepthPx = interface_obj.depthMm * currentMmToPx * currentScaleFactor; // visualDepthMm is dimension perpendicular to track
 
     sf::RectangleShape body(sf::Vector2f(visualWidthPx, visualDepthPx));
     body.setOrigin(visualWidthPx / 2.0f, visualDepthPx / 2.0f);
@@ -405,7 +421,9 @@ void WarehouseRenderer::drawInterface(sf::RenderTarget &target, sf::RenderStates
     }
 
     body.setFillColor(bodyFillColor);
-    body.setOutlineThickness(1.0f * mmToPx > 0.5f ? 1.0f * mmToPx : 0.5f); // Ensure outline is visible
+    // body.setOutlineThickness(1.0f * mmToPx > 0.5f ? 1.0f * mmToPx : 0.5f); // Ensure outline is visible
+    float outlineThickness = 1.0f * currentMmToPx * currentScaleFactor;
+    body.setOutlineThickness(std::max(0.5f, outlineThickness)); // Ensure outline is visible with a minimum
     body.setOutlineColor(bodyBorderColor);
 
     target.draw(body, states);
@@ -427,7 +445,8 @@ void WarehouseRenderer::drawInterface(sf::RenderTarget &target, sf::RenderStates
         float iconScale = std::min(scaleX, scaleY);
 
         // Prevent overly tiny icons or huge icons if device is oddly shaped
-        iconScale = std::max(0.1f, std::min(iconScale, 2.0f));
+        // Adjust icon scale considering the global currentScaleFactor from TrackRenderer
+        iconScale = std::max(0.1f, std::min(iconScale, 2.0f * currentScaleFactor));
 
         iconSprite.setScale(iconScale, iconScale);
         target.draw(iconSprite, states);

@@ -86,20 +86,22 @@ namespace gui
     {
         // std::string id; // 从 SimObject 继承
         // SimObjectType type = SimObjectType::Vehicle; // SimObject 构造时设置
-        sf::Vector2f position;     // 兼容测试代码直接访问
-        float rawTrackPositionMm;  // 新增: 车辆在轨道上的原始位置 (mm)
-        float speed;               // 当前速度（米/秒）
-        gui::VehicleStatus status; // GUI特定的车辆状态
-        std::string currentTaskId; // 当前任务ID（空字符串表示无任务）
-        bool isLoaded;             // 载货状态
-        CargoDisplayInfo cargo;    // 载货详情 (GUI用)
-        float batteryLevel;        // 电量 (0.0 - 1.0)
+        sf::Vector2f position;      // 兼容测试代码直接访问
+        float rawTrackPositionMm;   // 新增: 车辆在轨道上的原始位置 (mm)
+        float worldRotationDegrees; // 新增: 车辆在世界坐标系中的旋转角度 (度)
+        float speed;                // 当前速度（米/秒）
+        gui::VehicleStatus status;  // GUI特定的车辆状态
+        std::string currentTaskId;  // 当前任务ID（空字符串表示无任务）
+        bool isLoaded;              // 载货状态
+        CargoDisplayInfo cargo;     // 载货详情 (GUI用)
+        float batteryLevel;         // 电量 (0.0 - 1.0)
 
         // 默认构造函数
         VehicleState()
             : SimObject(SimObjectType::Vehicle, ""),
               position(sf::Vector2f(0, 0)), // 先初始化position，因为它在类定义中首先声明
               rawTrackPositionMm(0.0f),
+              worldRotationDegrees(0.0f), // 初始化新增的成员
               speed(0.0f),
               status(gui::VehicleStatus::UNKNOWN),
               currentTaskId(""),
@@ -110,13 +112,14 @@ namespace gui
         }
 
         // 测试/手动创建用构造函数
-        VehicleState(const std::string &_id, const sf::Vector2f &_pos, // _pos is render position
-                     float _rawTrackPosMm, float _speed, gui::VehicleStatus _status,
+        VehicleState(const std::string &_id, const sf::Vector2f &_pos,                                   // _pos is render position
+                     float _rawTrackPosMm, float _worldRotDeg, float _speed, gui::VehicleStatus _status, // Added _worldRotDeg
                      const std::string &_taskId, bool _isLoaded,
                      const gui::CargoDisplayInfo &_cargoDetails, float _batteryLevel)
             : SimObject(gui::SimObjectType::Vehicle, _id, _pos),
               position(_pos), // 先初始化position
               rawTrackPositionMm(_rawTrackPosMm),
+              worldRotationDegrees(_worldRotDeg), // 初始化新增的成员
               speed(_speed),
               status(_status),
               currentTaskId(_taskId),
@@ -131,6 +134,7 @@ namespace gui
             : SimObject(SimObjectType::Vehicle, coreVehicle.getId(), worldPos),
               position(worldPos),                                   // 先初始化position
               rawTrackPositionMm(coreVehicle.getTrackPositionMm()), // 假设 Core::Vehicle 有 getTrackPositionMm()
+              worldRotationDegrees(0.0f),                           // 初始化，将在 VehicleRenderer 中计算和设置
               speed(coreVehicle.getSpeed()),
               status(coreMotionToGuiStatus(coreVehicle.getMotionState())),
               currentTaskId(coreVehicle.getCurrentTaskId()),

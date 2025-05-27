@@ -1,0 +1,28 @@
+[33mcd26339[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/reset_structure[m[33m)[m basic render all set
+[33m70c8b79[m basic warehouserender with track
+[33m578a42f[m[33m ([m[1;31morigin/feature/reset_structure[m[33m)[m 修复车辆起始位置：从左下角开始而非右下角
+[33m7c98f8f[m y direction up
+[33m4092157[m y direction
+[33mbdfbea6[m 轨道正常计算+车库正常渲染
+[33ma7a026d[m Update SimulationView initialization and resize logic
+[33ma26c748[m[33m ([m[1;31mforked/feature/reset_structure[m[33m)[m Fix: Update GUI text to English and resolve font issues
+[33m8e1a47f[m row funny runnable
+[33m5009545[m[33m ([m[1;31mmyfork/feature/reset_structure[m[33m)[m GUI color and speed control
+[33m511030a[m GUI color and speed control
+[33m0149419[m mainwindow
+[33ma767acb[m 清理TestSimulationEngine相关代码，统一仿真接口为SimulationInterface/MockSimulationInterface，修复编译报错，优化GUI测试主流程
+[33m7c6306d[m fix: 统一SimObject类型作用域与头文件路径，修复仿真主界面与测试一致性，解决类型前缀和成员访问问题
+[33m368b159[m[33m ([m[1;31morigin/myfork[m[33m)[m feat: 英文化Toolbar及调整按钮布局，准备左侧任务列表功能
+[33m46ce05b[m refactor: 轨道渲染与车辆渲染大幅重构，完善赛道几何与交互体验
+[33mf582325[m 回退到基础轨道绘制版本（无加粗线条功能），确保轨道完美绘制
+[33m5b1358e[m 实现T键切换网格和中心点高亮显示
+[33m90c8096[m 修复轨道连接和多余线条问题：1. 重构轨道绘制结构，分离内外轨道 2. 精确计算弯曲和直线轨道连接点 3. 提高弯道分段数量，增加平滑度
+[33mae01f03[m 改进轨道渲染器: 修复轨道形状以匹配目标布局, 实现双线表示法, 优化视觉效果
+[33m6d9c362[m feat: 成功实现字体加载测试，更新构建规则
+[33m095326b[m[33m ([m[1;31morigin/back_interact[m[33m, [m[1;31mmyfork/back_interact[m[33m, [m[1;32mback_interact[m[33m)[m feat code store
+[33m4b0faa7[m first that can be compiled
+[33m22706ab[m[33m ([m[1;31morigin/dev-OpenGL[m[33m, [m[1;31mforked/back_interact[m[33m)[m row
+[33mb92c7cd[m add all for sure
+[33m366f3be[m add all for sure
+[33m0244e0f[m add for sure
+[33m5254ef7[m create a back-forth info interact hpp for reference
