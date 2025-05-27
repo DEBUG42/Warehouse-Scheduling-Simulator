@@ -19,7 +19,7 @@ void VehicleManager::initializeVehicles(int count) {
         vehicle.next_available_time = 0.0;
         vehicle.is_executing = false;
         vehicle.is_loaded = false;
-        vehicle.towards_device = -1;
+        vehicle.towards_device =0;
         vehicle.velocity_mps = 0.0;
         vehicle.max_speed = 8.0 / 3.0;
 
@@ -27,7 +27,7 @@ void VehicleManager::initializeVehicles(int count) {
         vehicle.m_state.currentSpeed = 0.0;
         vehicle.m_state.motionState = Vehicle::MotionState::Stopped;
         vehicle.m_state.currentTask = nullptr;
-        vehicle.m_state.operationTimer.restart();
+        vehicle.m_state.operationTimer=0.0f;
 
         vehicles.push_back(vehicle);
     }
@@ -104,7 +104,7 @@ void VehicleManager::updateAllVehicles(double current_time, double dt,double tim
     }
 }
 */
-void VehicleManager::updateVehicle(float Timescale,float current_time,float deltaTime, std::vector<Vehicle*>vehicle ,std::vector<Vehicle*> leadingVehicle){
+void VehicleManager::updateVehicle(float current_time,float deltaTime, std::vector<Vehicle*>vehicle ,std::vector<Vehicle*> leadingVehicle){
 		
 	//当前主小车相对原点位置
 	float VehiclePosition;
@@ -156,7 +156,7 @@ void VehicleManager::updateVehicle(float Timescale,float current_time,float delt
 //到车库停车的判断和处理
 	if(vehicle->m_state.motionState == Vehicle::MotionState::Stopped && fabs(VehiclePosition - device_position[vehicle.towards_device])<epsilon){
 		auto& task = *vehicle.m_state.currentTask;
-		vehicle->m_state.operationTimer+=deltaTime*Timescale;
+		vehicle->m_state.operationTimer+=deltaTime;
 		
 		
 		if (vehicle->m_state.operationTimer >= vehicle->m_loadTime) {
@@ -211,7 +211,7 @@ void VehicleManager::updateVehicle(float Timescale,float current_time,float delt
 	switch (vehicle->m_state.motionState) {
             case Vehicle::MotionState::Accelerating:
 		//判断上一辆车的距离
-				vehicle->m_state.currentSpeed += vehicle->m_acceleration   *Timescale * deltaTime;
+				vehicle->m_state.currentSpeed += vehicle->m_acceleration  * deltaTime;
 		//直线上且超过最大速度
 				if((VehiclePosition>=0.f)&&(VehiclePosition<=40.0f)&&(vehicle->m_state.currentSpeed > vehicle->m_maxStraightSpeed)){
 					vehicle->m_state.currentSpeed = vehicle->m_maxStraightSpeed;
@@ -228,7 +228,7 @@ void VehicleManager::updateVehicle(float Timescale,float current_time,float delt
 				}
 			break;
             case Vehicle::MotionState::Decelerating:
-                vehicle->m_state.currentSpeed -= vehicle->m_acceleration  *Timescale * deltaTime;
+                vehicle->m_state.currentSpeed -= vehicle->m_acceleration   * deltaTime;
 				if (vehicle->m_state.currentSpeed < 0.0f) {
 					vehicle->m_state.currentSpeed= 0.0f;
 					}
@@ -246,7 +246,7 @@ void VehicleManager::updateVehicle(float Timescale,float current_time,float delt
                 break;
         }
 //位置的更新
-	vehicle->m_state.position += vehicle->m_state.currentSpeed *Timescale* deltaTime;
+	vehicle->m_state.position += vehicle->m_state.currentSpeed * deltaTime;
 }
 // 计算从一个位置到另一个位置的距离
 // 输入: double from - 起始位置, double to - 目标位置
@@ -278,8 +278,28 @@ std::vector<Vehicle*> VehicleManager::getAvailableVehicles(Task& task, double cu
 Vehicle* VehicleManager::selectBestVehicle(Task& task, std::vector<Vehicle*>& candidates, double current_time) {
     double best_time = std::numeric_limits<double>::max();
     Vehicle* best_vehicle = nullptr;
-
-    double pickup_pos = task.start_device_id * 5.0;
+	float device_position[19]={
+		-1000.0f,
+		85.9209372261538,
+		83.5209372261538,
+		79.9209372261538,
+		77.5209372261538,
+		73.9209372261538,
+		71.5209372261538,
+		67.9209372261538,
+		65.5209372261538,
+		61.9209372261538,
+		59.5209372261538,
+		55.9209372261538,
+		53.5209372261538,
+		32.000,
+		29.000,
+		26.000,
+		14.000,
+		11.000,
+		8.000,
+	};
+    double pickup_pos = device_position[task.start_device_id];
 
     for (auto* vehicle : candidates) {
         double dist = getDistance(vehicle->position_m, pickup_pos);
@@ -297,9 +317,30 @@ Vehicle* VehicleManager::selectBestVehicle(Task& task, std::vector<Vehicle*>& ca
 // 输入: Vehicle& vehicle - 车辆, Task& task - 任务, double current_time - 当前时间
 // 输出: 无
 void VehicleManager::applyTaskToVehicle(Vehicle& vehicle, Task& task, double current_time) {
+		float device_position[19]={
+		-1000.0f,
+		85.9209372261538,
+		83.5209372261538,
+		79.9209372261538,
+		77.5209372261538,
+		73.9209372261538,
+		71.5209372261538,
+		67.9209372261538,
+		65.5209372261538,
+		61.9209372261538,
+		59.5209372261538,
+		55.9209372261538,
+		53.5209372261538,
+		32.000,
+		29.000,
+		26.000,
+		14.000,
+		11.000,
+		8.000,
+	};
     vehicle.m_state.currentTask = &task;                      // ✅ 修正为 m_state.currentTask
     vehicle.towards_device = task.start_device_id;
-    vehicle.target_position = task.start_device_id * 5.0;
+	vehicle.target_position = device_position[task.start_device_id];
     vehicle.velocity_mps = 0.0;
     vehicle.max_speed = vehicle.m_maxStraightSpeed;
     vehicle.m_state.motionState = Vehicle::MotionState::Accelerating;

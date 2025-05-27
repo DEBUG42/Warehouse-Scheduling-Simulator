@@ -75,7 +75,7 @@ public:
 	//更新单个车辆的状态
 	//输入：当前时间（double current_time），时间步长（double dt）时间倍率（Timescal）
 	//		当前车辆，前一辆车
-	void updateVehicle(float Timescale,float current_time,float deltaTime, std::vector<Vehicle*>vehicle ,std::vector<Vehicle*> leadingVehicle)
+	void updateVehicle(float current_time,float deltaTime, std::vector<Vehicle*>vehicle ,std::vector<Vehicle*> leadingVehicle);
 
 
     // 获取可用于执行指定任务的车辆列表
