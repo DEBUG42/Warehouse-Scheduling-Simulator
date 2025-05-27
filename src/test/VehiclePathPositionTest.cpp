@@ -126,7 +126,7 @@ int main()
 
     TrackRenderer trackRenderer;
     trackRenderer.setMmToPxRatio(0.01f);
-    trackRenderer.setScaleFactor(0.5f);
+    trackRenderer.setScaleFactor(2.0f);
     trackRenderer.generateGeometry(trackRenderer.getTrackLength(), trackRenderer.getCurveRadius());
 
     VehicleRenderer vehicleRenderer(font, trackRenderer); // Pass trackRenderer
@@ -142,7 +142,7 @@ int main()
     const float pathDistanceStep = 500.0f; // Example step in mm
     const float totalPathLength = trackRenderer.getTotalCenterLineLengthMm();
 
-    gui::VehicleState vehicleState(
+    gui::VehicleState vehicleState1(
         "VTest1",                 // _id
         sf::Vector2f(0, 0),       // _pos
         0.0f,                     // _rawTrackPosMm
@@ -153,6 +153,19 @@ int main()
         false,                    // _isLoaded
         gui::CargoDisplayInfo(),  // _cargoInfo
         1.0f                      // _visualScale
+    );
+
+    gui::VehicleState vehicleState2(
+        "Bai",                              // _id
+        sf::Vector2f(0, 0),                 // _pos
+        0.0f,                               // _rawTrackPosMm
+        0.0f,                               // _worldRotDeg (rotation in degrees)
+        0.0f,                               // _speed_mps
+        gui::VehicleStatus::MOVING_TO_LOAD, // _status
+        "",                                 // _currentOrder
+        false,                              // _isLoaded
+        gui::CargoDisplayInfo(),            // _cargoInfo
+        1.0f                                // _visualScale
     );
     float currentPathDistanceMm = 0.0f;
 
@@ -316,20 +329,26 @@ int main()
         }
 
         // 更新车辆状态
-        vehicleState.rawTrackPositionMm = currentPathDistanceMm;
+        vehicleState1.rawTrackPositionMm = currentPathDistanceMm;
+        vehicleState2.rawTrackPositionMm = currentPathDistanceMm + 5000.0f; // 偏移5000mm
 
-        // 获取当前位置和方向
-        sf::Vector2f vehiclePosPx_world;    // Renamed from currentPosPx for clarity
-        float vehicleAngleRad_world = 0.0f; // Renamed from angleDegrees, this is the variable for snprintf
-                                            // Use the consistent renderWorldOriginOffset
-        trackRenderer.getPointAndOrientationOnCenterLine(currentPathDistanceMm, vehiclePosPx_world, vehicleAngleRad_world, renderWorldOriginOffset);
-        vehicleState.position = vehiclePosPx_world;
+        // 分别计算每辆车的位置和方向
+        sf::Vector2f vehiclePosPx_world1, vehiclePosPx_world2;
+        float vehicleAngleRad_world1 = 0.0f, vehicleAngleRad_world2 = 0.0f;
+
+        trackRenderer.getPointAndOrientationOnCenterLine(vehicleState1.rawTrackPositionMm,
+                                                         vehiclePosPx_world1, vehicleAngleRad_world1, renderWorldOriginOffset);
+        trackRenderer.getPointAndOrientationOnCenterLine(vehicleState2.rawTrackPositionMm,
+                                                         vehiclePosPx_world2, vehicleAngleRad_world2, renderWorldOriginOffset);
+
+        vehicleState1.position = vehiclePosPx_world1;
+        vehicleState2.position = vehiclePosPx_world2;
 
         // 更新车辆渲染器状态
         // Use the consistent renderWorldOriginOffset
         // vehicleRenderer.updateState(vehicleState, trackRenderer, renderWorldOriginOffset); // This updates a single m_currentState
-        std::vector<gui::VehicleState> currentVehicles = {vehicleState};
-        vehicleRenderer.updateVehicleStates(currentVehicles, renderWorldOriginOffset); // This updates m_vehicles
+        std::vector<gui::VehicleState> currentVehicles = {vehicleState1, vehicleState2}; // Collect all vehicles to update
+        vehicleRenderer.updateVehicleStates(currentVehicles, renderWorldOriginOffset);   // This updates m_vehicles
 
         window.clear(sf::Color(230, 240, 230)); // 使用浅绿色背景
         window.setView(view);                   // Apply the potentially panned/zoomed view
@@ -413,8 +432,8 @@ int main()
                      "Zoom Factor: %.2fx\n" // Display calculated zoom
                      "Track Scale: %.2f | MmToPx: %.4f",
                      currentPathDistanceMm, totalPathLength,
-                     vehicleState.position.x, vehicleState.position.y, // Use the world coordinates
-                     vehicleAngleRad_world * 180.0f / M_PI,            // Use the world angle
+                     vehicleState1.position.x, vehicleState1.position.y, // Use the world coordinates
+                     vehicleAngleRad_world1 * 180.0f / M_PI,             // Use the world angle
                      view.getCenter().x, view.getCenter().y,
                      view.getSize().x, view.getSize().y,
                      initialViewSize.x / view.getSize().x, // Zoom factor relative to initial
