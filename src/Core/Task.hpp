@@ -1,0 +1,43 @@
+// 包含必要的标准库头文件
+#pragma once
+#include <string>
+#include <map>
+#include <queue>
+#include <vector>
+#include "Device.hpp"
+// 定义任务类型枚举，包括入库和出库两种类型
+enum TaskType { INBOUND, OUTBOUND };
+
+struct Task {
+    int id;                          // 任务唯一编号
+    std::string material_id;                // 物料编号
+    TaskType type;                   // 入库/出库任务
+    int start_device_id;             // 起始设备ID
+    int end_device_id;               // 目标设备ID
+    
+    
+    //调度状态
+    int assigned_vehicle_id = -1;      // 分配的车辆ID
+    bool is_assigned;                // 是否已分配
+
+    //时间戳
+    double ready_time = -1;
+    double assign_time = -1;
+    double pick_time = -1;
+    double drop_time = -1;
+    double complete_time = -1;
+
+};
+
+class TaskManager {
+public:
+    void loadFromFile( std::string& filepath);     // 从文件中加载任务信息
+    std::vector<Task*> getReadyTasks(double current_time,  DeviceManager& device_manager);     // 获取当前时间点可调度的任务
+    bool allTasksCompleted(); // 是否所有任务都已完成
+    void markTaskAssigned(int task_id, int vehicle_id, double assign_time); // 标记任务已分配
+
+
+private:
+    std::vector<Task> tasks;
+    std::map<int, int> next_task_id; // 起始设备 → 当前待调度任务编号
+};
