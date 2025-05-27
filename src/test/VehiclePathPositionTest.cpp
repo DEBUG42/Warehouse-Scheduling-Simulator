@@ -129,8 +129,7 @@ int main()
     trackRenderer.setScaleFactor(0.5f);
     trackRenderer.generateGeometry(trackRenderer.getTrackLength(), trackRenderer.getCurveRadius());
 
-    VehicleRenderer vehicleRenderer(font);
-    vehicleRenderer.setMmToPxRatio(trackRenderer.getMmToPxRatio());
+    VehicleRenderer vehicleRenderer(font, trackRenderer); // Pass trackRenderer
 
     // Declare and initialize view and related variables FIRST
     sf::View view = window.getDefaultView();
@@ -144,15 +143,17 @@ int main()
     const float totalPathLength = trackRenderer.getTotalCenterLineLengthMm();
 
     gui::VehicleState vehicleState(
-        "VTest1",
-        sf::Vector2f(0, 0),
-        0.0f,
-        0.0f,
-        gui::VehicleStatus::IDLE,
-        "",
-        false,
-        gui::CargoDisplayInfo(),
-        1.0f);
+        "VTest1",                 // _id
+        sf::Vector2f(0, 0),       // _pos
+        0.0f,                     // _rawTrackPosMm
+        0.0f,                     // _worldRotDeg (rotation in degrees)
+        0.0f,                     // _speed_mps
+        gui::VehicleStatus::IDLE, // _status
+        "",                       // _currentOrder
+        false,                    // _isLoaded
+        gui::CargoDisplayInfo(),  // _cargoInfo
+        1.0f                      // _visualScale
+    );
     float currentPathDistanceMm = 0.0f;
 
     WarehouseRenderer warehouseRenderer;
@@ -326,7 +327,10 @@ int main()
 
         // 更新车辆渲染器状态
         // Use the consistent renderWorldOriginOffset
-        vehicleRenderer.updateState(vehicleState, trackRenderer, renderWorldOriginOffset);
+        // vehicleRenderer.updateState(vehicleState, trackRenderer, renderWorldOriginOffset); // This updates a single m_currentState
+        std::vector<gui::VehicleState> currentVehicles = {vehicleState};
+        vehicleRenderer.updateVehicleStates(currentVehicles, renderWorldOriginOffset); // This updates m_vehicles
+
         window.clear(sf::Color(230, 240, 230)); // 使用浅绿色背景
         window.setView(view);                   // Apply the potentially panned/zoomed view
 
