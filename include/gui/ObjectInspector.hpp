@@ -3,8 +3,12 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "SimObject.hpp"   // 包含 VehicleState 和 ObjectType
-// #include "DeviceState.hpp" // 包含 DeviceState
+// 前向声明，避免直接包含Core头文件（为了演示简化）
+namespace core
+{
+    class Vehicle;
+    class Device;
+}
 
 /**
  * @brief 对象检视器类
@@ -18,7 +22,8 @@ private:
     float m_width;    // 检视器宽度
     // float m_height;       // 检视器高度 (由 StatusPanel 控制)
 
-    const gui::SimObject *m_currentObject = nullptr; // 当前显示的对象
+    const void *m_currentObject = nullptr; // 当前显示的对象（简化版本）
+    std::string m_objectType = "None";     // 对象类型字符串
 
     sf::Text m_titleText;                // 标题 "对象详情" 或 "未选中对象"
     std::vector<sf::Text> m_detailLines; // 用于显示多行详细信息
@@ -38,12 +43,10 @@ private:
      * @param value 值 (例如 "V_001")
      * @param yOffset 当前行基于上一行的Y轴偏移引用，函数内部会更新它
      */
-    void addDetailLine(const std::string &label, const std::string &value, float &currentY);
-
-    // 将各种状态枚举转换为可读字符串的辅助函数
-    std::string vehicleStatusToString(gui::VehicleStatus status) const;
-    std::string deviceTypeToString(gui::DeviceType type) const;
-    std::string deviceStatusToString(gui::DeviceStatus status) const;
+    void addDetailLine(const std::string &label, const std::string &value, float &currentY); // 将各种状态枚举转换为可读字符串的辅助函数
+    std::string vehicleStatusToString(int status) const;
+    std::string deviceTypeToString(int type) const;
+    std::string deviceStatusToString(int status) const;
 
 public:
     /**
@@ -51,13 +54,11 @@ public:
      * @param font 字体引用
      * @param width 检视器宽度
      */
-    ObjectInspector(sf::Font &font, float width);
-
-    /**
-     * @brief 更新当前要显示的对象
-     * @param selectedObject 指向 SimObject 的指针，如果为 nullptr 则表示没有对象被选中
-     */
-    void updateObject(const gui::SimObject *selectedObject);
+    ObjectInspector(sf::Font &font, float width); /**
+                                                   * @brief 更新当前要显示的对象
+                                                   * @param selectedObject 指向 SimObject 的指针，如果为 nullptr 则表示没有对象被选中
+                                                   */
+    void updateObject(const void *selectedObject, const std::string &objectType = "Unknown");
 
     /**
      * @brief 绘制对象检视器

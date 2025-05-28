@@ -25,17 +25,13 @@ private:
     std::unique_ptr<SpeedControl> m_speedControl;   // 速度调节滑块
 
     // 布局参数
-    float m_height;                  // 工具栏高度
-    float m_width;                   // 工具栏宽度
-    sf::RectangleShape m_background; // 背景矩形
-    sf::Font &m_font;                // 字体引用
-
-    // 回调函数
+    float m_height;                                  // 工具栏高度
+    float m_width;                                   // 工具栏宽度
+    sf::RectangleShape m_background;                 // 背景矩形
+    sf::Font &m_font;                                // 字体引用    // 回调函数
     std::function<void(float)> m_onTimeScaleChanged; // 时间缩放回调
     std::function<void()> m_onPlayPauseToggled;      // 播放/暂停回调
-    std::function<void()> m_onAddTask;               // 添加任务回调
     std::function<void()> m_onResetView;             // 视图复位回调
-    std::function<void()> m_onSwitchMode;            // 切换模式回调
 
 public:
     /**
@@ -57,14 +53,11 @@ public:
      * @param mousePos 鼠标位置（相对窗口坐标）
      * @return 是否消耗了该事件
      */
-    bool handleEvent(const sf::Event &event, const sf::Vector2f &mousePos);
-
-    /**
-     * @brief 更新时间显示数值
-     * @param simTime 当前仿真时间
-     * @param realTime 程序运行时间
-     */
-    void updateTimeDisplay(float simTime, float realTime);
+    bool handleEvent(const sf::Event &event, const sf::Vector2f &mousePos); /**
+                                                                             * @brief 更新时间显示数值
+                                                                             * @param simTime 当前仿真时间
+                                                                             */
+    void updateTimeDisplay(float simTime);
 
     /**
      * @brief 渲染工具栏
@@ -89,25 +82,11 @@ public:
      * @brief 设置播放/暂停回调
      * @param callback 回调函数
      */
-    void setPlayPauseCallback(std::function<void()> callback);
-
-    /**
-     * @brief 设置添加任务回调
-     * @param callback 回调函数
-     */
-    void setAddTaskCallback(std::function<void()> callback);
-
-    /**
-     * @brief 设置视图复位回调
-     * @param callback 回调函数
-     */
+    void setPlayPauseCallback(std::function<void()> callback); /**
+                                                                * @brief 设置视图复位回调
+                                                                * @param callback 回调函数
+                                                                */
     void setResetViewCallback(std::function<void()> callback);
-
-    /**
-     * @brief 设置切换模式回调
-     * @param callback 回调函数
-     */
-    void setSwitchModeCallback(std::function<void()> callback);
 
     /**
      * @brief 更新时间缩放值

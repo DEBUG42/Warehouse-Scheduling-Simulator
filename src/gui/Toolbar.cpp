@@ -30,31 +30,13 @@ void Toolbar::createFunctionButtons()
     float buttonWidth = 80;
     float buttonHeight = 20;
     float startX = 370;
-    float spacing = 10;
-
-    // Add Task button
-    sf::FloatRect addTaskBounds(startX, 5, buttonWidth, buttonHeight);
-    auto addTaskBtn = std::make_unique<Button>(addTaskBounds, m_font, "Add Task");
-    addTaskBtn->setCallback([this]()
-                            {
-        if (m_onAddTask) m_onAddTask(); });
-    m_buttons.push_back(std::move(addTaskBtn));
-
-    // Reset View button
-    sf::FloatRect resetViewBounds(startX + buttonWidth + spacing, 5, buttonWidth, buttonHeight);
+    float spacing = 10; // Reset View button (保留此功能)
+    sf::FloatRect resetViewBounds(startX, 5, buttonWidth, buttonHeight);
     auto resetViewBtn = std::make_unique<Button>(resetViewBounds, m_font, "Reset View");
     resetViewBtn->setCallback([this]()
                               {
-        if (m_onResetView) m_onResetView(); });//如果确定含有回调函数，则调用它
+        if (m_onResetView) m_onResetView(); });
     m_buttons.push_back(std::move(resetViewBtn));
-
-    // Switch Mode button
-    sf::FloatRect switchModeBounds(startX + 2 * (buttonWidth + spacing), 5, buttonWidth, buttonHeight);
-    auto switchModeBtn = std::make_unique<Button>(switchModeBounds, m_font, "Switch Mode");
-    switchModeBtn->setCallback([this]()
-                               {
-        if (m_onSwitchMode) m_onSwitchMode(); });
-    m_buttons.push_back(std::move(switchModeBtn));
 }
 
 bool Toolbar::handleEvent(const sf::Event &event, const sf::Vector2f &mousePos)
@@ -94,9 +76,9 @@ bool Toolbar::handleEvent(const sf::Event &event, const sf::Vector2f &mousePos)
     return false;
 }
 
-void Toolbar::updateTimeDisplay(float simTime, float realTime)
+void Toolbar::updateTimeDisplay(float simTime)
 {
-    m_timeDisplay->updateTime(simTime, realTime);
+    m_timeDisplay->updateTime(simTime);
 }
 
 void Toolbar::render(sf::RenderTarget &target, const sf::Vector2f &position)
@@ -147,19 +129,9 @@ void Toolbar::setPlayPauseCallback(std::function<void()> callback)
     m_playPauseButton->setCallback(m_onPlayPauseToggled);
 }
 
-void Toolbar::setAddTaskCallback(std::function<void()> callback)
-{
-    m_onAddTask = callback;
-}
-
 void Toolbar::setResetViewCallback(std::function<void()> callback)
 {
     m_onResetView = callback;
-}
-
-void Toolbar::setSwitchModeCallback(std::function<void()> callback)
-{
-    m_onSwitchMode = callback;
 }
 
 void Toolbar::updateTimeScale(float scale)

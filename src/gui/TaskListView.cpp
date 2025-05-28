@@ -25,7 +25,7 @@ TaskListView::TaskListView(sf::Font &font, float width)
  * @brief 更新要显示的任务列表
  * @param tasks 新的任务列表
  */
-void TaskListView::updateTasks(const std::vector<Task> &tasks)
+void TaskListView::updateTasks(const std::vector<std::string> &tasks)
 {
     m_tasks = tasks;
     m_totalContentHeight = m_tasks.size() * m_itemHeight;
@@ -80,9 +80,7 @@ bool TaskListView::handleScrollEvent(const sf::Event::MouseWheelScrollEvent &whe
  */
 void TaskListView::draw(sf::RenderTarget &target, sf::RenderStates states) const
 {
-    states.transform *= getTransform(); // 应用 TaskListView 自身的位置变换
-
-    // 绘制标题
+    states.transform *= getTransform(); // 应用 TaskListView 自身的位置变换    // 绘制标题
     sf::Text currentTitle = m_titleText;
     // currentTitle.setPosition(0, 0); // 假设TaskListView的位置已经通过states.transform设置好
     target.draw(currentTitle, states);
@@ -93,7 +91,7 @@ void TaskListView::draw(sf::RenderTarget &target, sf::RenderStates states) const
     float yPos = titleHeight;  // 任务项从标题下方开始绘制，相对于TaskListView的(0,0)
     int drawnCount = 0;
 
-    for (const auto &task : m_tasks)
+    for (size_t i = 0; i < m_tasks.size(); ++i)
     {
         float itemTopY_local = yPos - m_scrollOffset;            // 任务项顶部在TaskListView滚动视图内的Y坐标
         float itemBottomY_local = itemTopY_local + m_itemHeight; // 任务项底部
@@ -102,28 +100,13 @@ void TaskListView::draw(sf::RenderTarget &target, sf::RenderStates states) const
         // 可视区域的顶部是 titleHeight，底部是 m_height
         if (itemBottomY_local > titleHeight && itemTopY_local < m_height)
         {
-            std::ostringstream taskLine;
-            // 保持任务信息简洁，避免过长
-            taskLine << "ID: " << std::setw(3) << std::setfill(' ') << task.id
-                     << " T: " << (task.type == Core::TaskType::INPUT ? "IN" : (task.type == Core::TaskType::OUTPUT ? "OUT" : "MV"))
-                     // << " M: " << task.materialId // 暂时注释掉物料ID以节省空间
-                     << " S: " << task.startDeviceId
-                     << "->E: " << task.endDeviceId;
-
-            sf::Text taskText(taskLine.str(), m_font, 12); // 任务文本字号
-            taskText.setFillColor(sf::Color(70, 70, 70));  // 深灰色任务文本 (原为White)
-
-            sf::RenderStates itemStates = states;
-            // itemStates.transform.translate(5.0f, itemTopY_local); // 应用相对于TaskListView原点的变换
-            // 注意：这里 itemTopY_local 已经是相对于 TaskListView 左上角（考虑了标题和滚动）的Y坐标
-            // 因此，绘制时直接使用这个Y坐标
-            taskText.setPosition(states.transform.getInverse().transformPoint(itemStates.transform.transformPoint(5.0f, itemTopY_local)));
-            // 我们需要将 itemTopY_local (已经是相对TaskListView的Y) 和 5.0f (X偏移) 应用到 states 上
-            // 但是 sf::Text 的 setPosition 是相对于其父变换的。states.transform 已经是 TaskListView 的全局变换。
-            // 正确做法：直接设置相对于 TaskListView 原点的位置，然后让 states.transform 处理全局定位
+            // 简化版本：直接显示任务字符串
+            std::string taskLine = "Task " + std::to_string(i + 1) + ": " + m_tasks[i];
+            sf::Text taskText(taskLine, m_font, 12);      // 任务文本字号
+            taskText.setFillColor(sf::Color(70, 70, 70)); // 深灰色任务文本
             taskText.setPosition(5.0f, itemTopY_local);
 
-            target.draw(taskText, states); // 注意：这里使用 states，因为 taskText 的位置是相对于 TaskListView 的
+            target.draw(taskText, states);
             drawnCount++;
         }
         yPos += m_itemHeight; // 移动到下一个任务项的绘制基准线 (无滚动时的位置)
@@ -149,9 +132,8 @@ bool TaskListView::handleClick(const sf::Vector2f &localMousePos)
         // std::cout << "[调试] TaskListView: Clicked on title area." << std::endl;
         return false;
     }
-
     float currentItemY = titleHeight; // 第一个任务项的顶部Y坐标（无滚动时）
-    for (const auto &task : m_tasks)
+    for (size_t i = 0; i < m_tasks.size(); ++i)
     {
         // 计算当前任务项在视图中的实际显示边界 (考虑滚动)
         float itemTopInView = currentItemY - m_scrollOffset;
@@ -165,7 +147,7 @@ bool TaskListView::handleClick(const sf::Vector2f &localMousePos)
         // 并且鼠标点击在该项的边界内
         if (itemBottomInView > titleHeight && itemTopInView < m_height && itemBounds.contains(localMousePos))
         {
-            std::cout << "[调试] TaskListView: Clicked on Task ID: " << task.id
+            std::cout << "[调试] TaskListView: Clicked on Task " << (i + 1) << ": " << m_tasks[i]
                       << " (Mouse Y: " << localMousePos.y << ", Item Top: " << itemTopInView << ")"
                       << std::endl;
             // TODO: 在这里可以触发更复杂的操作，例如通知外部监听器，或改变任务项的显示状态

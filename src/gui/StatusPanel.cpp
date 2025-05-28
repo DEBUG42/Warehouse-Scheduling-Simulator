@@ -1,5 +1,4 @@
 #include "gui/StatusPanel.hpp"
-#include "gui/SimObject.hpp"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -59,23 +58,22 @@ StatusPanel::StatusPanel(sf::Font &font) : m_font(font)
     std::cout << "[调试] StatusPanel构造完成: PanelWidth=" << m_panelWidth << std::endl;
 }
 
-void StatusPanel::refreshContent(const gui::SimObject *selectedObject,
-                                 const std::vector<Core::Task> &pendingTasks)
+void StatusPanel::refreshContent(const void *selectedObject,
+                                 const std::string &objectType,
+                                 const std::vector<std::string> &pendingTasks)
 {
     // 更新对象检视器
     if (m_objectInspector)
     {
-        m_objectInspector->updateObject(selectedObject);
+        m_objectInspector->updateObject(selectedObject, objectType);
     }
 
     // 更新待处理任务数 (全局状态)
-    setPendingTaskCount(pendingTasks.size());
-
-    // 更新任务列表视图的内容
+    setPendingTaskCount(pendingTasks.size()); // 更新任务列表视图的内容
     if (m_taskListView)
     {
-        m_taskListView->updateTasks(pendingTasks); // 假设显示所有待处理任务
-                                                   // 如果TaskListView需要显示特定于对象相关的任务，这里逻辑需要调整
+        // 简化版本：将字符串数组转换为任务显示
+        // m_taskListView->updateTasks(pendingTasks); // 暂时注释，用于演示
     }
     // std::cout << "[调试] StatusPanel::refreshContent - PendingTasks: " << pendingTasks.size() << std::endl;
 }
@@ -119,17 +117,15 @@ void StatusPanel::render(sf::RenderTarget &target, const sf::Vector2f &panelPosi
     globalTransform.translate(0, m_lineSpacing);
     target.draw(m_pendingTasksDisplay, globalTransform);
 
-    currentY += globalStatusHeight + m_padding; // 更新Y坐标，准备绘制下一个区域 (增加一个padding作为区域间隔)
-
-    // 分隔线1
-    sf::RectangleShape divider1(sf::Vector2f(availableWidth, 1.0f));
-    divider1.setPosition(currentX, currentY - m_padding / 2.0f); // 分隔线在区域间隔的中间
-    divider1.setFillColor(sf::Color(180, 180, 180));             // 浅灰色分隔线
-    target.draw(divider1);
-
-    // 区域2: 对象检视器 (ObjectInspector)
-    // 预估高度：面板总高度的35% (可调整比例)
-    float inspectorHeight = m_panelHeight * 0.35f;
+    currentY += globalStatusHeight + m_padding;                      // 更新Y坐标，准备绘制下一个区域 (增加一个padding作为区域间隔)    // 分隔线1 - 增强视觉效果
+    sf::RectangleShape divider1(sf::Vector2f(availableWidth, 2.0f)); // 增加厚度
+    divider1.setPosition(currentX, currentY - m_padding / 2.0f);     // 分隔线在区域间隔的中间
+    divider1.setFillColor(sf::Color(120, 120, 120));                 // 更深的灰色，提高对比度
+    target.draw(divider1);                                           // 区域2: 对象检视器 (ObjectInspector)
+    // 计算可用高度：总高度减去padding和全局状态区域
+    float availableContentHeight = m_panelHeight - 3 * m_padding - globalStatusHeight;
+    // 按照25:35:40比例分配剩余空间给三个区域
+    float inspectorHeight = availableContentHeight * 0.35f; // 35%给ObjectInspector
     if (inspectorHeight < 100)
         inspectorHeight = 100; // 最小高度
     // (调试输出可以取消注释)
@@ -147,12 +143,10 @@ void StatusPanel::render(sf::RenderTarget &target, const sf::Vector2f &panelPosi
         // m_objectInspector->setHeight(inspectorHeight); // 假设有此方法
         target.draw(*m_objectInspector);
     }
-    currentY += inspectorHeight + m_padding; // 更新Y坐标
-
-    // 分隔线2
-    sf::RectangleShape divider2(sf::Vector2f(availableWidth, 1.0f));
+    currentY += inspectorHeight + m_padding;                         // 更新Y坐标    // 分隔线2 - 增强视觉效果
+    sf::RectangleShape divider2(sf::Vector2f(availableWidth, 2.0f)); // 增加厚度
     divider2.setPosition(currentX, currentY - m_padding / 2.0f);
-    divider2.setFillColor(sf::Color(180, 180, 180));
+    divider2.setFillColor(sf::Color(120, 120, 120)); // 更深的灰色，提高对比度
     target.draw(divider2);
 
     // 区域3: 任务列表视图 (TaskListView)
@@ -184,10 +178,9 @@ bool StatusPanel::handleEvent(const sf::Event &event, const sf::Vector2f &panelL
 
     // 区域1: 全局状态区 (通常不可交互)
     float globalStatusHeight = m_lineSpacing * 4;
-    currentY_relative += globalStatusHeight + m_padding;
-
-    // 区域2: 对象检视器
-    float inspectorHeight = m_panelHeight * 0.35f;
+    currentY_relative += globalStatusHeight + m_padding; // 区域2: 对象检视器
+    float availableContentHeight = m_panelHeight - 3 * m_padding - globalStatusHeight;
+    float inspectorHeight = availableContentHeight * 0.35f; // 35%给ObjectInspector
     if (inspectorHeight < 100)
         inspectorHeight = 100;
     sf::FloatRect inspectorBounds(currentX_relative, currentY_relative, availableWidth, inspectorHeight);

@@ -2,11 +2,8 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include <vector>
-#include "../Core/Task.hpp"
 #include "gui/TaskListView.hpp"
 #include "gui/ObjectInspector.hpp"
-#include "gui/SimObject.hpp"
-#include "gui/DeviceState.hpp"
 
 /**
  * @brief 状态面板类
@@ -43,15 +40,15 @@ public:
      * @brief 构造函数
      * @param font 字体引用
      */
-    StatusPanel(sf::Font &font);
-
-    /**
-     * @brief 更新面板显示内容
-     * @param selectedObject 当前选中的对象（可为nullptr）
-     * @param pendingTasks 全局待处理任务队列
-     */
-    void refreshContent(const gui::SimObject *selectedObject,
-                        const std::vector<Core::Task> &pendingTasks);
+    StatusPanel(sf::Font &font); /**
+                                  * @brief 更新面板显示内容
+                                  * @param selectedObject 当前选中的对象（可为nullptr）
+                                  * @param objectType 对象类型字符串
+                                  * @param pendingTasks 全局待处理任务队列
+                                  */
+    void refreshContent(const void *selectedObject,
+                        const std::string &objectType,
+                        const std::vector<std::string> &pendingTasks);
 
     /**
      * @brief 渲染面板界面

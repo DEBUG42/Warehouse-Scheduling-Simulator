@@ -3,6 +3,40 @@
 #include <iomanip>
 #include <cmath>
 
+// UIUtils 格式化工具函数实现
+namespace UIUtils
+{
+    std::string formatSimulationTime(float seconds)
+    {
+        int hours = static_cast<int>(seconds / 3600.0f);
+        int minutes = static_cast<int>((seconds - hours * 3600.0f) / 60.0f);
+        int secs = static_cast<int>(seconds) % 60;
+        int millis = static_cast<int>((seconds - static_cast<int>(seconds)) * 1000.0f);
+
+        std::ostringstream oss;
+        oss << std::setfill('0') << std::setw(2) << hours << ":"
+            << std::setw(2) << minutes << ":"
+            << std::setw(2) << secs << "."
+            << std::setw(3) << millis;
+        return oss.str();
+    }
+
+    sf::Color getPriorityColor(int priority)
+    {
+        switch (priority)
+        {
+        case 0:
+            return sf::Color(100, 200, 100); // 绿色 - 低优先级
+        case 1:
+            return sf::Color(255, 200, 100); // 黄色 - 中优先级
+        case 2:
+            return sf::Color(255, 100, 100); // 红色 - 高优先级
+        default:
+            return sf::Color::White;
+        }
+    }
+}
+
 // Button 实现
 Button::Button(const sf::FloatRect &bounds, const sf::Font &font, const std::string &label)
     : m_onClick(nullptr), m_fontRef(font)
@@ -116,42 +150,17 @@ TimeDisplay::TimeDisplay(const sf::FloatRect &bounds, const sf::Font &font)
     m_simTimeText.setFillColor(sf::Color::White);
     m_simTimeText.setPosition(bounds.left, bounds.top);
 
-    // 设置真实时间文本
-    m_realTimeText.setFont(font);
-    m_realTimeText.setCharacterSize(12);
-    m_realTimeText.setFillColor(sf::Color(180, 180, 180));
-    m_realTimeText.setPosition(bounds.left, bounds.top + 14);
-
     // 初始化时间显示
-    updateTime(0, 0);
+    updateTime(0.0f);
 }
 
-void TimeDisplay::updateTime(float simTime, float realTime)
+void TimeDisplay::updateTime(float simTime)
 {
     m_simTime = simTime;
-    m_realTime = realTime;
 
-    // 格式化仿真时间
-    int simHours = static_cast<int>(simTime / 3600);
-    int simMinutes = static_cast<int>((simTime - simHours * 3600) / 60);
-    int simSeconds = static_cast<int>(simTime) % 60;
-
-    std::ostringstream simTimeStr;
-    simTimeStr << "Sim Time: "
-               << std::setw(2) << std::setfill('0') << simHours << ":"
-               << std::setw(2) << std::setfill('0') << simMinutes << ":"
-               << std::setw(2) << std::setfill('0') << simSeconds;
-    m_simTimeText.setString(simTimeStr.str());
-
-    // 格式化真实时间
-    int realMinutes = static_cast<int>(realTime / 60);
-    int realSeconds = static_cast<int>(realTime) % 60;
-
-    std::ostringstream realTimeStr;
-    realTimeStr << "Real Time: "
-                << std::setw(2) << std::setfill('0') << realMinutes << ":"
-                << std::setw(2) << std::setfill('0') << realSeconds;
-    m_realTimeText.setString(realTimeStr.str());
+    // 使用格式化函数生成时间字符串
+    std::string formattedTime = UIUtils::formatSimulationTime(simTime);
+    m_simTimeText.setString("Sim Time: " + formattedTime);
 }
 
 bool TimeDisplay::handleEvent(const sf::Event &event, const sf::Vector2f &mousePos)
@@ -168,11 +177,9 @@ void TimeDisplay::render(sf::RenderTarget &target, const sf::Vector2f &position)
 
     // 设置时间显示位置
     m_simTimeText.setPosition(position);
-    m_realTimeText.setPosition(position + sf::Vector2f(0.f, 14.f));
 
     // 绘制时间显示
     target.draw(m_simTimeText);
-    target.draw(m_realTimeText);
 }
 
 // SpeedControl 实现

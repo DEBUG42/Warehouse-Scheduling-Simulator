@@ -4,6 +4,24 @@
 #include <memory>
 #include <functional>
 
+// 格式化工具命名空间
+namespace UIUtils
+{
+    /**
+     * @brief 格式化仿真时间为 HH:MM:SS.mmm 格式
+     * @param seconds 秒数（包含小数部分）
+     * @return 格式化的时间字符串
+     */
+    std::string formatSimulationTime(float seconds);
+
+    /**
+     * @brief 根据优先级获取颜色
+     * @param priority 优先级（0=低，1=中，2=高）
+     * @return 对应的颜色
+     */
+    sf::Color getPriorityColor(int priority);
+}
+
 // UI控件基类
 class UIControl
 {
@@ -71,17 +89,14 @@ public:
 class TimeDisplay : public UIControl
 {
 private:
-    sf::Text m_simTimeText;  // 仿真时间文本
-    sf::Text m_realTimeText; // 真实时间文本
-
-    float m_simTime = 0.0f;  // 仿真时间(秒)
-    float m_realTime = 0.0f; // 真实时间(秒)
+    sf::Text m_simTimeText; // 仿真时间文本
+    float m_simTime = 0.0f; // 仿真时间(秒)
 
 public:
     TimeDisplay(const sf::FloatRect &bounds, const sf::Font &font);
 
     // 更新时间显示
-    void updateTime(float simTime, float realTime = 0.0f);
+    void updateTime(float simTime);
 
     // 处理事件(本控件不需要交互)
     bool handleEvent(const sf::Event &event, const sf::Vector2f &mousePos) override;

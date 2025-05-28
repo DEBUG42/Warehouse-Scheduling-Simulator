@@ -19,8 +19,8 @@
     "workstationInCount": 3,
     "workstationOutCount": 3
   },
-  "resources": {
-    "fontPath": "resources/fonts/arial.ttf",
-    "iconBasePath": "resources/icons/"
+  "assets": {
+    "fontPath": "assets/fonts/arial.ttf",
+    "iconBasePath": "assets/icons/"
   }
 }
