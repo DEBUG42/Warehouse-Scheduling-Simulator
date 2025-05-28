@@ -21,7 +21,7 @@ struct Task {
     
     //调度状态
     int assigned_vehicle_id = -1;      // 分配的车辆ID
-    bool is_assigned;                // 是否已分配
+    bool is_assigned=0;                // 是否已分配(默认为0)
 
     //时间戳
     double ready_time = -1;
