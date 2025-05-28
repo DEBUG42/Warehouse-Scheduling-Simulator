@@ -1,8 +1,13 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include "SimObject.hpp"
 #include <SFML/Graphics/Transformable.hpp>
-#include "gui/TrackRenderer.hpp" // Added include for TrackRenderer
+#include "gui/TrackRenderer.hpp"
+#include "Core/Vehicle.hpp" // No Core:: prefix needed for types from here
+
+// Bring Core types into the current namespace for easier use
+// using Core::Vehicle;
+// using Core::MotionState;
+// using Core::VehicleState;
 
 /**
  * @brief 车辆渲染器类
@@ -20,8 +25,8 @@ private:
     const float m_height = 10.0f; // 车辆高度（像素单位） - This might need scaling too if it's a fixed pixel height not relative to zoom
 
     // 状态样式
-    sf::Color m_colorEmpty{80, 130, 200};     // 空载状态
-    sf::Color m_colorLoaded{200, 90, 40};     // 载货状态
+    sf::Color m_colorEmpty{80, 130, 200}; // 空载状态
+    // sf::Color m_colorLoaded{200, 90, 40};     // 载货状态
     sf::Color m_colorAssigned{140, 80, 160};  // 已分配任务状态
     sf::Color m_shadowColor{50, 50, 50, 150}; // 阴影颜色
 
@@ -35,32 +40,49 @@ private:
     // float m_curveRadius = 2500.0f;   // REMOVED: Not directly used for vehicle's own rendering scale
 
     // 颜色设置
-    sf::Color m_emptyColor{60, 120, 200};   // 空载颜色
-    sf::Color m_loadedColor{230, 85, 40};   // 载货颜色
+    sf::Color m_emptyColor{60, 120, 200}; // 空载颜色
+    // sf::Color m_loadedColor{230, 85, 40};   // 载货颜色
     sf::Color m_selectedColor{255, 255, 0}; // 选中颜色
     sf::Color m_borderColor{100, 100, 100}; // 边框颜色
 
+    // 车辆状态颜色
+    sf::Color m_colorIdleNoCargo{120, 180, 240};    // 无任务无货（浅蓝）
+    sf::Color m_colorAssignedNoCargo{255, 200, 60}; // 有任务无货（橙黄）
+    sf::Color m_colorLoaded{230, 85, 40};           // 有货（橙红）
+    sf::Color m_colorError{220, 50, 50};            // 故障/异常（红色）
+    sf::Color m_colorCharging{60, 220, 180};        // 充电中（青色）
+    sf::Color m_colorSelected{255, 255, 0};         // 选中（黄色）
+    sf::Color m_colorShadow{50, 50, 50, 150};       // 阴影
+
     // 车辆状态
-    std::vector<gui::VehicleState> m_vehicles; // 车辆状态列表
+    std::vector<Vehicle *> m_vehicles; // Store pointers to Vehicle objects
 
     mutable sf::RectangleShape m_body;
     mutable sf::RectangleShape m_statusBounds;    // 新增：用于显示状态的外部矩形
     mutable sf::CircleShape m_directionIndicator; // 或者其他表示方向的形状
     mutable sf::Text m_idText;
+    sf::Texture m_vehicleTexture; // Added for texture-based rendering
+    sf::Sprite m_vehicleSprite;   // Added for texture-based rendering
+    bool m_initialized = false;   // Flag to check if texture is loaded
+    float m_visualScale = 0.1f;   // Default visual scale for the sprite
 
-    gui::VehicleState m_currentState; // 存储当前状态用于绘制
-
-    TrackRenderer *m_trackRendererRef; // Reference to TrackRenderer for scaling info
-    float m_vehicleVisualScale;        // Additional visual scale for vehicles
-
-    // 新增：获取不同状态对应的颜色
-    sf::Color getColorForStatus(gui::VehicleStatus status) const;
+    TrackRenderer *m_trackRendererRef;                                        // Reference to TrackRenderer for scaling info
+    float m_vehicleVisualScale;                                               // Additional visual scale for vehicles    // 新增：获取不同状态对应的颜色
+    sf::Color getColorForMotionState(Vehicle::MotionState motionState) const; // Use MotionState directly
+    sf::Color getColorForVehicleState(const Vehicle *vehicle) const;
 
 public:
     /**
      * @brief 构造函数，加载资源
      */
     VehicleRenderer(const sf::Font &font, TrackRenderer &trackRenderer); // Added TrackRenderer reference
+
+    /**
+     * @brief 初始化车辆纹理和视觉比例
+     * @param texturePath 纹理文件路径
+     * @param scale 视觉比例
+     */
+    void initializeTexture(const std::string &texturePath, float scale = 0.1f);
 
     /**
      * @brief 更新车辆位置，根据轨道路程计算实际坐标和朝向
@@ -70,11 +92,11 @@ public:
      * @param position 输出参数，返回计算后的位置
      * @param rotation 输出参数，返回计算后的角度
      */
-    void calculatePosition(const gui::VehicleState &vehicle,
-                           TrackRenderer &trackRenderer, // Kept for now, might be replaceable by m_trackRendererRef
-                           const sf::Vector2f &worldOriginOffsetPx,
-                           sf::Vector2f &position,
-                           float &rotation);
+    void calculateScreenPositionAndRotation(const Vehicle &vehicle, // Use Vehicle directly
+                                            TrackRenderer &trackRenderer,
+                                            const sf::Vector2f &worldOriginOffsetPx,
+                                            sf::Vector2f &screenPosition,
+                                            float &screenRotationDegrees) const; // Made const
 
     /**
      * @brief 绘制单个车辆
@@ -83,10 +105,10 @@ public:
      * @param position 车辆世界坐标
      * @param rotation 车辆朝向角度
      */
-    void renderVehicle(sf::RenderTarget &target,
-                       const gui::VehicleState &vehicle,
-                       const sf::Vector2f &position,
-                       float rotation) const; // Added const
+    void renderSingleVehicle(sf::RenderTarget &target,
+                             const Vehicle &vehicle, // Use Vehicle directly
+                             const sf::Vector2f &screenPosition,
+                             float screenRotationDegrees) const; // Added const
 
     /**
      * @brief 渲染车辆阴影以增强3D效果
@@ -95,39 +117,41 @@ public:
      * @param rotation 车辆朝向角度
      */
     void renderShadow(sf::RenderTarget &target,
-                      const sf::Vector2f &position,
-                      float rotation) const; // Added const
+                      const sf::Vector2f &screenPosition,
+                      float screenRotationDegrees) const; // Added const
 
     /**
      * @brief 更新车辆状态
      * @param vehicles 车辆状态列表
      */
-    void updateVehicleStates(const std::vector<gui::VehicleState> &vehicles, const sf::Vector2f &worldOriginOffsetPx);
-
-    virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override;
-    // REMOVED: setMmToPxRatio and getMmToPxRatio
-    // void setMmToPxRatio(float mmToPxRatio);
-    // float getMmToPxRatio() const { return m_mmToPxRatio; }
+    void setVehiclesToRender(const std::vector<Vehicle *> &vehicles); // Use Vehicle*
 
     /**
-     * @brief 更新车辆状态，同时传递 TrackRenderer 和 worldOriginOffsetPx
-     * @param state 车辆状态
-     * @param trackRenderer 轨道渲染器引用
-     * @param worldOriginOffsetPx 世界坐标原点偏移量
-     */
-    void updateState(const gui::VehicleState &state, TrackRenderer &trackRenderer, const sf::Vector2f &worldOriginOffsetPx);
-
-    /**
-     * @brief 设置车辆视觉缩放比例
+     * @brief 设置车辆的额外视觉缩放比例
      * @param scale 缩放比例
      */
     void setVehicleVisualScale(float scale);
-    /**
-     * @brief 获取车辆视觉缩放比例
-     * @return 缩放比例
-     */
-    float getVehicleVisualScale() const { return m_vehicleVisualScale; }
 
-private:
-    // float m_vehicleVisualScale; // Moved up to be with m_trackRendererRef
+    // Helper rendering functions - ensure these use `const Vehicle&`
+    void drawDirectionIndicator(sf::RenderTarget &target, const sf::Vector2f &position, float rotation, float size) const;
+    void drawIdText(sf::RenderTarget &target, int id, const sf::Vector2f &position, float scaleFactor) const;
+    void drawBatteryIndicator(sf::RenderTarget &target, const Vehicle &vehicle, const sf::Vector2f &basePosition, float vehicleHeight, float scaleFactor) const;
+    void drawCargoIndicator(sf::RenderTarget &target, const Vehicle &vehicle, const sf::Vector2f &basePosition, float vehicleWidth, float vehicleHeight, float scaleFactor) const;
+    void drawStatusBounds(sf::RenderTarget &target, const Vehicle &vehicle, const sf::Vector2f &basePosition, float length, float width, float rotation) const;
+    void drawVehicleID(sf::RenderTarget &target, const Vehicle &vehicle, const sf::Vector2f &screenPos, float spriteHeight, float zoomLevel) const; // Added declaration
+
+    /**
+     * @brief 绘制所有车辆
+     * @param target 渲染目标
+     * @param states 渲染状态
+     */
+    void draw(sf::RenderTarget &target, sf::RenderStates states) const;
+
+    // Texture and initialization (if using sprites)
+    // sf::Texture m_vehicleTexture;
+    // sf::Sprite m_vehicleSprite;
+    // bool m_initialized = false;
+    // float m_visualScale = 1.0f; // General visual scale for the sprite
+
+    // void initializeTexture(const std::string& texturePath, float scale = 1.0f);
 };

@@ -1,10 +1,12 @@
+#pragma once
 #include <queue>
 #include <map>
+#include "Task.hpp"
+#include "Event.hpp"
 #include <vector>
 #include <algorithm>
 /*
-p
-/*
+
 pi=3.14159265358979323846
 18 8000
 17 11000
@@ -26,6 +28,8 @@ pi=3.14159265358979323846
 1 40000+2500pi+36200=76200+7500pi=   84035.981634
 */
 // 设备类型枚举
+class Task;
+class Event;
 enum class DeviceType {
     StorageIn,      // 入库接口设备（1,3,5,7,9,11）
     StorageOut,     // 出库接口设备（2,4,6,8,10,12）

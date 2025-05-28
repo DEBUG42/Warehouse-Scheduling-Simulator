@@ -5,11 +5,12 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "SimObject.hpp"
-#include "DeviceState.hpp"
 #include "WarehouseUtils.hpp"
-#include "WarehouseState.hpp"
 #include "TrackRenderer.hpp"
+#include "Core/Device.hpp"  // For DeviceState, DeviceType
+#include "Core/Vehicle.hpp" // For Vehicle for path rendering (if needed later)
+
+// Bring Core types into the current namespace for easier use
 
 /**
  * @class WarehouseRenderer
@@ -39,9 +40,10 @@ public:
     struct WarehouseInterface
     {
         int id;                             ///< 接口ID
-        InterfaceType type;                 ///< 接口类型(入库/出库)
-        WarehousePosition positionCategory; ///< 所处位置分类(上/下)
-        gui::DeviceState state;             ///< 设备状态
+        InterfaceType type;                 ///< 接口类型(入库/出库) - GUI specific enum
+        WarehousePosition positionCategory; ///< 所处位置分类(上/下) - GUI specific enum
+        DeviceState coreState;              ///< Core device state
+        DeviceType coreType;                ///< Core device type
 
         // New members for precise positioning and dimensions
         sf::Vector2f worldCenterPx; ///< Center of the device in world pixel coordinates
@@ -65,9 +67,9 @@ public:
 
     /**
      * @brief 更新设备状态
-     * @param deviceStates 设备状态数组引用
+     * @param coreDevices Vector of pointers to Core::DeviceBase objects
      */
-    void updateDeviceStates(const std::vector<gui::DeviceState> &deviceStates);
+    void updateDeviceStates(const std::vector<DeviceBase *> &coreDevices);
 
     /**
      * @brief 设置入库口颜色
@@ -87,11 +89,6 @@ public:
      * @return 仓库接口指针，如果没有则返回nullptr
      */
     const WarehouseInterface *getInterfaceAt(const sf::Vector2f &position) const;
-
-    /**
-     * @brief 兼容旧接口：更新仓库状态（自动转换为设备状态）
-     */
-    void updateWarehouseStates(const std::vector<WarehouseState> &warehouseStates);
 
 protected:
     /// 绘制接口设备
@@ -113,41 +110,38 @@ private:
                      float x, float y, float scale = 1.0f);
 
     // 成员变量
-    std::vector<WarehouseInterface> m_interfaces; ///< 所有接口设备
-    sf::Font m_font;                              ///< 标签字体
-    sf::Color m_inputColor{60, 180, 75};          ///< 入库口颜色
-    sf::Color m_outputColor{230, 85, 40};         ///< 出库口颜色
-    sf::Color m_borderColor{100, 100, 100};       ///< 边框颜色
-    sf::Color m_shadowColor{50, 50, 50, 150};     ///< 阴影颜色
-
-    // 状态颜色 (从DeviceRenderer借鉴并统一)
-    const sf::Color COLOR_IDLE{75, 185, 85, 180};      // 空闲状态 (稍透明)
-    const sf::Color COLOR_WORKING{60, 150, 230, 255};  // 工作中状态 (修改了颜色以区分原Input/Output)
-    const sf::Color COLOR_FAULT{230, 170, 50, 255};    // 故障状态
-    const sf::Color COLOR_OFFLINE{150, 150, 150, 200}; // 离线状态
-
-    // 图标资源
-    std::map<gui::DeviceType, sf::Texture> m_iconTextures;
-
-    // 文本标签集合
-    std::vector<sf::Text> m_labels; ///< 接口标签
-
-    // Store a reference to TrackRenderer for coordinate calculations
+    sf::Vector2f m_worldOriginOffsetPx; ///< World origin offset in pixels
     TrackRenderer *m_trackRendererRef = nullptr;
-    sf::Vector2f m_worldOriginOffsetPx; // To align with TrackRenderer's coordinate system origin
+    sf::Font m_font; // Add member for font
 
-    // Static layout definition for all warehouse devices
+    std::vector<WarehouseInterface> m_interfaces; ///< List of all warehouse interfaces
+    std::vector<sf::Text> m_labels;               ///< Labels for the interfaces
+
+    std::map<DeviceType, sf::Texture> m_iconTextures; // Use DeviceType directly as key
+
+    // Define colors for device states
+    const sf::Color COLOR_IDLE = sf::Color::Green;
+    const sf::Color COLOR_BUSY = sf::Color::Yellow; // For is_transferring
+    const sf::Color COLOR_HAS_GOODS = sf::Color::Blue;
+    const sf::Color COLOR_RESERVED = sf::Color(255, 165, 0); // Orange for reserved
+
+    // Predefined layout structure (can be moved to .cpp or a config file)
     struct PredefinedDeviceLayout
     {
         int id;
-        float trackDistanceMm;              // Distance along the track from origin (mm)
-        InterfaceType type;                 // Input or Output
-        WarehousePosition positionCategory; // Top or Bottom track section
-        float visualWidthMm;                // Visual width of the device on screen (mm)
-        float visualDepthMm;                // Visual depth/length of the device on screen (perpendicular to width) (mm)
-        float offsetFromTrackEdgeMm;        // Perpendicular distance from track's outer edge to device's nearest edge (mm)
+        float trackDistanceMm;
+        InterfaceType type;
+        WarehousePosition positionCategory;
+        float visualWidthMm;
+        float visualDepthMm;
+        float offsetFromTrackEdgeMm;
+        DeviceType coreDeviceType;
     };
     static const std::vector<PredefinedDeviceLayout> s_deviceLayouts;
+
+    sf::Color m_inputColor = sf::Color(60, 180, 75, 180);  // 入库口默认颜色
+    sf::Color m_outputColor = sf::Color(230, 85, 40, 180); // 出库口默认颜色
+    sf::Color m_borderColor = sf::Color(100, 100, 100);    // 边框颜色
 };
 
 #endif // WAREHOUSE_RENDERER_HPP

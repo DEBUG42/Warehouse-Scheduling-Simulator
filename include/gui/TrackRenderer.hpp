@@ -63,6 +63,14 @@ public:
     // 获取毫米到像素的转换比例
     float getMmToPxRatio() const { return m_mmToPxRatio; }
 
+    // 新增：获取当前缩放级别
+    float getCurrentZoomLevel() const { return m_scaleFactor; }
+
+    // 新增：获取世界原点偏移量 (相对于TrackRenderer自身的原点)
+    // 如果TrackRenderer被放置在场景中的特定位置，这将是该位置。
+    // VehicleRenderer似乎管理自己的全局世界原点，所以这里返回自身位置。
+    sf::Vector2f getWorldOriginOffset() const { return getPosition(); }
+
     // 设置轨道颜色
     void setTrackColor(const sf::Color &color) { m_trackColor = color; }
     // 获取轨道颜色

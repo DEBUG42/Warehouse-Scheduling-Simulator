@@ -1,9 +1,12 @@
-// 包含必要的标准库头文件
 #pragma once
 #include <string>
 #include <map>
 #include <queue>
 #include <vector>
+
+// 前向声明
+class DeviceManager;
+
 #include "Device.hpp"
 // 定义任务类型枚举，包括入库和出库两种类型
 enum TaskType { INBOUND, OUTBOUND };

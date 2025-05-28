@@ -1,12 +1,20 @@
 #include <SFML/Graphics.hpp>
-#include "gui/TrackRenderer.hpp"
-#include "gui/VehicleRenderer.hpp"
-#include "gui/SimObject.hpp"
-#include "gui/WarehouseRenderer.hpp" // 添加 WarehouseRenderer 的头文件
 #include <iostream>
-#include <string>
-#include <cmath>
-#include <cstdio>
+#include <vector>
+#define _USE_MATH_DEFINES // For M_PI in MSVC
+#include <cmath>          // For M_PI and other math functions
+#include <math.h>         // For M_PI
+
+#include "gui/VehicleRenderer.hpp"
+#include "gui/WarehouseRenderer.hpp"
+#include "gui/TrackRenderer.hpp"
+#include "Core/Vehicle.hpp" // For Core enums
+
+// Bring Core types into the current namespace for easier use
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 // Helper to draw text
 void drawText(sf::RenderWindow &window, const std::string &str, sf::Vector2f pos, const sf::Font &font, unsigned int size = 15, sf::Color color = sf::Color::White)
@@ -142,31 +150,15 @@ int main()
     const float pathDistanceStep = 500.0f; // Example step in mm
     const float totalPathLength = trackRenderer.getTotalCenterLineLengthMm();
 
-    gui::VehicleState vehicleState1(
-        "VTest1",                 // _id
-        sf::Vector2f(0, 0),       // _pos
-        0.0f,                     // _rawTrackPosMm
-        0.0f,                     // _worldRotDeg (rotation in degrees)
-        0.0f,                     // _speed_mps
-        gui::VehicleStatus::IDLE, // _status
-        "",                       // _currentOrder
-        false,                    // _isLoaded
-        gui::CargoDisplayInfo(),  // _cargoInfo
-        1.0f                      // _visualScale
-    );
+    // 创建车辆对象 (Using direct types after `using` directive)
+    // Vehicle vehicle1(1, 0.0f, 0.0f);                              // id, initial_pos_m, initial_angle_rad
+    // vehicle1.m_state.motionState = Vehicle::MotionState::Stopped; // Corrected enum usage
+    // vehicle1.is_loaded = false;
 
-    gui::VehicleState vehicleState2(
-        "Bai",                              // _id
-        sf::Vector2f(0, 0),                 // _pos
-        0.0f,                               // _rawTrackPosMm
-        0.0f,                               // _worldRotDeg (rotation in degrees)
-        0.0f,                               // _speed_mps
-        gui::VehicleStatus::MOVING_TO_LOAD, // _status
-        "",                                 // _currentOrder
-        false,                              // _isLoaded
-        gui::CargoDisplayInfo(),            // _cargoInfo
-        1.0f                                // _visualScale
-    );
+    // Vehicle vehicle2(2, 0.0f, 0.0f);                               // id, initial_pos_m, initial_angle_rad
+    // vehicle2.m_state.motionState = Vehicle::MotionState::Cruising; // Corrected enum usage
+    // vehicle2.is_loaded = true;
+
     float currentPathDistanceMm = 0.0f;
 
     WarehouseRenderer warehouseRenderer;
@@ -210,16 +202,57 @@ int main()
     // sf::CircleShape pathOriginMarker(6.f); // This is the marker that's not drawn in the loop
     // pathOriginMarker.setFillColor(sf::Color::Yellow);
     // pathOriginMarker.setOrigin(pathOriginMarker.getRadius(), pathOriginMarker.getRadius());
-    // pathOriginMarker.setPosition(pathOriginRenderCoords);
-
-    // UI控制变量
+    // pathOriginMarker.setPosition(pathOriginRenderCoords);    // UI控制变量
     bool showDebugInfo = true;
     bool showDebugCoords = true;
     bool showGrid = false;
-    bool showWarehouses = true; // 新增：控制仓库显示
+    bool showWarehouses = true;      // 新增：控制仓库显示
+    bool showVehicleRenderer = true; // 新增：控制车辆渲染器显示
     float zoomLevel = 1.0f;
     bool isDragging = false;
-    sf::Vector2f dragStart;
+    sf::Vector2f dragStart;    // 批量创建多辆车辆对象，并设置不同状态
+    std::vector<Vehicle> vehicles;
+    const int vehicleCount = 4;
+    for (int i = 0; i < vehicleCount; ++i)
+    {
+        Vehicle v;
+        v.id = i + 1;
+        v.position_m = 5.0f + i * 10.0f; // 每辆车相距10米，第一辆在5米处
+        v.is_loaded = false;
+        v.is_executing = false;
+        v.velocity_mps = 0.0f;
+        v.max_speed = 2.0f;
+        v.towards_device = -1;
+        v.next_available_time = 0.0f;
+        v.m_state.position = v.position_m;
+        v.m_state.currentSpeed = 0.0f;
+        v.m_state.motionState = Vehicle::MotionState::Stopped;
+        v.m_state.currentTask = nullptr;
+        v.m_state.operationTimer = 0.0f;
+        vehicles.push_back(v);
+    }
+    // 设置不同状态
+    // 车辆1：无任务无货（idle）
+    // 车辆2：有任务无货（assigned）
+    // 车辆3：有货（loaded）
+    // 车辆4：有任务且有货（assigned+loaded）
+    Task dummyTask;
+    dummyTask.id = 100;
+    dummyTask.material_id = "M001";
+    dummyTask.type = INBOUND;
+    dummyTask.start_device_id = 1;
+    dummyTask.end_device_id = 2;
+    dummyTask.is_assigned = true;
+    // 车辆2
+    vehicles[1].m_state.currentTask = &dummyTask;
+    vehicles[1].is_loaded = false;
+    // 车辆3
+    vehicles[2].m_state.currentTask = nullptr;
+    vehicles[2].is_loaded = true;
+    // 车辆4
+    vehicles[3].m_state.currentTask = &dummyTask;
+    vehicles[3].is_loaded = true;
+
     while (window.isOpen())
     {
         sf::Event event;
@@ -326,29 +359,20 @@ int main()
                     std::cout << (showWarehouses ? "显示仓库\n" : "隐藏仓库\n");
                 }
             }
+        }        // 更新车辆位置（演示：随currentPathDistanceMm变化，但保持相对间距）
+        for (size_t i = 0; i < vehicles.size(); ++i)
+        {
+            // 基础位置 + 车辆间距，转换为米单位
+            float basePosition = currentPathDistanceMm / 1000.0f; // 转换为米
+            float spacing = i * 10.0f; // 每辆车间距10米
+            vehicles[i].position_m = basePosition + spacing;
+            vehicles[i].m_state.position = vehicles[i].position_m;
         }
-
-        // 更新车辆状态
-        vehicleState1.rawTrackPositionMm = currentPathDistanceMm;
-        vehicleState2.rawTrackPositionMm = currentPathDistanceMm + 5000.0f; // 偏移5000mm
-
-        // 分别计算每辆车的位置和方向
-        sf::Vector2f vehiclePosPx_world1, vehiclePosPx_world2;
-        float vehicleAngleRad_world1 = 0.0f, vehicleAngleRad_world2 = 0.0f;
-
-        trackRenderer.getPointAndOrientationOnCenterLine(vehicleState1.rawTrackPositionMm,
-                                                         vehiclePosPx_world1, vehicleAngleRad_world1, renderWorldOriginOffset);
-        trackRenderer.getPointAndOrientationOnCenterLine(vehicleState2.rawTrackPositionMm,
-                                                         vehiclePosPx_world2, vehicleAngleRad_world2, renderWorldOriginOffset);
-
-        vehicleState1.position = vehiclePosPx_world1;
-        vehicleState2.position = vehiclePosPx_world2;
-
         // 更新车辆渲染器状态
-        // Use the consistent renderWorldOriginOffset
-        // vehicleRenderer.updateState(vehicleState, trackRenderer, renderWorldOriginOffset); // This updates a single m_currentState
-        std::vector<gui::VehicleState> currentVehicles = {vehicleState1, vehicleState2}; // Collect all vehicles to update
-        vehicleRenderer.updateVehicleStates(currentVehicles, renderWorldOriginOffset);   // This updates m_vehicles
+        std::vector<Vehicle *> vehiclesToRender;
+        for (auto &v : vehicles)
+            vehiclesToRender.push_back(&v);
+        vehicleRenderer.setVehiclesToRender(vehiclesToRender);
 
         window.clear(sf::Color(230, 240, 230)); // 使用浅绿色背景
         window.setView(view);                   // Apply the potentially panned/zoomed view
@@ -402,7 +426,11 @@ int main()
             window.draw(warehouseRenderer);
         }
 
-        window.draw(vehicleRenderer);
+        if (showVehicleRenderer)
+        {
+            vehicleRenderer.setVehiclesToRender(vehiclesToRender);
+            window.draw(vehicleRenderer);
+        }
 
         // 绘制路径距离为0的标记 (This is the marker drawn in the loop)
         sf::Vector2f originPosPx; // This is local to this block
@@ -420,25 +448,29 @@ int main()
         window.setView(window.getDefaultView()); // 重置视图以绘制UI元素
         if (showDebugInfo)
         {
-            char buffer[256];
-            // Make sure vehicleState.position is what you intend to display (world coords)
+            char buffer[256]; // Make sure vehicleState.position is what you intend to display (world coords)
             // And vehicleAngleRad_world for the angle
             snprintf(buffer, sizeof(buffer),
                      "Path Dist: %.1f / %.1f mm\n"
-                     "Vehicle Pos (WorldPx): (%.1f, %.1f)\n" // Displaying world coordinates
-                     "Vehicle Angle: %.1f deg\n"
+                     "Vehicle Count: %d \n"
+                     "First Vehicle Pos (m): %.2f \n"
+                     "Last Vehicle Pos (m): %.2f \n"
+                     // "Vehicle Pos (WorldPx): (%.1f, %.1f)\n" // No direct Px position in Core::Vehicle for display here
+                     // "Vehicle Angle: %.1f deg\n"
                      "View Center (WorldPx): (%.1f, %.1f)\n"
                      "View Size (WorldPx): (%.1f, %.1f)\n"
                      "Zoom Factor: %.2fx\n" // Display calculated zoom
                      "Track Scale: %.2f | MmToPx: %.4f",
                      currentPathDistanceMm, totalPathLength,
-                     vehicleState1.position.x, vehicleState1.position.y, // Use the world coordinates
-                     vehicleAngleRad_world1 * 180.0f / M_PI,             // Use the world angle
+                     (int)vehicles.size(),                                 // Display vehicle count
+                     vehicles.empty() ? 0.0f : vehicles[0].position_m,     // Display first vehicle position
+                     vehicles.empty() ? 0.0f : vehicles.back().position_m, // Display last vehicle position
+                     // vehicleState1.position.x, vehicleState1.position.y, // Old
+                     // vehicleAngleRad_world1 * 180.0f / M_PI,             // Old
                      view.getCenter().x, view.getCenter().y,
                      view.getSize().x, view.getSize().y,
-                     initialViewSize.x / view.getSize().x, // Zoom factor relative to initial
+                     zoomLevel,
                      trackRenderer.getScaleFactor(), trackRenderer.getMmToPxRatio());
-            drawText(window, buffer, sf::Vector2f(10, 10), font, 15, sf::Color::Black); // Ensure text is visible
         }
 
         if (showDebugCoords)

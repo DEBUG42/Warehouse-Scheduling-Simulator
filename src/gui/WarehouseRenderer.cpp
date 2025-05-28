@@ -1,6 +1,18 @@
 #include "gui/WarehouseRenderer.hpp"
+#include <SFML/Graphics/CircleShape.hpp>
+#include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/Text.hpp>
 #include <iostream>
-#include <cmath> // For std::cos, std::sin, M_PI
+#include <fstream>
+#include <sstream>
+#define _USE_MATH_DEFINES // For M_PI in MSVC
+#include <cmath>          // For std::abs, M_PI if needed elsewhere
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+#include "Core/Device.hpp" // No Core:: prefix needed for types from here
 
 /*
 每一个仓库对应在弯道上的位置，
@@ -55,30 +67,31 @@ ID 1:  85920.9372261538f
 */
 // Define the fixed layout based on comments and image from user
 // All TrackDist MM are CENTERLINE distances.
+// Add Core::DeviceType to the layout definition
 const std::vector<WarehouseRenderer::PredefinedDeviceLayout> WarehouseRenderer::s_deviceLayouts = {
     // Bottom track devices (IDs 13-18) - Centerline Distances
-    // Device ID, TrackDist MM (Centerline), Type, positionCategory, VisualWidth MM, VisualDepth MM, OffsetFromTrackEdge MM
-    {18, 8000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
-    {17, 11100.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
-    {16, 14000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
-    {15, 26000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
-    {14, 29000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
-    {13, 32000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200},
+    // Device ID, TrackDist MM (Centerline), GUI Type, GUI positionCategory, VisualWidth MM, VisualDepth MM, OffsetFromTrackEdge MM, CoreType
+    {18, 8000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200, DeviceType::WorkstationIn},
+    {17, 11100.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200, DeviceType::WorkstationIn},
+    {16, 14000.0f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200, DeviceType::WorkstationIn},
+    {15, 26000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200, DeviceType::WorkstationOut},
+    {14, 29000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200, DeviceType::WorkstationOut},
+    {13, 32000.0f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::BOTTOM, 1100, 2700, 200, DeviceType::WorkstationOut},
 
     // Top track devices (IDs 1-12) - Centerline Distances
     // Image: Odd IDs are INPUT_STATION (arrow in), Even IDs are OUTPUT_STATION (arrow out) for top row.
-    {12, 53520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
-    {11, 55920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
-    {10, 59520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
-    {9, 61920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
-    {8, 65520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
-    {7, 67920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
-    {6, 71520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
-    {5, 73920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
-    {4, 77520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
-    {3, 79920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
-    {2, 83520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
-    {1, 85920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200},
+    {12, 53520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageOut},
+    {11, 55920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageIn},
+    {10, 59520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageOut},
+    {9, 61920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageIn},
+    {8, 65520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageOut},
+    {7, 67920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageIn},
+    {6, 71520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageOut},
+    {5, 73920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageIn},
+    {4, 77520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageOut},
+    {3, 79920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageIn},
+    {2, 83520.9372261538f, WarehouseRenderer::InterfaceType::OUTPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageOut},
+    {1, 85920.9372261538f, WarehouseRenderer::InterfaceType::INPUT, WarehouseRenderer::WarehousePosition::TOP, 1100, 2700, 200, DeviceType::StorageIn},
 };
 
 WarehouseRenderer::WarehouseRenderer()
@@ -140,16 +153,26 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
             chargeTexture = defaultTexture;
     }
 
-    m_iconTextures[gui::DeviceType::INPUT_STATION] = storageInTexture;
-    m_iconTextures[gui::DeviceType::OUTPUT_STATION] = storageOutTexture;
-    m_iconTextures[gui::DeviceType::CORE_WORKSTATION_IN] = workInTexture;
-    m_iconTextures[gui::DeviceType::CORE_WORKSTATION_OUT] = workOutTexture;
-    m_iconTextures[gui::DeviceType::CHARGER] = chargeTexture;
+    // m_iconTextures[gui::DeviceType::INPUT_STATION] = storageInTexture; // Changed to Core::DeviceType
+    // m_iconTextures[gui::DeviceType::OUTPUT_STATION] = storageOutTexture;
+    // m_iconTextures[gui::DeviceType::CORE_WORKSTATION_IN] = workInTexture;
+    // m_iconTextures[gui::DeviceType::CORE_WORKSTATION_OUT] = workOutTexture;
+    // m_iconTextures[gui::DeviceType::CHARGER] = chargeTexture;
+    m_iconTextures[DeviceType::StorageIn] = storageInTexture;
+    m_iconTextures[DeviceType::StorageOut] = storageOutTexture;
+    m_iconTextures[DeviceType::WorkstationIn] = workInTexture;
+    m_iconTextures[DeviceType::WorkstationOut] = workOutTexture;
+    // Assuming CHARGER is not a Core::DeviceType, or needs mapping if it is.
+    // If CHARGER is a specific type in Core::DeviceType, map it here.
+    // For now, it's removed as it's not in the provided Core::DeviceType enum.
+
     if (defaultTexture.getSize().x > 0) // sf::Texture::getSize 是一个常量成员函数，返回纹理的大小，类型为 sf::Vector2u，表示纹理的宽度和高度（以像素为单位）
     {
-        m_iconTextures[gui::DeviceType::UNKNOWN_DEVICE_TYPE] = defaultTexture;
-        m_iconTextures[gui::DeviceType::WORK_STATION] = defaultTexture;    // Generic work station as fallback
-        m_iconTextures[gui::DeviceType::STORAGE_STATION] = defaultTexture; // Generic storage as fallback
+        // m_iconTextures[gui::DeviceType::UNKNOWN_DEVICE_TYPE] = defaultTexture; // No UNKNOWN in Core::DeviceType
+        // m_iconTextures[gui::DeviceType::WORK_STATION] = defaultTexture;    // Generic work station as fallback
+        // m_iconTextures[gui::DeviceType::STORAGE_STATION] = defaultTexture; // Generic storage as fallback
+        // Add fallbacks if necessary, perhaps by not inserting into map if specific types aren't found,
+        // and then checking for key existence before drawing.
     }
 
     float trackOuterEdgeOffsetMm = m_trackRendererRef->getTrackWidth() / 2.0f;
@@ -163,9 +186,9 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         interface_element.id = layout.id;
         interface_element.type = layout.type;
         interface_element.positionCategory = layout.positionCategory;
-        interface_element.widthMm = layout.visualDepthMm / 1.0f; // 1100
-        interface_element.depthMm = layout.visualWidthMm / 1.0f; // 2700
-        // 210行    float totalOffsetFromCenterlineMm = trackOuterEdgeOffsetMm + layout.offsetFromTrackEdgeMm + (layout.visualDepthMm / 2.0f);
+        interface_element.widthMm = layout.visualDepthMm;   // Use full depth as width for rendering
+        interface_element.depthMm = layout.visualWidthMm;   // Use full width as depth for rendering
+        interface_element.coreType = layout.coreDeviceType; // Assign core type from layout
 
         sf::Vector2f trackCenterPointPx;
         float trackAngleRad; // 用于存储从TrackRenderer获取的轨道角度
@@ -260,17 +283,11 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
         float maxY = std::max({p1.y, p2.y, p3.y, p4.y});
         interface_element.boundsPx = sf::FloatRect(minX, minY, maxX - minX, maxY - minY);
 
-        // Initialize gui::DeviceState within WarehouseInterface
-        gui::DeviceType determinedType = (layout.type == WarehouseRenderer::InterfaceType::INPUT) ? gui::DeviceType::INPUT_STATION : gui::DeviceType::OUTPUT_STATION;
-        // TODO: Further refine 'determinedType' based on s_deviceLayouts if it has more specific info (e.g. WORKSTATION types)
-        // For now, all are INPUT_STATION or OUTPUT_STATION based on InterfaceType.
+        // Initialize Core::DeviceState and Core::DeviceType within WarehouseInterface
+        // interface_element.coreType is now set from layout.coreDeviceType above
 
-        interface_element.state = gui::DeviceState(
-            std::to_string(layout.id),
-            interface_element.worldCenterPx,
-            determinedType,
-            gui::DeviceStatus::IDLE // Default status
-        );
+        // Default construct Core::DeviceState, it will be updated by updateDeviceStates
+        interface_element.coreState = DeviceState();
 
         m_interfaces.push_back(interface_element);
 
@@ -315,18 +332,35 @@ void WarehouseRenderer::initialize(TrackRenderer &trackRenderer, const sf::Vecto
     }
 }
 
-void WarehouseRenderer::updateDeviceStates(const std::vector<gui::DeviceState> &deviceStates)
+void WarehouseRenderer::updateDeviceStates(const std::vector<DeviceBase *> &coreDevices)
 {
-    // 更新每个接口设备的状态
-    for (const auto &state : deviceStates)
-    {
-        for (auto &interface : m_interfaces)
+    for (auto &gui_device : m_interfaces)
+    { // Iterate over m_interfaces directly
+        bool found = false;
+        for (const auto *core_device_ptr : coreDevices)
         {
-            if (std::to_string(interface.id) == state.getId())
+            if (core_device_ptr && core_device_ptr->m_id == gui_device.id)
             {
-                interface.state = state;
+                // Assuming DeviceBase has a way to get its state and type, or that these are directly accessible
+                // For now, let's assume core_device_ptr itself can be cast or its members accessed if it matches Device structure
+                // This part depends on how Core::DeviceBase, Core::Device, and Core::DeviceState are structured.
+                // If core_device_ptr is a Core::Device*, then its m_status can be accessed.
+                // We need to ensure the core_device_ptr is of a type that has m_status (DeviceState) and a way to get its DeviceType.
+                // For this example, we'll assume core_device_ptr can be safely cast to a type that has m_status.
+                // A better approach would be for DeviceBase to have virtual methods to get state and type.
+                // Or, if all devices in coreDevices are guaranteed to be of a specific derived type:
+                const auto *actual_device = static_cast<const DeviceBase *>(core_device_ptr); // Or specific derived type if known
+                gui_device.coreState = actual_device->m_status;                               // Update the state
+                // gui_device.coreType is already set during initialization from s_deviceLayouts
+                found = true;
                 break;
             }
+        }
+        if (!found)
+        {
+            // Optionally handle cases where a GUI device doesn't have a matching core device
+            gui_device.coreState = DeviceState(); // Reset to default state
+            // Consider logging a warning or setting a specific 'offline' visual state if applicable
         }
     }
 }
@@ -388,35 +422,37 @@ void WarehouseRenderer::drawInterface(sf::RenderTarget &target, sf::RenderStates
     sf::Color bodyFillColor;
     sf::Color bodyBorderColor = m_borderColor;
 
-    switch (interface_obj.state.status)
+    // Determine color based on Core::DeviceState
+    if (interface_obj.coreState.is_transferring)
     {
-    case gui::DeviceStatus::IDLE:
+        bodyFillColor = COLOR_BUSY; // Changed from COLOR_WORKING to COLOR_BUSY as per .hpp definition
+    }
+    else if (interface_obj.coreState.is_reserved)
+    {
+        bodyFillColor = COLOR_RESERVED; // Use the new COLOR_RESERVED
+    }
+    else if (interface_obj.coreState.has_goods)
+    {
+        bodyFillColor = COLOR_HAS_GOODS;
+    }
+    else
+    {
         bodyFillColor = COLOR_IDLE;
-        break;
-    case gui::DeviceStatus::WORKING:
-        bodyFillColor = COLOR_WORKING;
-        break;
-    case gui::DeviceStatus::BUSY:
-        bodyFillColor = COLOR_WORKING;
-        break; // Map BUSY to WORKING
-    case gui::DeviceStatus::ERROR:
-        bodyFillColor = COLOR_FAULT;
-        bodyBorderColor = sf::Color::Red;
-        break;
-    case gui::DeviceStatus::OFFLINE:
-        bodyFillColor = COLOR_OFFLINE;
-        break;
-    default:
-        bodyFillColor = sf::Color(100, 100, 100, 150); // Default fallback
     }
 
-    // Override with input/output specific colors if IDLE, for better visual distinction as per image
-    if (interface_obj.state.status == gui::DeviceStatus::IDLE)
+    // The old switch statement based on gui::DeviceStatus is no longer applicable.
+    // Remove or comment out the old switch:
+    /*
+    switch (interface_obj.coreState.status) // This 'status' member does not exist in Core::DeviceState
     {
-        // These m_inputColor/m_outputColor are from WarehouseRenderer members, ensure they are set if used.
-        // Or, define them locally here. The image implies distinct colors for input/output stations.
-        // Let's use the member ones, assuming they are set to something reasonable like green/blue or green/red.
-        // From original file: m_inputColor{60, 180, 75}; m_outputColor{230, 85, 40};
+    // ... cases ...
+    }
+    */
+
+    // Override with input/output specific colors if IDLE, for better visual distinction as per image
+    if (!interface_obj.coreState.is_transferring && !interface_obj.coreState.is_reserved && !interface_obj.coreState.has_goods)
+    {
+        // Use the GUI specific type for visual distinction of input/output areas when idle
         bodyFillColor = (interface_obj.type == InterfaceType::INPUT) ? sf::Color(60, 180, 75, 180) : sf::Color(230, 85, 40, 180);
     }
 
@@ -429,10 +465,22 @@ void WarehouseRenderer::drawInterface(sf::RenderTarget &target, sf::RenderStates
     target.draw(body, states);
 
     // Draw Icon
-    auto it = m_iconTextures.find(interface_obj.state.deviceType);
-    if (it != m_iconTextures.end() && it->second.getSize().x > 0)
-    { // Check if texture is valid
-        sf::Sprite iconSprite(it->second);
+    sf::Texture iconTexture;
+    auto it = m_iconTextures.find(interface_obj.coreType);
+    if (it != m_iconTextures.end())
+    {
+        iconTexture = it->second;
+    }
+    else
+    {
+        // Handle case where icon for the coreType is not found, maybe use a default
+        // This depends on how you handled defaultTexture loading for Core::DeviceType keys
+        // For now, assume it might lead to a blank texture if not found and no default was mapped.
+    }
+
+    if (iconTexture.getSize().x > 0) // Check if texture is valid
+    {
+        sf::Sprite iconSprite(iconTexture);
         sf::FloatRect spriteBounds = iconSprite.getLocalBounds();
         iconSprite.setOrigin(spriteBounds.width / 2.0f, spriteBounds.height / 2.0f);
         iconSprite.setPosition(interface_obj.worldCenterPx);

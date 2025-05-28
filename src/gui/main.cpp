@@ -6,9 +6,14 @@
  */
 
 #include "MainWindow.hpp"
-#include "MockSimulationInterface.hpp"
+// #include "MockSimulationInterface.hpp"
 #include <iostream>
 #include <memory>
+#include "Physics/CollisionDetector.hpp"
+#include "Physics/TaskManager.cpp"
+#include "Physics/DeviceManager.cpp"
+#include "Physics/AssignTasksToVehicles.cpp"
+#include "Core/Scheduler.hpp"
 
 /**
  * @brief 程序主函数
@@ -22,10 +27,13 @@ int main()
 
         // 创建模拟仿真接口（用于GUI测试，不需连接实际后端）
         // 参数为模拟的小车数量
-        std::shared_ptr<SimulationInterface> simInterface = std::make_shared<MockSimulationInterface>(5);
+        // std::shared_ptr<SimulationInterface> simInterface = std::make_shared<MockSimulationInterface>(5);
 
-        // 创建并初始化主窗口
-        MainWindow mainWindow;
+        Scheduler scheduler;
+        scheduler.vehicle_manager.initializeVehicles(3)
+
+            // 创建并初始化主窗口
+            MainWindow mainWindow;
         mainWindow.initialize(simInterface);
 
         std::cout << "初始化完成，开始运行..." << std::endl;
