@@ -165,7 +165,7 @@ void VehicleManager::updateVehicle(float current_time, float deltaTime, Vehicle*
 //到车库停车的判断和处理
 	if(vehicle->m_state.motionState == Vehicle::MotionState::Stopped && fabs(VehiclePosition - device_position[vehicle->towards_device])<epsilon){
 		if(vehicle->m_state.currentTask) {
-                        // Removed unused task variable
+                        
 		vehicle->m_state.operationTimer+=deltaTime;
 		}
 		

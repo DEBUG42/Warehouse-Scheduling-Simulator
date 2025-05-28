@@ -1,4 +1,4 @@
-#include "Core/EventQueue.hpp"
+#include "../Core/EventQueue.hpp"
 
 // 添加事件到事件队列的实现
 // 输入: Event& e - 要添加的事件

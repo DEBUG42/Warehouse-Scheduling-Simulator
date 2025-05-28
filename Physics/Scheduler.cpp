@@ -1,4 +1,4 @@
-#include "Core/Scheduler.hpp"
+#include "../Core/Scheduler.hpp"
 #include <iostream>
 #include <iomanip>
 
@@ -16,7 +16,7 @@ void Scheduler::run(double frequency, float timescale) {
     dt = 1.0 / frequency * timescale;
     current_time = 0.0;
 
-    std::cout << "[INFO] Starting simulation at " << frequency << "Hz..." << std::endl;
+//    std::cout << "[INFO] Starting simulation at " << frequency << "Hz..." << std::endl;
 
     int step_count = 0;
     while (!task_manager.allTasksCompleted()) {
@@ -32,7 +32,7 @@ void Scheduler::run(double frequency, float timescale) {
         step_count++;
     }
 
-    std::cout << "[INFO] Simulation finished at time " << current_time << "s" << std::endl;
+//    std::cout << "[INFO] Simulation finished at time " << current_time << "s" << std::endl;
 }
 
 // 更新系统状态
