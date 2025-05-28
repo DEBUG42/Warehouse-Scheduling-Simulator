@@ -149,7 +149,7 @@ int main()
     // Declare other necessary variables
     const float pathDistanceStep = 500.0f; // Example step in mm
     const float totalPathLength = trackRenderer.getTotalCenterLineLengthMm();
-
+    printf("Total Path Length: %f mm\n", totalPathLength);
     // 创建车辆对象 (Using direct types after `using` directive)
     // Vehicle vehicle1(1, 0.0f, 0.0f);                              // id, initial_pos_m, initial_angle_rad
     // vehicle1.m_state.motionState = Vehicle::MotionState::Stopped; // Corrected enum usage
@@ -210,7 +210,7 @@ int main()
     bool showVehicleRenderer = true; // 新增：控制车辆渲染器显示
     float zoomLevel = 1.0f;
     bool isDragging = false;
-    sf::Vector2f dragStart;    // 批量创建多辆车辆对象，并设置不同状态
+    sf::Vector2f dragStart; // 批量创建多辆车辆对象，并设置不同状态
     std::vector<Vehicle> vehicles;
     const int vehicleCount = 4;
     for (int i = 0; i < vehicleCount; ++i)
@@ -359,12 +359,12 @@ int main()
                     std::cout << (showWarehouses ? "显示仓库\n" : "隐藏仓库\n");
                 }
             }
-        }        // 更新车辆位置（演示：随currentPathDistanceMm变化，但保持相对间距）
+        } // 更新车辆位置（演示：随currentPathDistanceMm变化，但保持相对间距）
         for (size_t i = 0; i < vehicles.size(); ++i)
         {
             // 基础位置 + 车辆间距，转换为米单位
             float basePosition = currentPathDistanceMm / 1000.0f; // 转换为米
-            float spacing = i * 10.0f; // 每辆车间距10米
+            float spacing = i * 10.0f;                            // 每辆车间距10米
             vehicles[i].position_m = basePosition + spacing;
             vehicles[i].m_state.position = vehicles[i].position_m;
         }
