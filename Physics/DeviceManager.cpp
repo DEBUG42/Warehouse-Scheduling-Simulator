@@ -1,4 +1,3 @@
-
 #include "../Core/Device.hpp"
 #include "../Core/Event.hpp"
 #include <iostream>
@@ -72,36 +71,29 @@ void DeviceManager::update(double current_time) {
 // 处理传入的事件
 // 输入: 事件对象 (const Event& e)
 // 输出: 无
-void DeviceManager::handleEvent( Event& e) {
-    // 获取指定ID的设备状态
-    auto& state = devices[e.device_id];
-
-    // 根据事件类型处理事件
+void DeviceManager::handleEvent(const Event& e) {
     switch (e.type) {
-        // 设备变为空时的处理
-        case EventType::DEVICE_BECOMES_EMPTY:
-            state.has_goods = false;
-            state.is_transferring = false;
-            std::cout << "[Event] Device " << e.device_id << " became EMPTY (task " << e.task_id << ")\n";
+        case EventType::HUMAN_UNLOAD_AT_OUT_PORT:
+            // 出库口货物被人工搬空 → 标记为空
+            DeviceState[e.device_id].has_goods = false;
             break;
 
-        // 设备中有货物时的处理
-        case EventType::DEVICE_HAS_GOODS:
-            state.has_goods = true;
-            state.is_transferring = false;
-            std::cout << "[Event] Device " << e.device_id << " now HAS GOODS (task " << e.task_id << ")\n";
+        case EventType::STACKER_PUT_TO_OUT_INTERFACE:
+            // 堆垛机已把货物放到接口设备上
+            DeviceState[e.device_id].has_goods = true;
             break;
 
-        // 人类卸货完成或堆垛机完成加载时的处理
-        case EventType::HUMAN_UNLOAD_DONE:
-        case EventType::STACKER_FINISH_LOAD:
-            state.is_transferring = false;
-            std::cout << "[Event] Transfer done at device " << e.device_id << " (task " << e.task_id << ")\n";
+        case EventType::FORKLIFT_PUT_TO_IN_PORT:
+            // 入库口叉车放货完成
+            DeviceState[e.device_id].has_goods = true;
             break;
 
-        // 未知事件的处理
+        case EventType::STACKER_PICK_FROM_IN_INTERFACE:
+            // 堆垛机取走入库接口设备货物
+            DeviceState[e.device_id].has_goods = false;
+            break;
+
         default:
-            std::cout << "[Event] Unknown event for device " << e.device_id << "\n";
             break;
     }
 }

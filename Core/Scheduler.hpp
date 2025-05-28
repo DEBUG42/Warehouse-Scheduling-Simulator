@@ -39,6 +39,16 @@ public:
     // 输入: 无（依赖于类的成员变量）
     // 输出: 无
     void tryDispatchTasks();
+
+    void addEventForStackerPut(int device_id, int task_id, double current_time);
+
+    void addEventForHumanUnload(int device_id, int task_id, double current_time);
+
+    void addEventForForkliftPut(int device_id, int task_id, double current_time);
+
+    void addEventForStackerPick(int device_id, int task_id, double current_time);
+
+
 };
 
 

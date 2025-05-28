@@ -94,7 +94,7 @@ public:
     // 处理由 EventQueue 触发的事件
     // 输入: Event& e - 事件
     // 输出: 无
-    void handleEvent(Event& e);
+    void handleEvent(const Event& e);
 
 private:
     std::map<int, DeviceState> devices;

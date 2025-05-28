@@ -1,4 +1,3 @@
-
 #include "../Core/Task.hpp"
 #include "../Core/Event.hpp"
 #include "../Core/Device.hpp"
@@ -7,14 +6,28 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
-#include "string"
+#include <string>
+//辅助函数：从被保护的task容器中获取task对象
+std::vector<Task>& TaskManager::getTasks(){return tasks;}
 
+
+//辅助函数：将枚举型 TaskType 转换为字符串
+std::string TaskManager::taskTypeToString(TaskType type) {
+    switch (type) {
+        case INBOUND:
+            return "INBOUND";
+        case OUTBOUND:
+            return "OUTBOUND";
+        default:
+            return "UNKNOWN";
+    }
+}
 
 
 // 辅助函数：将字符串按指定分隔符分割
 // 输入: 字符串 (const std::string& s), 分隔符 (char delimiter)
 // 输出: 分割后的字符串列表 (std::vector<std::string>)
-std::vector<std::string> split(const std::string& s, char delimiter) {
+std::vector<std::string> TaskManager::split(const std::string& s, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
     std::istringstream tokenStream(s);
@@ -35,7 +48,7 @@ std::vector<std::string> split(const std::string& s, char delimiter) {
  *   - tasks: 所有任务的结构体列表
  *   - next_task_id: 每个起始设备应执行的最小编号任务
  */
-void TaskManager::loadFromFile(std::string& filepath) {
+void TaskManager::loadFromFile(const std::string& filepath) {
     std::ifstream fin(filepath);
     std::string line;
 
@@ -79,7 +92,7 @@ void TaskManager::loadFromFile(std::string& filepath) {
         }
     }
 
-    // 输出加载的任务数量信息
+    // 输出加载的任务数量信息    
     std::cout << "[INFO] Loaded " << tasks.size() << " tasks from " << filepath << std::endl;
 }
 
