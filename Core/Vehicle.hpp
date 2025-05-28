@@ -34,7 +34,7 @@ public:
 
     // 固有属性
     int id;                      // 车辆编号
-    float m_length = 0.02;            // 车辆长度（米）
+    float m_length = 2;            // 车辆长度（米）
     float m_maxStraightSpeed = (8 / 3); // 直轨最大速度（米/秒）
     float m_maxCurveSpeed = (2 / 3) ;     // 弯轨最大速度（米/秒）
     float m_acceleration = 0.5 ;       // 加减速度（米/秒²）
