@@ -1,6 +1,8 @@
-#include <Task.hpp>
-#include <Vehicle.hpp>
-#include <Event.hpp>
+#pragma once
+class Vehicle;
+#include "../Core/Task.hpp"
+#include "../Core/Vehicle.hpp"
+#include "../Core/Event.hpp"
 #include <vector>
 #include <fstream>
 #include <iostream>
@@ -18,21 +20,5 @@ public:
 private:
     std::ofstream log_file;
 };
-Logger::Logger() {
-    try {
-        log_file.open("simulation_log.txt", std::ios::out);
-        if (!log_file.is_open()) {
-            throw std::runtime_error("[Logger] Failed to open log file!");
-        }
-    } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-    }
-}
 
-
-Logger::~Logger() {
-    if (log_file.is_open()) {
-        log_file.close();
-    }
-}
 //

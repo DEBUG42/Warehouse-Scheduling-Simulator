@@ -1,7 +1,10 @@
 #pragma once
 #include "Device.hpp"
 #include <vector>
-#include "Scheduler.hpp"
+#include <iostream>
+#include <iomanip>
+#include <memory>
+//#include "Scheduler.hpp"
 #include "Task.hpp"
 #include "Event.hpp"
 #include <SFML/Graphics.hpp>
@@ -75,7 +78,7 @@ public:
 	//更新单个车辆的状态
 	//输入：当前时间（double current_time），时间步长（double dt）时间倍率（Timescal）
 	//		当前车辆，前一辆车
-	void updateVehicle(float current_time,float deltaTime, std::vector<Vehicle*>vehicle ,std::vector<Vehicle*> leadingVehicle);
+        void updateVehicle(float current_time,float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle);
 
 
     // 获取可用于执行指定任务的车辆列表
@@ -98,9 +101,9 @@ public:
     // 输出: 所有车辆的列表 (const std::vector<Vehicle>&)
     std::vector<Vehicle>& getVehicles();
 
-private:
+public:
     std::vector<Vehicle> vehicles; // 定义 vehicles 容器
-    constexpr static double LOOP_LENGTH = 100.0;  // 环道总长度（可调）
+    constexpr static double LOOP_LENGTH = 99.47787445225672;  // 环道总长度（可调）
 
     // 计算两个位置之间的距离
     // 输入: 起始位置 (double from), 结束位置 (double to)
@@ -108,12 +111,12 @@ private:
     double getDistance(double from, double to);
 };
  // 新增：将 MotionState 转换为字符串的辅助函数
-static std::string motionStateToString(Vehicle::MotionState state) {
-    switch (state) {
-        case Vehicle::MotionState::Accelerating: return "Accelerating";
-        case Vehicle::MotionState::Cruising:     return "Cruising";
-        case Vehicle::MotionState::Decelerating: return "Decelerating";
-        case Vehicle::MotionState::Stopped:      return "Stopped";
-        default:                        return "Unknown";
-    }
-    }
+// static std::string motionStateToString(Vehicle::MotionState state) {
+//     switch (state) {
+//         case Vehicle::MotionState::Accelerating: return "Accelerating";
+//         case Vehicle::MotionState::Cruising:     return "Cruising";
+//         case Vehicle::MotionState::Decelerating: return "Decelerating";
+//         case Vehicle::MotionState::Stopped:      return "Stopped";
+//         default:                        return "Unknown";
+//     }
+// }
