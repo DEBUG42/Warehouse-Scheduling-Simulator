@@ -6,7 +6,6 @@
 
 namespace test
 {
-
     // Helper to convert sim::VehicleStatus to gui::VehicleStatus
     gui::VehicleStatus convertSimToGuiVehicleStatus(sim::VehicleStatus simStatus)
     {

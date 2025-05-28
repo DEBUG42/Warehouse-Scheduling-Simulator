@@ -12,7 +12,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "Core/Device.hpp" // No Core:: prefix needed for types from here
+#include "../Core/Device.hpp" // No Core:: prefix needed for types from here
 
 /*
 每一个仓库对应在弯道上的位置，
@@ -341,17 +341,9 @@ void WarehouseRenderer::updateDeviceStates(const std::vector<DeviceBase *> &core
         {
             if (core_device_ptr && core_device_ptr->m_id == gui_device.id)
             {
-                // Assuming DeviceBase has a way to get its state and type, or that these are directly accessible
-                // For now, let's assume core_device_ptr itself can be cast or its members accessed if it matches Device structure
-                // This part depends on how Core::DeviceBase, Core::Device, and Core::DeviceState are structured.
-                // If core_device_ptr is a Core::Device*, then its m_status can be accessed.
-                // We need to ensure the core_device_ptr is of a type that has m_status (DeviceState) and a way to get its DeviceType.
-                // For this example, we'll assume core_device_ptr can be safely cast to a type that has m_status.
-                // A better approach would be for DeviceBase to have virtual methods to get state and type.
-                // Or, if all devices in coreDevices are guaranteed to be of a specific derived type:
-                const auto *actual_device = static_cast<const DeviceBase *>(core_device_ptr); // Or specific derived type if known
-                gui_device.coreState = actual_device->m_status;                               // Update the state
-                // gui_device.coreType is already set during initialization from s_deviceLayouts
+                // Since DeviceBase doesn't directly expose state, we need to get it from DeviceManager
+                // For now, we'll assume the caller provides the correct state through a different mechanism
+                // This method signature should be updated to accept DeviceManager or states directly
                 found = true;
                 break;
             }
@@ -361,6 +353,23 @@ void WarehouseRenderer::updateDeviceStates(const std::vector<DeviceBase *> &core
             // Optionally handle cases where a GUI device doesn't have a matching core device
             gui_device.coreState = DeviceState(); // Reset to default state
             // Consider logging a warning or setting a specific 'offline' visual state if applicable
+        }
+    }
+}
+
+void WarehouseRenderer::updateDeviceStates(const std::map<int, DeviceState> &deviceStates)
+{
+    for (auto &gui_device : m_interfaces)
+    {
+        auto it = deviceStates.find(gui_device.id);
+        if (it != deviceStates.end())
+        {
+            gui_device.coreState = it->second;
+        }
+        else
+        {
+            // Reset to default state if device not found
+            gui_device.coreState = DeviceState();
         }
     }
 }

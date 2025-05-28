@@ -7,8 +7,8 @@
 #include <map>
 #include "WarehouseUtils.hpp"
 #include "TrackRenderer.hpp"
-#include "Core/Device.hpp"  // For DeviceState, DeviceType
-#include "Core/Vehicle.hpp" // For Vehicle for path rendering (if needed later)
+#include "../src/Core/Device.hpp"  // For DeviceState, DeviceType
+#include "../src/Core/Vehicle.hpp" // For Vehicle for path rendering (if needed later)
 
 // Bring Core types into the current namespace for easier use
 
@@ -63,13 +63,17 @@ public:
      * @param worldOriginOffsetPx 世界坐标原点偏移量
      * @param iconBasePath 图标资源的基础路径
      */
-    void initialize(TrackRenderer &trackRenderer, const sf::Vector2f &worldOriginOffsetPx, const std::string &iconBasePath = "resources/icons/");
+    void initialize(TrackRenderer &trackRenderer, const sf::Vector2f &worldOriginOffsetPx, const std::string &iconBasePath = "resources/icons/"); /**
+                                                                                                                                                   * @brief 更新设备状态
+                                                                                                                                                   * @param coreDevices Vector of pointers to Core::DeviceBase objects
+                                                                                                                                                   */
+    void updateDeviceStates(const std::vector<DeviceBase *> &coreDevices);
 
     /**
-     * @brief 更新设备状态
-     * @param coreDevices Vector of pointers to Core::DeviceBase objects
+     * @brief 更新设备状态（使用状态映射）
+     * @param deviceStates Map of device ID to DeviceState
      */
-    void updateDeviceStates(const std::vector<DeviceBase *> &coreDevices);
+    void updateDeviceStates(const std::map<int, DeviceState> &deviceStates);
 
     /**
      * @brief 设置入库口颜色
