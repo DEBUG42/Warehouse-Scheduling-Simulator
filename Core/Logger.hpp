@@ -1,12 +1,12 @@
 #pragma once
 class Vehicle;
-#include "../Core/Task.hpp"
-#include "../Core/Vehicle.hpp"
-#include "../Core/Event.hpp"
+#include "Task.hpp"
+#include "Vehicle.hpp"
+#include "Event.hpp"
 #include <vector>
 #include <fstream>
 #include <iostream>
-#include <EventQueue.hpp>
+#include "EventQueue.hpp"
 
 class Logger {
 public:
