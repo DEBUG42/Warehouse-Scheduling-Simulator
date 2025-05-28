@@ -217,7 +217,7 @@ int main()
     {
         Vehicle v;
         v.id = i + 1;
-        v.position_m = 5.0f + i * 10.0f; // 每辆车相距10米，第一辆在5米处
+        v.position_m = (32.000 - 0.002 * i - v.m_length * i); // 每辆车相距10米，第一辆在5米处
         v.is_loaded = false;
         v.is_executing = false;
         v.velocity_mps = 0.0f;
@@ -360,14 +360,14 @@ int main()
                 }
             }
         } // 更新车辆位置（演示：随currentPathDistanceMm变化，但保持相对间距）
-        for (size_t i = 0; i < vehicles.size(); ++i)
-        {
-            // 基础位置 + 车辆间距，转换为米单位
-            float basePosition = currentPathDistanceMm / 1000.0f; // 转换为米
-            float spacing = i * 10.0f;                            // 每辆车间距10米
-            vehicles[i].position_m = basePosition + spacing;
-            vehicles[i].m_state.position = vehicles[i].position_m;
-        }
+        // for (size_t i = 0; i < vehicles.size(); ++i)
+        // {
+        //     // 基础位置转换为米 + 车辆间距（米单位）
+        //     float basePositionM = currentPathDistanceMm; // 毫米转米
+        //     float spacingM = i * 1000.0f;                // 每辆车间距10米
+        //     vehicles[i].position_m = basePositionM + spacingM;
+        //     vehicles[i].m_state.position = vehicles[i].position_m;
+        // }
         // 更新车辆渲染器状态
         std::vector<Vehicle *> vehiclesToRender;
         for (auto &v : vehicles)

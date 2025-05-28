@@ -51,7 +51,7 @@ public:
     // 动态状态
     struct
     {
-        float position;              // 轨道位置（0~trackLength）
+        float position;              // 绝对路程轨道位置（0~trackLength）
         float currentSpeed;          // 当前速度（米/秒）
         MotionState motionState;     // 当前运动状态
         Task *currentTask = nullptr; // 当前执行的任务

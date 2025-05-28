@@ -90,10 +90,12 @@ void VehicleRenderer::calculateScreenPositionAndRotation(const Vehicle &vehicle,
         return;
     }
     float rotationRadians = 0.0f;
+    // Convert position from meters to millimeters for the track renderer
+    float positionMm = vehicle.position_m * 1000.0f;
     // Pass `this->m_trackRendererRef` instead of the parameter `trackRenderer` if it's meant to use the member.
     // However, the current signature allows overriding, which might be intentional for some scenarios.
     // For now, using the passed `trackRenderer` as per signature.
-    trackRenderer.getPointAndOrientationOnCenterLine(vehicle.position_m, screenPosition, rotationRadians, worldOriginOffsetPx);
+    trackRenderer.getPointAndOrientationOnCenterLine(positionMm, screenPosition, rotationRadians, worldOriginOffsetPx);
     screenRotationDegrees = rotationRadians * (180.f / M_PI);
 }
 
@@ -210,7 +212,6 @@ void VehicleRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) co
         // Pass *m_trackRendererRef to calculateScreenPositionAndRotation
         // No const_cast needed as calculateScreenPositionAndRotation is now const
         calculateScreenPositionAndRotation(vehicle, *m_trackRendererRef, worldOriginOffsetPx, screenPos, screenRotation);
-
         renderShadow(target, screenPos, screenRotation);
         renderSingleVehicle(target, vehicle, screenPos, screenRotation);
     }
