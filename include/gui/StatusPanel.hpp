@@ -6,98 +6,122 @@
 #include "gui/ObjectInspector.hpp"
 
 /**
- * @brief 状态面板类
+ * @brief Modern Status Panel Class
  *
- * 位于界面右侧，用于显示当前选中对象的详细信息
- * 包括对象类型、ID、状态属性以及相关任务列表
- * 根据不同对象类型(车辆/设备)动态调整显示内容
+ * Located on the right side of the interface for displaying detailed information about the currently selected object
+ * Includes object type, ID, status properties, and related task lists
+ * Dynamically adjusts display content based on different object types (vehicle/device)
+ * 
+ * Modern Design Features:
+ * - Dark theme consistent with Toolbar
+ * - Improved color contrast
+ * - Enhanced visual hierarchy
+ * - Better component separation
  */
 class StatusPanel
 {
 private:
-    // 布局参数
-    const float m_panelWidth = 300.0f;                // 面板宽度
-    float m_panelHeight = 600.0f;                     // 面板高度（可调整）
-    const sf::Color m_backgroundColor{230, 240, 230}; // 背景色 - 更改为浅绿色
-    const float m_padding = 10.0f;                    // 内部边距
-    const float m_lineSpacing = 18.0f;                // 行间距
+    // Layout parameters - Modern design
+    const float m_panelWidth = 300.0f;                
+    float m_panelHeight = 600.0f;                     
+    const sf::Color m_backgroundColor{40, 40, 40};    // Dark gray background
+    const sf::Color m_headerColor{50, 50, 50};        // Darker header
+    const sf::Color m_separatorColor{70, 70, 70};     // Separator color
+    const sf::Color m_textColor{200, 200, 200};       // Light gray text
+    const sf::Color m_accentColor{70, 130, 180};      // Steel blue accent
+    const float m_padding = 12.0f;                    // Increased padding
+    const float m_lineSpacing = 20.0f;                // Increased line spacing
+    const float m_sectionSpacing = 15.0f;             // Section spacing
 
-    // 字体引用
+    // Font reference
     sf::Font &m_font;
 
-    // 内容元素
-    std::unique_ptr<TaskListView> m_taskListView;       // 任务队列视图
-    std::unique_ptr<ObjectInspector> m_objectInspector; // 对象详细信息
+    // Background shapes for modern design
+    sf::RectangleShape m_background;
+    sf::RectangleShape m_headerBackground;
+    std::vector<sf::RectangleShape> m_sectionSeparators;
 
-    // 存储的状态信息文本
+    // Content elements
+    std::unique_ptr<TaskListView> m_taskListView;       
+    std::unique_ptr<ObjectInspector> m_objectInspector; 
+
+    // Status information displays with improved styling
+    sf::Text m_headerText;
     sf::Text m_simTimeDisplay;
     sf::Text m_vehicleCountDisplay;
     sf::Text m_completedTasksDisplay;
     sf::Text m_pendingTasksDisplay;
 
+    // Layout calculation
+    void calculateLayout();
+    void updateBackgroundShapes();
+    sf::Color getOptimalTextColor(const sf::Color& backgroundColor) const;
+
 public:
     /**
-     * @brief 构造函数
-     * @param font 字体引用
+     * @brief Constructor
+     * @param font Font reference
      */
-    StatusPanel(sf::Font &font); /**
-                                  * @brief 更新面板显示内容
-                                  * @param selectedObject 当前选中的对象（可为nullptr）
-                                  * @param objectType 对象类型字符串
-                                  * @param pendingTasks 全局待处理任务队列
-                                  */
+    StatusPanel(sf::Font &font);
+
+    /**
+     * @brief Update panel display content
+     * @param selectedObject Currently selected object (can be nullptr)
+     * @param objectType Object type string
+     * @param pendingTasks Global pending task queue
+     */
     void refreshContent(const void *selectedObject,
                         const std::string &objectType,
                         const std::vector<std::string> &pendingTasks);
 
     /**
-     * @brief 渲染面板界面
-     * @param target 渲染目标
-     * @param position 面板左上角位置
+     * @brief Render panel interface
+     * @param target Render target
+     * @param position Panel top-left position
      */
     void render(sf::RenderTarget &target, const sf::Vector2f &position);
 
     /**
-     * @brief 处理面板区域内的输入事件
-     * @param event SFML事件对象
-     * @param localPos 相对面板的鼠标位置
-     * @return 是否消耗了事件
+     * @brief Handle input events within panel area
+     * @param event SFML event object
+     * @param localPos Mouse position relative to panel
+     * @return Whether the event was consumed
      */
     bool handleEvent(const sf::Event &event, const sf::Vector2f &localPos);
 
     /**
-     * @brief 获取面板宽度
-     * @return 面板宽度（像素）
+     * @brief Get panel width
+     * @return Panel width (pixels)
      */
     float getPanelWidth() const;
 
     /**
-     * @brief 调整面板高度
-     * @param height 新的高度值
+     * @brief Adjust panel height
+     * @param height New height value
      */
     void resize(float height);
 
     /**
-     * @brief 设置仿真时间
-     * @param time 仿真时间（秒）
+     * @brief Set simulation time
+     * @param time Simulation time (seconds)
      */
     void setSimulationTime(float time);
 
     /**
-     * @brief 设置车辆数量
-     * @param count 车辆数量
+     * @brief Set vehicle count
+     * @param count Vehicle count
      */
     void setVehicleCount(size_t count);
 
     /**
-     * @brief 设置已完成任务数量
-     * @param count 已完成任务数量
+     * @brief Set completed task count
+     * @param count Completed task count
      */
     void setCompletedTaskCount(size_t count);
 
     /**
-     * @brief 设置待处理任务数量
-     * @param count 待处理任务数量
+     * @brief Set pending task count
+     * @param count Pending task count
      */
     void setPendingTaskCount(size_t count);
 };

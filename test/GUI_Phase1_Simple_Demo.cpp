@@ -45,14 +45,13 @@ public:
     }
 
     bool loadFont()
-    {
-        if (!font.loadFromFile("assets/fonts/arial.ttf"))
+    {        if (!font.loadFromFile("assets/fonts/arial.ttf"))
         {
-            std::cerr << "无法加载字体文件: assets/fonts/arial.ttf" << std::endl;
-            // 尝试系统字体
+            std::cerr << "Cannot load font file: assets/fonts/arial.ttf" << std::endl;
+            // Try system font
             if (!font.loadFromFile("C:/Windows/Fonts/arial.ttf"))
             {
-                std::cerr << "无法加载系统字体文件" << std::endl;
+                std::cerr << "Cannot load system font file" << std::endl;
                 return false;
             }
         }
@@ -68,15 +67,14 @@ public:
         
         // 创建车辆信息面板
         vehicleInfoPanel = std::make_unique<VehicleInfoPanel>(font, STATUS_PANEL_WIDTH, 400.0f);
-        
-        // 设置工具栏回调
+          // 设置工具栏回调
         toolbar->setOnPlayPauseToggled([this]() {
             isRunning = !isRunning;
-            std::cout << "仿真状态: " << (isRunning ? "运行" : "暂停") << std::endl;
+            std::cout << "Simulation State: " << (isRunning ? "Running" : "Paused") << std::endl;
         });
         
         toolbar->setOnTimeScaleChanged([this](float speed) {
-            std::cout << "速度调整为: " << speed << "x" << std::endl;
+            std::cout << "Speed adjusted to: " << speed << "x" << std::endl;
         });
 
         // 设置初始状态
@@ -106,17 +104,16 @@ public:
             if (event.type == sf::Event::KeyPressed)
             {
                 switch (event.key.code)
-                {
-                case sf::Keyboard::Space:
+                {                case sf::Keyboard::Space:
                     isRunning = !isRunning;
                     toolbar->setPlaying(isRunning);
-                    std::cout << "仿真状态: " << (isRunning ? "运行" : "暂停") << std::endl;
+                    std::cout << "Simulation State: " << (isRunning ? "Running" : "Paused") << std::endl;
                     break;
                 case sf::Keyboard::R:
                     simulationTime = 0.0f;
                     isRunning = false;
                     toolbar->setPlaying(false);
-                    std::cout << "重置仿真" << std::endl;
+                    std::cout << "Reset Simulation" << std::endl;
                     break;
                 case sf::Keyboard::Escape:
                     window.close();
@@ -124,13 +121,13 @@ public:
                 }
             }
         }
-    }
-
-    void update(float deltaTime)
+    }    void update(float deltaTime)
     {
         if (isRunning)
         {
-            simulationTime += deltaTime;
+            // 应用倍速系数
+            float timeScale = toolbar->getCurrentSpeed();
+            simulationTime += deltaTime * timeScale;
 
             // 更新工具栏时间显示
             toolbar->updateTimeDisplay(simulationTime);
@@ -157,14 +154,12 @@ public:
         float endTime = simulationTime;
         float startSpeed = 0.0f + (eventCounter % 3) * 0.5f;
         float endSpeed = 1.5f + (eventCounter % 4) * 0.3f;
-        float acceleration = (endSpeed - startSpeed) / (endTime - startTime);
-
-        std::string eventType = (eventCounter % 2 == 0) ? "加速" : "减速";
+        float acceleration = (endSpeed - startSpeed) / (endTime - startTime);        std::string eventType = (eventCounter % 2 == 0) ? "Acceleration" : "Deceleration";
 
         vehicleInfoPanel->recordAccelerationEvent(
             startTime, endTime, startSpeed, endSpeed, acceleration, eventType);
 
-        std::cout << "记录" << eventType << "事件: "
+        std::cout << "Record " << eventType << " event: "
                   << startSpeed << "m/s -> " << endSpeed << "m/s" << std::endl;
     }
 
@@ -195,12 +190,10 @@ public:
         instructions.setFont(font);
         instructions.setCharacterSize(14);
         instructions.setFillColor(sf::Color::Black);
-        instructions.setPosition(10, window.getSize().y - 100);
-
-        std::string text = "GUI第一阶段优化演示\n"
-                           "空格键: 开始/暂停仿真\n"
-                           "R键: 重置仿真\n"
-                           "ESC键: 退出";
+        instructions.setPosition(10, window.getSize().y - 100);        std::string text = "GUI Phase 1 Optimization Demo\n"
+                           "Space: Start/Pause Simulation\n"
+                           "R: Reset Simulation\n"
+                           "ESC: Exit";
         instructions.setString(text);
 
         window.draw(instructions);
@@ -208,15 +201,13 @@ public:
 
     void run()
     {
-        sf::Clock clock;
-
-        std::cout << "GUI第一阶段优化演示启动" << std::endl;
-        std::cout << "展示功能:" << std::endl;
-        std::cout << "1. Toolbar - 时间格式化显示 (HH:MM:SS.mmm)" << std::endl;
-        std::cout << "2. StatusPanel - 25:35:40比例布局" << std::endl;
-        std::cout << "3. VehicleInfoPanel - 车辆加减速信息记录" << std::endl;
-        std::cout << "4. UIControls - 工具函数集合" << std::endl;
-        std::cout << "\n操作说明: 空格键开始仿真，观察时间格式化效果" << std::endl;
+        sf::Clock clock;        std::cout << "GUI Phase 1 Optimization Demo Started" << std::endl;
+        std::cout << "Features:" << std::endl;
+        std::cout << "1. Toolbar - Time format display (HH:MM:SS.mmm)" << std::endl;
+        std::cout << "2. StatusPanel - 25:35:40 ratio layout" << std::endl;
+        std::cout << "3. VehicleInfoPanel - Vehicle acceleration info recording" << std::endl;
+        std::cout << "4. UIControls - Utility functions collection" << std::endl;
+        std::cout << "\nInstructions: Press Space to start simulation, observe time formatting effect" << std::endl;
 
         while (window.isOpen())
         {
@@ -238,7 +229,7 @@ int main()
     }
     catch (const std::exception &e)
     {
-        std::cerr << "演示程序错误: " << e.what() << std::endl;
+        std::cerr << "Demo program error: " << e.what() << std::endl;
         return -1;
     }
 
