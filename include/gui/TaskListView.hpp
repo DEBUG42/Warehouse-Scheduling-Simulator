@@ -3,17 +3,9 @@
 #include <string>
 #include <vector>
 #include <memory>
-// #include "Core/Task.hpp" // Task依赖暂时注释掉，用于演示
-// using Core::Task;
+#include "../src/Core/Task.hpp" // 使用Core的Task定义
 
-// 为演示目的，简单定义Task结构
-struct Task
-{
-    std::string id;
-    std::string description;
-    int priority;
-    std::string status;
-};
+// 不再定义重复的Task结构
 
 /**
  * @brief 任务列表视图类

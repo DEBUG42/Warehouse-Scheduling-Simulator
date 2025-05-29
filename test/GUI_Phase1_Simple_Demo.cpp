@@ -45,7 +45,8 @@ public:
     }
 
     bool loadFont()
-    {        if (!font.loadFromFile("assets/fonts/arial.ttf"))
+    {
+        if (!font.loadFromFile("assets/fonts/arial.ttf"))
         {
             std::cerr << "Cannot load font file: assets/fonts/arial.ttf" << std::endl;
             // Try system font
@@ -56,7 +57,8 @@ public:
             }
         }
         return true;
-    }    void initializeComponents()
+    }
+    void initializeComponents()
     {
         // 创建工具栏 - 修正参数顺序：(font, width, height)
         toolbar = std::make_unique<Toolbar>(font, window.getSize().x, TOOLBAR_HEIGHT);
@@ -64,25 +66,25 @@ public:
         // 创建状态面板
         statusPanel = std::make_unique<StatusPanel>(font);
         statusPanel->resize(window.getSize().y - TOOLBAR_HEIGHT);
-        
+
         // 创建车辆信息面板
         vehicleInfoPanel = std::make_unique<VehicleInfoPanel>(font, STATUS_PANEL_WIDTH, 400.0f);
-          // 设置工具栏回调
-        toolbar->setOnPlayPauseToggled([this]() {
+        // 设置工具栏回调
+        toolbar->setOnPlayPauseToggled([this]()
+                                       {
             isRunning = !isRunning;
-            std::cout << "Simulation State: " << (isRunning ? "Running" : "Paused") << std::endl;
-        });
-        
-        toolbar->setOnTimeScaleChanged([this](float speed) {
-            std::cout << "Speed adjusted to: " << speed << "x" << std::endl;
-        });
+            std::cout << "Simulation State: " << (isRunning ? "Running" : "Paused") << std::endl; });
+
+        toolbar->setOnTimeScaleChanged([this](float speed)
+                                       { std::cout << "Speed adjusted to: " << speed << "x" << std::endl; });
 
         // 设置初始状态
         statusPanel->setSimulationTime(0.0f);
         statusPanel->setVehicleCount(3);
         statusPanel->setCompletedTaskCount(0);
         statusPanel->setPendingTaskCount(5);
-    }    void handleEvents()
+    }
+    void handleEvents()
     {
         sf::Event event;
         while (window.pollEvent(event))
@@ -97,14 +99,16 @@ public:
             sf::Vector2f mousePos = window.mapPixelToCoords(mousePixelPos);
 
             // 工具栏事件处理
-            if (toolbar->handleEvent(event, mousePos)) {
+            if (toolbar->handleEvent(event, mousePos))
+            {
                 continue; // 工具栏消费了事件，跳过其他处理
             }
 
             if (event.type == sf::Event::KeyPressed)
             {
                 switch (event.key.code)
-                {                case sf::Keyboard::Space:
+                {
+                case sf::Keyboard::Space:
                     isRunning = !isRunning;
                     toolbar->setPlaying(isRunning);
                     std::cout << "Simulation State: " << (isRunning ? "Running" : "Paused") << std::endl;
@@ -121,7 +125,8 @@ public:
                 }
             }
         }
-    }    void update(float deltaTime)
+    }
+    void update(float deltaTime)
     {
         if (isRunning)
         {
@@ -154,7 +159,8 @@ public:
         float endTime = simulationTime;
         float startSpeed = 0.0f + (eventCounter % 3) * 0.5f;
         float endSpeed = 1.5f + (eventCounter % 4) * 0.3f;
-        float acceleration = (endSpeed - startSpeed) / (endTime - startTime);        std::string eventType = (eventCounter % 2 == 0) ? "Acceleration" : "Deceleration";
+        float acceleration = (endSpeed - startSpeed) / (endTime - startTime);
+        std::string eventType = (eventCounter % 2 == 0) ? "Acceleration" : "Deceleration";
 
         vehicleInfoPanel->recordAccelerationEvent(
             startTime, endTime, startSpeed, endSpeed, acceleration, eventType);
@@ -190,7 +196,8 @@ public:
         instructions.setFont(font);
         instructions.setCharacterSize(14);
         instructions.setFillColor(sf::Color::Black);
-        instructions.setPosition(10, window.getSize().y - 100);        std::string text = "GUI Phase 1 Optimization Demo\n"
+        instructions.setPosition(10, window.getSize().y - 100);
+        std::string text = "GUI Phase 1 Optimization Demo\n"
                            "Space: Start/Pause Simulation\n"
                            "R: Reset Simulation\n"
                            "ESC: Exit";
@@ -201,7 +208,8 @@ public:
 
     void run()
     {
-        sf::Clock clock;        std::cout << "GUI Phase 1 Optimization Demo Started" << std::endl;
+        sf::Clock clock;
+        std::cout << "GUI Phase 1 Optimization Demo Started" << std::endl;
         std::cout << "Features:" << std::endl;
         std::cout << "1. Toolbar - Time format display (HH:MM:SS.mmm)" << std::endl;
         std::cout << "2. StatusPanel - 25:35:40 ratio layout" << std::endl;

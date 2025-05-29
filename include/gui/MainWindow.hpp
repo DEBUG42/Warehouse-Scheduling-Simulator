@@ -4,8 +4,11 @@
 #include "SimulationView.hpp"
 #include "StatusPanel.hpp"
 #include "Toolbar.hpp"
+#include "VehicleInfoPanel.hpp"
 #include "SimulationInterface.hpp"
 #include "TaskListView.hpp"
+#include "../src/Core/Vehicle.hpp"
+#include "../src/Core/Task.hpp"
 
 /**
  * @class MainWindow
@@ -18,22 +21,23 @@ class MainWindow : public sf::RenderWindow
 {
 private:
     // 窗口布局参数
-    sf::Vector2u m_initialSize{1280, 720}; // 初始分辨率
-    const float m_toolbarHeight = 30.0f;   // 工具栏高度
-
-    // 子视图组件
-    std::unique_ptr<SimulationView> m_simView;        // 仿真视图区域
-    std::unique_ptr<StatusPanel> m_statusPanel;       // 右侧状态面板
-    std::unique_ptr<Toolbar> m_toolbar;               // 顶部工具栏
-    std::unique_ptr<TaskListView> m_taskListViewLeft; // 左侧任务队列
+    sf::Vector2u m_initialSize{1280, 720};                // 初始分辨率
+    const float m_toolbarHeight = 30.0f;                  // 工具栏高度    // 子视图组件
+    std::unique_ptr<SimulationView> m_simView;            // 仿真视图区域
+    std::unique_ptr<StatusPanel> m_statusPanel;           // 右侧状态面板
+    std::unique_ptr<VehicleInfoPanel> m_vehicleInfoPanel; // 车辆信息面板
+    std::unique_ptr<Toolbar> m_toolbar;                   // 顶部工具栏
+    std::unique_ptr<TaskListView> m_taskListViewLeft;     // 左侧任务队列
 
     // 样式资源
-    sf::Font m_globalFont;                   // 全局字体
-    sf::Color m_backgroundColor{45, 50, 55}; // 背景色
-
-    // 仿真接口
+    sf::Font m_globalFont;                               // 全局字体
+    sf::Color m_backgroundColor{45, 50, 55};             // 背景色    // 仿真接口
     std::shared_ptr<SimulationInterface> m_simInterface; // 仿真接口
-    std::vector<Core::Task> m_pendingTasks;              // 当前任务队列
+    std::vector<Task> m_pendingTasks;                    // 当前任务队列
+
+    // 车辆选择状态
+    int m_selectedVehicleId = -1;                  // 当前选中的车辆ID
+    std::vector<Vehicle *> m_currentVehicleStates; // 当前车辆状态缓存
 
 public:
     /**
@@ -91,17 +95,25 @@ private:
      * @brief 处理仿真状态更新回调
      * @param state 仿真状态
      */
-    void onSimulationStateUpdate(const SimulationInterface::SimulationState &state);
+    void onSimulationStateUpdate(const SimulationInterface::SimulationState &state); /**
+                                                                                      * @brief 处理车辆状态更新回调
+                                                                                      * @param vehicles 车辆状态列表
+                                                                                      */
+    void onVehicleUpdate(const std::vector<Vehicle *> &vehicles);                    /**
+                                                                                      * @brief 处理设备状态更新回调
+                                                                                      * @param devices 设备状态列表
+                                                                                      */
+    void onDeviceUpdate(const std::vector<DeviceBase *> &devices);
 
     /**
-     * @brief 处理车辆状态更新回调
-     * @param vehicles 车辆状态列表
+     * @brief 处理车辆选择事件
+     * @param vehicleId 选中的车辆ID，-1表示取消选择
      */
-    void onVehicleUpdate(const std::vector<gui::VehicleState> &vehicles);
+    void onVehicleSelected(int vehicleId);
 
     /**
-     * @brief 处理设备状态更新回调
-     * @param devices 设备状态列表
+     * @brief 更新车辆信息面板
+     * @param vehicleStates 当前所有车辆状态
      */
-    void onDeviceUpdate(const std::vector<gui::DeviceState> &devices);
+    void updateVehicleInfoPanel(const std::vector<Vehicle *> &vehicleStates);
 };

@@ -2,10 +2,10 @@
 #define REAL_BACKEND_ADAPTER_HPP
 
 #include "gui/SimulationInterface.hpp"
-#include "Core/Vehicle.hpp"
-#include "Core/Device.hpp"
-#include "Core/Scheduler.hpp"
-#include "Core/Task.hpp"
+#include "../src/Core/Vehicle.hpp"
+#include "../src/Core/Device.hpp"
+#include "../src/Core/Scheduler.hpp"
+#include "../src/Core/Task.hpp"
 // Potentially include EventQueue.hpp and Logger.hpp if direct interaction is needed
 // #include "Core/EventQueue.hpp"
 // #include "Core/Logger.hpp"
@@ -26,13 +26,11 @@ public:
     // Alternative constructor: Takes existing backend components (e.g., for testing or if managed externally)
     // RealBackendAdapter(VehicleManager& vm, DeviceManager& dm, Scheduler& scheduler);
 
-    virtual ~RealBackendAdapter() override;
-
-    // --- Implementation of SimulationInterface ---
+    virtual ~RealBackendAdapter() override; // --- Implementation of SimulationInterface ---
 
     SimulationState getSimulationState() const override;
-    std::vector<Core::Vehicle *> getVehicleStates() const override;
-    std::vector<Core::DeviceBase *> getDeviceStates() const override;
+    std::vector<Vehicle *> getVehicleStates() const override;
+    std::vector<DeviceBase *> getDeviceStates() const override;
 
     void setSimulationSpeedFactor(float speedFactor) override;
     void pauseSimulation() override;
@@ -43,8 +41,8 @@ public:
     void registerVehicleUpdateCallback(VehicleUpdateCallback callback) override;
     void registerDeviceUpdateCallback(DeviceUpdateCallback callback) override;
 
-    Core::Vehicle *getVehicleStateById(int vehicleId) const override;
-    Core::DeviceBase *getDeviceStateById(int deviceId) const override;
+    Vehicle *getVehicleStateById(int vehicleId) const override;
+    DeviceBase *getDeviceStateById(int deviceId) const override;
 
     // --- RealBackendAdapter specific methods ---
     // Method to periodically update the backend and trigger callbacks

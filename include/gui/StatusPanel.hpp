@@ -11,7 +11,7 @@
  * Located on the right side of the interface for displaying detailed information about the currently selected object
  * Includes object type, ID, status properties, and related task lists
  * Dynamically adjusts display content based on different object types (vehicle/device)
- * 
+ *
  * Modern Design Features:
  * - Dark theme consistent with Toolbar
  * - Improved color contrast
@@ -22,16 +22,16 @@ class StatusPanel
 {
 private:
     // Layout parameters - Modern design
-    const float m_panelWidth = 300.0f;                
-    float m_panelHeight = 600.0f;                     
-    const sf::Color m_backgroundColor{40, 40, 40};    // Dark gray background
-    const sf::Color m_headerColor{50, 50, 50};        // Darker header
-    const sf::Color m_separatorColor{70, 70, 70};     // Separator color
-    const sf::Color m_textColor{200, 200, 200};       // Light gray text
-    const sf::Color m_accentColor{70, 130, 180};      // Steel blue accent
-    const float m_padding = 12.0f;                    // Increased padding
-    const float m_lineSpacing = 20.0f;                // Increased line spacing
-    const float m_sectionSpacing = 15.0f;             // Section spacing
+    const float m_panelWidth = 300.0f;
+    float m_panelHeight = 600.0f;
+    const sf::Color m_backgroundColor{40, 40, 40}; // Dark gray background
+    const sf::Color m_headerColor{50, 50, 50};     // Darker header
+    const sf::Color m_separatorColor{70, 70, 70};  // Separator color
+    const sf::Color m_textColor{200, 200, 200};    // Light gray text
+    const sf::Color m_accentColor{70, 130, 180};   // Steel blue accent
+    const float m_padding = 12.0f;                 // Increased padding
+    const float m_lineSpacing = 20.0f;             // Increased line spacing
+    const float m_sectionSpacing = 15.0f;          // Section spacing
 
     // Font reference
     sf::Font &m_font;
@@ -42,8 +42,8 @@ private:
     std::vector<sf::RectangleShape> m_sectionSeparators;
 
     // Content elements
-    std::unique_ptr<TaskListView> m_taskListView;       
-    std::unique_ptr<ObjectInspector> m_objectInspector; 
+    std::unique_ptr<TaskListView> m_taskListView;
+    std::unique_ptr<ObjectInspector> m_objectInspector;
 
     // Status information displays with improved styling
     sf::Text m_headerText;
@@ -55,7 +55,7 @@ private:
     // Layout calculation
     void calculateLayout();
     void updateBackgroundShapes();
-    sf::Color getOptimalTextColor(const sf::Color& backgroundColor) const;
+    sf::Color getOptimalTextColor(const sf::Color &backgroundColor) const;
 
 public:
     /**

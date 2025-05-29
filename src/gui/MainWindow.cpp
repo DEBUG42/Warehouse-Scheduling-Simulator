@@ -1,6 +1,4 @@
 #include "gui/MainWindow.hpp"
-#include "gui/SimObject.hpp"
-#include "gui/MockSimulationInterface.hpp"
 #include "gui/Toolbar.hpp"
 #include "gui/StatusPanel.hpp"
 #include "gui/TaskListView.hpp"
@@ -30,14 +28,17 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
         {
             std::cerr << "Warning: Failed to load global font. Some text may not display correctly." << std::endl;
         }
-    }
-
-    // 初始化子组件
+    } // 初始化子组件
     m_simView = std::make_unique<SimulationView>(m_globalFont);
     m_simView->initialize(m_globalFont, m_simInterface, sf::Vector2f(static_cast<float>(m_initialSize.x), static_cast<float>(m_initialSize.y)));
 
     m_statusPanel = std::make_unique<StatusPanel>(m_globalFont);
     m_toolbar = std::make_unique<Toolbar>(m_globalFont, m_toolbarHeight, m_initialSize.x);
+
+    // 创建VehicleInfoPanel - 与StatusPanel配合使用
+    float vehicleInfoPanelHeight = 300.0f; // 设置合适的高度
+    float statusPanelWidth = 300.0f;       // 与StatusPanel相同的宽度
+    m_vehicleInfoPanel = std::make_unique<VehicleInfoPanel>(m_globalFont, statusPanelWidth, vehicleInfoPanelHeight);
 
     m_taskListViewLeft = std::make_unique<TaskListView>(m_globalFont, 250.f); // 左侧250像素宽
 
@@ -47,27 +48,22 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
         {
             onSimulationStateUpdate(state);
         });
-
     m_simInterface->registerVehicleUpdateCallback(
-        [this](const std::vector<gui::VehicleState> &vehicles)
+        [this](const std::vector<Vehicle *> &vehicles)
         {
             onVehicleUpdate(vehicles);
         });
-
     m_simInterface->registerDeviceUpdateCallback(
-        [this](const std::vector<gui::DeviceState> &devices)
+        [this](const std::vector<DeviceBase *> &devices)
         {
             onDeviceUpdate(devices);
-        });
-
-    // 设置工具栏回调
-    m_toolbar->setTimeScaleCallback([this](float scale)
-                                    {
+        }); // 设置工具栏回调
+    m_toolbar->setOnTimeScaleChanged([this](float scale)
+                                     {
         // 直接使用 float scale 调用新的接口
         m_simInterface->setSimulationSpeedFactor(scale); });
-
-    m_toolbar->setPlayPauseCallback([this]()
-                                    {
+    m_toolbar->setOnPlayPauseToggled([this]()
+                                     {
         // 切换仿真暂停/运行状态
         auto state = m_simInterface->getSimulationState();
         if (state.isPaused) {
@@ -75,6 +71,10 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
         } else {
             m_simInterface->pauseSimulation();
         } });
+
+    // 设置车辆选择回调
+    m_simView->setVehicleSelectedCallback([this](int vehicleId)
+                                          { onVehicleSelected(vehicleId); });
 
     // 更新布局
     updateLayout();
@@ -207,35 +207,99 @@ void MainWindow::onSimulationStateUpdate(const SimulationInterface::SimulationSt
     m_statusPanel->setSimulationTime(state.simulationTime);
     m_statusPanel->setVehicleCount(state.vehicleCount);
     m_statusPanel->setCompletedTaskCount(state.completedTaskCount);
-    m_statusPanel->setPendingTaskCount(state.pendingTaskCount);
-
-    // 更新工具栏状态
-    m_toolbar->updateTimeDisplay(state.simulationTime, 0);   // 假设没有真实时间显示，或者需要从别处获取
-    m_toolbar->updatePlayPauseState(!state.isPaused);        // isPaused=true -> 按钮显示Play (即非isPlaying)
-    m_toolbar->updateTimeScale(state.simulationSpeedFactor); // 使用新的 float speed factor
-
-    if (m_taskListViewLeft)
-        m_taskListViewLeft->updateTasks(m_pendingTasks);
+    m_statusPanel->setPendingTaskCount(state.pendingTaskCount); // 更新工具栏状态
+    m_toolbar->updateTimeDisplay(state.simulationTime);         // 只需要一个参数
+    m_toolbar->setPlaying(!state.isPaused);                     // isPaused=true -> 按钮显示Play (即非isPlaying)
+    // Toolbar没有updateTimeScale方法，暂时注释掉
+    // m_toolbar->updateTimeScale(state.simulationSpeedFactor); // 使用新的 float speed factor    if (m_taskListViewLeft)
+    {
+        // 将Task对象转换为字符串
+        std::vector<std::string> taskStrings;
+        for (const auto &task : m_pendingTasks)
+        {
+            std::string taskStr = "Task " + std::to_string(task.id) +
+                                  " - " + task.material_id +
+                                  " (Device " + std::to_string(task.start_device_id) +
+                                  "->" + std::to_string(task.end_device_id) + ")";
+            taskStrings.push_back(taskStr);
+        }
+        m_taskListViewLeft->updateTasks(taskStrings);
+    }
 }
 
 /**
  * @brief 处理车辆状态更新回调
  * @param vehicles 车辆状态列表
  */
-void MainWindow::onVehicleUpdate(const std::vector<gui::VehicleState> &vehicles)
+void MainWindow::onVehicleUpdate(const std::vector<Vehicle *> &vehicles)
 {
     // 通知仿真视图更新车辆状态
     m_simView->updateVehicles(vehicles);
+
+    // 更新车辆信息面板（如果有选中的车辆）
+    updateVehicleInfoPanel(vehicles);
 }
 
 /**
  * @brief 处理设备状态更新回调
  * @param devices 设备状态列表
  */
-void MainWindow::onDeviceUpdate(const std::vector<gui::DeviceState> &devices)
+void MainWindow::onDeviceUpdate(const std::vector<DeviceBase *> &devices)
 {
     // 通知仿真视图更新设备状态
     m_simView->updateDevices(devices);
+}
+
+/**
+ * @brief 处理车辆选择事件
+ * @param vehicleId 选中的车辆ID，-1表示取消选择
+ */
+void MainWindow::onVehicleSelected(int vehicleId)
+{
+    m_selectedVehicleId = vehicleId;
+
+    if (vehicleId == -1)
+    {
+        // 取消选择
+        if (m_vehicleInfoPanel)
+        {
+            m_vehicleInfoPanel->setVehicle(nullptr);
+        }
+        std::cout << "Vehicle selection cleared" << std::endl;
+    }
+    else
+    {
+        // 更新车辆信息面板
+        updateVehicleInfoPanel(m_currentVehicleStates);
+        std::cout << "Vehicle " << vehicleId << " selected" << std::endl;
+    }
+}
+
+/**
+ * @brief 更新车辆信息面板
+ * @param vehicleStates 当前所有车辆状态
+ */
+void MainWindow::updateVehicleInfoPanel(const std::vector<Vehicle *> &vehicleStates)
+{
+    // 缓存车辆状态
+    m_currentVehicleStates = vehicleStates;
+
+    if (!m_vehicleInfoPanel || m_selectedVehicleId == -1)
+    {
+        return;
+    } // 查找选中的车辆状态
+    for (const auto &vehicle : vehicleStates)
+    {
+        if (vehicle && vehicle->getId() == m_selectedVehicleId)
+        {
+            // 直接使用Vehicle指针更新VehicleInfoPanel
+            m_vehicleInfoPanel->setVehicle(vehicle);
+            std::cout << "Updated VehicleInfoPanel for vehicle: " << m_selectedVehicleId << std::endl;
+            return;
+        }
+    }
+
+    std::cout << "Selected vehicle " << m_selectedVehicleId << " not found in current vehicle states" << std::endl;
 }
 
 // New methods for testing
@@ -284,13 +348,23 @@ void MainWindow::renderFrame()
         m_simView->renderWorld(*this);
         // m_simView->renderUI(*this); // If SimulationView has a separate UI layer to render on top
     }
-
     if (m_statusPanel)
     {
         // StatusPanel render call as in runEventLoop
         // Use getSize() for current window dimensions to correctly position panel
         sf::Vector2f statusPanelPos(static_cast<float>(getSize().x) - m_statusPanel->getPanelWidth(), m_toolbarHeight);
         m_statusPanel->render(*this, statusPanelPos);
+    }
+
+    if (m_vehicleInfoPanel)
+    {
+        // Render VehicleInfoPanel below StatusPanel
+        float statusPanelWidth = m_statusPanel ? m_statusPanel->getPanelWidth() : 300.0f;
+        float statusPanelHeight = (static_cast<float>(getSize().y) - m_toolbarHeight) * 0.6f; // StatusPanel占60%高度
+        sf::Vector2f vehiclePanelPos(static_cast<float>(getSize().x) - statusPanelWidth,
+                                     m_toolbarHeight + statusPanelHeight);
+        m_vehicleInfoPanel->setPosition(vehiclePanelPos);
+        draw(*m_vehicleInfoPanel);
     }
     // Note: display() is NOT called here. The external loop (GUITestMain) will call it.
 }

@@ -3,12 +3,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-
-// 由于需要访问Vehicle的详细成员，直接包含头文件
-// #include "Core/Vehicle.hpp"
-
-// 前向声明，用于演示简化
-class Vehicle;
+#include "../src/Core/Vehicle.hpp"
 
 /**
  * @brief 车辆信息面板类

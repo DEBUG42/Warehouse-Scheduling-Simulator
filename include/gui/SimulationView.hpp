@@ -1,13 +1,15 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include <functional>
 #include "TrackRenderer.hpp"
 // #include "DeviceRenderer.hpp" // Removed
 #include "VehicleRenderer.hpp"
 #include "WarehouseRenderer.hpp"
-#include "SimObject.hpp"
-#include "DeviceState.hpp"
+#include "gui/DeviceState.hpp"
 #include "SimulationInterface.hpp"
+#include "../src/Core/Vehicle.hpp"
+#include "../src/Core/Device.hpp"
 
 /**
  * @brief 仿真场景视图类
@@ -44,15 +46,14 @@ private:
 
     // Define the visual origin for the track and warehouses within the view
     // This is where the (0,0) of your track's coordinate system will be placed in the world view.
-    sf::Vector2f m_worldOriginOffsetPx; // Offset of the track's (0,0) from the view's (0,0)
+    sf::Vector2f m_worldOriginOffsetPx;        // Offset of the track's (0,0) from the view's (0,0)    // 选择系统
+    std::shared_ptr<Vehicle> m_selectedObject; // 存储的状态数据
+    std::vector<Vehicle *> m_vehicles;         // 车辆状态
+    std::vector<DeviceBase *> m_devices;       // 设备状态（使用Core设备指针）// 视图控制参数
+    sf::Vector2f m_unzoomedWorldViewSize;      // 世界视图在 m_zoomLevel = 0 时的基础大小
 
-    // 选择系统
-    std::shared_ptr<gui::SimObject> m_selectedObject; // 存储的状态数据
-    std::vector<gui::VehicleState> m_vehicles;        // 车辆状态
-    std::vector<gui::DeviceState> m_devices;          // 设备状态（旧接口）
-
-    // 视图控制参数
-    sf::Vector2f m_unzoomedWorldViewSize; // 世界视图在 m_zoomLevel = 0 时的基础大小
+    // 回调函数
+    std::function<void(int)> m_onVehicleSelected; // 车辆选择回调
 
 public:
     /**
@@ -104,25 +105,27 @@ public:
      * @brief 选择指定位置的对象
      * @param worldPos 世界坐标位置
      */
-    void selectObjectAt(const sf::Vector2f &worldPos);
-
-    /**
-     * @brief 获取当前选中的对象
-     * @return 选中对象指针（可能为nullptr）
-     */
-    std::shared_ptr<gui::SimObject> getSelectedObject() const;
+    void selectObjectAt(const sf::Vector2f &worldPos); /**
+                                                        * @brief 获取当前选中的对象
+                                                        * @return 选中对象指针（可能为nullptr）
+                                                        */
+    std::shared_ptr<Vehicle> getSelectedObject() const;
 
     /**
      * @brief 更新车辆状态
      * @param vehicles 车辆状态列表
      */
-    void updateVehicles(const std::vector<gui::VehicleState> &vehicles);
+    void updateVehicles(const std::vector<Vehicle *> &vehicles); /**
+                                                                  * @brief 更新设备状态
+                                                                  * @param devices 设备状态列表
+                                                                  */
+    void updateDevices(const std::vector<DeviceBase *> &devices);
 
     /**
-     * @brief 更新设备状态
-     * @param devices 设备状态列表
+     * @brief 设置车辆选择回调
+     * @param callback 车辆选择回调函数，参数为车辆ID，-1表示取消选择
      */
-    void updateDevices(const std::vector<gui::DeviceState> &devices);
+    void setVehicleSelectedCallback(std::function<void(int)> callback);
 
     // 调整视图大小
     void resize(unsigned int width, unsigned int height);

@@ -2,9 +2,8 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <string>
-#include <map>               // For std::map
-#include "gui/SimObject.hpp" // For SimObject base class and other GUI types
-#include "Core/Device.hpp"   // For Core::DeviceType and Core::DeviceBase (if needed for constructor)
+#include <map>                    // For std::map
+#include "../src/Core/Device.hpp" // For DeviceType and DeviceBase
 
 namespace gui
 {
@@ -24,31 +23,29 @@ namespace gui
         bool has_goods = false;
         bool is_reserved = false;
         // Add other fields from Core::DeviceState if they need to be visualized
-    };
-
-    // Helper function to convert Core::DeviceType to gui::DeviceType
-    inline gui::DeviceType coreToGuiDeviceType(Core::DeviceType coreType)
+    }; // Helper function to convert ::DeviceType to gui::DeviceType
+    inline gui::DeviceType coreToGuiDeviceType(::DeviceType coreType)
     {
         switch (coreType)
         {
-        case Core::DeviceType::StorageIn:
+        case ::DeviceType::StorageIn:
             return gui::DeviceType::StorageIn;
-        case Core::DeviceType::StorageOut:
+        case ::DeviceType::StorageOut:
             return gui::DeviceType::StorageOut;
-        case Core::DeviceType::WorkstationIn:
+        case ::DeviceType::WorkstationIn:
             return gui::DeviceType::WorkstationIn;
-        case Core::DeviceType::WorkstationOut:
+        case ::DeviceType::WorkstationOut:
             return gui::DeviceType::WorkstationOut;
         default:
             // Handle unknown case, maybe throw or return a default
-            throw std::runtime_error("Unknown Core::DeviceType");
+            throw std::runtime_error("Unknown DeviceType");
         }
     }
 
-    // Helper function to update gui::DeviceStatus from Core::DeviceState
+    // Helper function to update gui::DeviceStatus from ::DeviceState
     // This is not a direct enum mapping like DeviceType.
     // It copies relevant fields.
-    inline gui::DeviceStatus coreToGuiDeviceStatus(const Core::DeviceState &coreState)
+    inline gui::DeviceStatus coreToGuiDeviceStatus(const ::DeviceState &coreState)
     {
         gui::DeviceStatus guiStatus;
         guiStatus.has_goods = coreState.has_goods;
@@ -56,34 +53,37 @@ namespace gui
         // map other fields as needed
         return guiStatus;
     }
-
-    struct DeviceState : public SimObject
+    struct DeviceState
     {
-        DeviceType type;         // Type of the device
-        DeviceStatus status;     // Current status of the device (has_goods, is_reserved)
-        std::string currentTask; // ID of the task currently assigned or being processed
-        float 작업진행도;        // Progress of the current operation (0.0 to 1.0)
+        int id;                      // Device ID
+        DeviceType type;             // Type of the device
+        DeviceStatus status;         // Current status of the device (has_goods, is_reserved)
+        std::string currentTask;     // ID of the task currently assigned or being processed
+        float 작업진행도;            // Progress of the current operation (0.0 to 1.0)
+        sf::Vector2f screenPosition; // Screen position for rendering
         // sf::Color deviceColor;   // Base color, might be determined by type or status
 
         // Default constructor
         DeviceState()
-            : SimObject(SimObjectType::Device, ""),
+            : id(0),
               type(gui::DeviceType::StorageIn), // Default type
-              작업진행도(0.0f)
+              작업진행도(0.0f),
+              screenPosition(0.0f, 0.0f)
         // deviceColor(sf::Color::White)
         {
             // status will be default constructed
         }
 
-        // Constructor to initialize from Core::DeviceBase (or relevant parts of it)
-        // This constructor needs access to Core::DeviceBase definition.
-        DeviceState(const Core::DeviceBase &coreDevice, const sf::Vector2f &_pos)
-            : SimObject(SimObjectType::Device, std::to_string(coreDevice.m_id)),
-              type(coreToGuiDeviceType(coreDevice.m_type)),      // m_type needs to be accessible from Core::DeviceBase
-              status(coreToGuiDeviceStatus(coreDevice.m_status)) // m_status needs to be accessible
+        // Constructor to initialize from DeviceBase (or relevant parts of it)
+        // This constructor needs access to DeviceBase definition.
+        DeviceState(const DeviceBase &coreDevice, const sf::Vector2f &_pos)
+            : id(coreDevice.m_id),
+              type(coreToGuiDeviceType(coreDevice.m_type)),       // m_type needs to be accessible from DeviceBase
+              status(coreToGuiDeviceStatus(coreDevice.m_status)), // m_status needs to be accessible
+              screenPosition(_pos),
+              작업진행도(0.0f)
         {
-            screenPosition = _pos;
-            // Initialize other members like 작업진행도, currentTask as needed
+            // Initialize other members like currentTask as needed
             // deviceColor = determineColorByType(type); // Example
         }
 

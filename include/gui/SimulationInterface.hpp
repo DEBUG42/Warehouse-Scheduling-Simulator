@@ -3,8 +3,8 @@
 
 #include <vector>
 #include <functional>
-#include "Core/Vehicle.hpp"
-#include "Core/Device.hpp"
+#include "../src/Core/Vehicle.hpp"
+#include "../src/Core/Device.hpp"
 
 /**
  * @class SimulationInterface
@@ -31,8 +31,8 @@ public:
 
     /// 状态更新回调函数类型
     using StateUpdateCallback = std::function<void(const SimulationState &)>;
-    using VehicleUpdateCallback = std::function<void(const std::vector<Core::Vehicle *> &)>;
-    using DeviceUpdateCallback = std::function<void(const std::vector<Core::DeviceBase *> &)>;
+    using VehicleUpdateCallback = std::function<void(const std::vector<Vehicle *> &)>;
+    using DeviceUpdateCallback = std::function<void(const std::vector<DeviceBase *> &)>;
 
 public:
     /// 虚析构函数
@@ -42,19 +42,17 @@ public:
      * @brief 获取当前仿真状态
      * @return 仿真状态结构体
      */
-    virtual SimulationState getSimulationState() const = 0;
-
-    /**
-     * @brief 获取所有车辆状态
-     * @return 车辆状态向量
-     */
-    virtual std::vector<Core::Vehicle *> getVehicleStates() const = 0;
+    virtual SimulationState getSimulationState() const = 0; /**
+                                                             * @brief 获取所有车辆状态
+                                                             * @return 车辆状态向量
+                                                             */
+    virtual std::vector<Vehicle *> getVehicleStates() const = 0;
 
     /**
      * @brief 获取所有设备状态
      * @return 设备状态向量
      */
-    virtual std::vector<Core::DeviceBase *> getDeviceStates() const = 0;
+    virtual std::vector<DeviceBase *> getDeviceStates() const = 0;
 
     /**
      * @brief 设置仿真速度因子
@@ -93,21 +91,19 @@ public:
      * @brief 注册设备状态更新回调函数
      * @param callback 回调函数
      */
-    virtual void registerDeviceUpdateCallback(DeviceUpdateCallback callback) = 0;
-
-    /**
-     * @brief 获取指定ID的车辆状态
-     * @param vehicleId 车辆ID
-     * @return 车辆状态，如果找不到则返回默认状态
-     */
-    virtual Core::Vehicle *getVehicleStateById(int vehicleId) const = 0;
+    virtual void registerDeviceUpdateCallback(DeviceUpdateCallback callback) = 0; /**
+                                                                                   * @brief 获取指定ID的车辆状态
+                                                                                   * @param vehicleId 车辆ID
+                                                                                   * @return 车辆状态，如果找不到则返回默认状态
+                                                                                   */
+    virtual Vehicle *getVehicleStateById(int vehicleId) const = 0;
 
     /**
      * @brief 获取指定ID的设备状态
      * @param deviceId 设备ID
      * @return 设备状态，如果找不到则返回默认状态
      */
-    virtual Core::DeviceBase *getDeviceStateById(int deviceId) const = 0;
+    virtual DeviceBase *getDeviceStateById(int deviceId) const = 0;
 
     // TODO: Add methods for sending commands to the backend, e.g.,
     // virtual void sendTaskToBackend(const Core::Task& task) = 0;

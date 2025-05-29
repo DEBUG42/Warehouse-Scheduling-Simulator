@@ -1,17 +1,14 @@
 #include "gui/SimulationView.hpp"
-#include "gui/MockSimulationInterface.hpp"
 #include <iostream>
 #include <cmath>
 #include "gui/DeviceState.hpp"
-#include "gui/WarehouseState.hpp"
-#include "gui/SimObject.hpp"
 #include "gui/CoordinateUtils.hpp"
 
 /**
  * @brief 构造函数，传入全局字体，确保VehicleRenderer等成员能正确初始化
  */
 SimulationView::SimulationView(sf::Font &font)
-    : m_vehicleRenderer(font)
+    : m_vehicleRenderer(font, m_trackRenderer)
 {
     // 预先分配容器内存，避免频繁重新分配
     m_vehicles.reserve(20); // 预估最大车辆数
@@ -28,8 +25,8 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
 {
     m_simInterface = simInterface;
 
-    float mmToPxRatio = 0.04f; 
-    float trackWidthMm = 1200.0f; 
+    float mmToPxRatio = 0.04f;
+    float trackWidthMm = 40000.0f;
 
     // The track's (0,0) doc origin is at world (0,0) for now.
     m_worldOriginOffsetPx = sf::Vector2f(0.0f, 0.0f);
@@ -45,7 +42,7 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
     // Store the initial size as the base size for zoom level 0
     m_unzoomedWorldViewSize = initialViewSize;
     m_worldView.setSize(m_unzoomedWorldViewSize); // Set initial size
-    
+
     m_viewCenter = m_worldOriginOffsetPx;
     m_worldView.setCenter(m_viewCenter);
 
@@ -54,7 +51,8 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
     float desiredViewWidthForTrackPx = initialViewSize.x * 0.9f;
     float targetZoomFactor = 1.0f; // This is the factor for sf::View::zoom()
 
-    if (desiredViewWidthForTrackPx > 0 && estimatedTrackSystemWidthPx > 0) {
+    if (desiredViewWidthForTrackPx > 0 && estimatedTrackSystemWidthPx > 0)
+    {
         targetZoomFactor = estimatedTrackSystemWidthPx / desiredViewWidthForTrackPx;
     }
 
@@ -65,9 +63,12 @@ void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterf
     // targetZoomFactor = 1.0f / pow(2.0f, m_zoomLevel_abstract)
     // pow(2.0f, m_zoomLevel_abstract) = 1.0f / targetZoomFactor
     // m_zoomLevel_abstract = log2(1.0f / targetZoomFactor)
-    if (targetZoomFactor > 0.0001f) {
+    if (targetZoomFactor > 0.0001f)
+    {
         m_zoomLevel = -std::log2(targetZoomFactor);
-    } else {
+    }
+    else
+    {
         m_zoomLevel = 0.0f; // Default if targetZoomFactor is problematic
     }
 
@@ -95,7 +96,7 @@ void SimulationView::updateViewTransforms(float deltaTime)
     m_worldView.setCenter(m_viewCenter);
     // Reset the view size to its unzoomed state before applying the new zoom factor
     m_worldView.setSize(m_unzoomedWorldViewSize);
-    
+
     float zoomMethodFactor = std::pow(2.0f, m_zoomLevel);
     // sf::View::zoom(factor): factor < 1 zooms IN, factor > 1 zooms OUT.
     // If m_zoomLevel increases (scroll up, want to zoom IN), viewZoomMethodFactor increases.
@@ -184,9 +185,9 @@ void SimulationView::renderVehicles(sf::RenderTarget &target)
         for (size_t i = 0; i < m_vehicles.size(); ++i)
         {
             // 使用车辆渲染器计算位置
-            m_vehicleRenderer.calculatePosition(
-                m_vehicles[i],
-                m_trackRenderer, // Pass TrackRenderer reference
+            m_vehicleRenderer.calculateScreenPositionAndRotation(
+                *m_vehicles[i],        // Dereference pointer to get Vehicle reference
+                m_trackRenderer,       // Pass TrackRenderer reference
                 m_worldOriginOffsetPx, // Pass world origin offset
                 vehiclePositions[i].position,
                 vehiclePositions[i].rotation);
@@ -201,14 +202,12 @@ void SimulationView::renderVehicles(sf::RenderTarget &target)
             target,
             vehiclePositions[i].position,
             vehiclePositions[i].rotation);
-    }
-
-    // 然后绘制所有车辆
+    } // 然后绘制所有车辆
     for (size_t i = 0; i < m_vehicles.size(); ++i)
     {
-        m_vehicleRenderer.renderVehicle(
+        m_vehicleRenderer.renderSingleVehicle(
             target,
-            m_vehicles[i],
+            *m_vehicles[i], // Dereference pointer to get Vehicle reference
             vehiclePositions[i].position,
             vehiclePositions[i].rotation);
     }
@@ -219,61 +218,54 @@ void SimulationView::renderVehicles(sf::RenderTarget &target)
  * @param target SFML渲染目标
  */
 void SimulationView::renderUI(sf::RenderTarget &target)
-{
-    // 如果有选中对象，显示选择框或高亮效果
+{ // 如果有选中对象，显示选择框或高亮效果
     if (m_selectedObject)
     {
-        // 对象为车辆
-        if (m_selectedObject->getType() == gui::SimObjectType::Vehicle)
+        // 对象为车辆（m_selectedObject is always a Vehicle pointer now）
+        std::string vehicleId = std::to_string(m_selectedObject->getId());
+        static const float selectionWidth = 50.0f;
+        static const float selectionHeight = 25.0f;
+        static sf::RectangleShape selectionRect(sf::Vector2f(selectionWidth, selectionHeight));
+        static bool shapeInitialized = false;
+        if (!shapeInitialized)
         {
-            std::string vehicleId = m_selectedObject->getId();
-            static const float selectionWidth = 50.0f;
-            static const float selectionHeight = 25.0f;
-            static sf::RectangleShape selectionRect(sf::Vector2f(selectionWidth, selectionHeight));
-            static bool shapeInitialized = false;
-            if (!shapeInitialized)
+            selectionRect.setOrigin(selectionWidth / 2, selectionHeight / 2);
+            selectionRect.setFillColor(sf::Color::Transparent);
+            selectionRect.setOutlineColor(sf::Color::Yellow);
+            selectionRect.setOutlineThickness(2.0f);
+            shapeInitialized = true;
+        }
+        for (const auto &vehicle : m_vehicles)
+        {
+            if (vehicle && vehicle->getId() == std::stoi(vehicleId))
             {
-                selectionRect.setOrigin(selectionWidth / 2, selectionHeight / 2);
-                selectionRect.setFillColor(sf::Color::Transparent);
-                selectionRect.setOutlineColor(sf::Color::Yellow);
-                selectionRect.setOutlineThickness(2.0f);
-                shapeInitialized = true;
-            }
-            for (const auto &vehicle : m_vehicles)
-            {
-                if (vehicle.getId() == vehicleId)
-                {
-                    sf::Vector2f position;
-                    float rotation;
-                    // Updated call to calculatePosition
-                    m_vehicleRenderer.calculatePosition(
-                        vehicle, 
-                        m_trackRenderer, 
-                        m_worldOriginOffsetPx, 
-                        position, 
-                        rotation);
-                    sf::Vector2i screenPos = target.mapCoordsToPixel(position, m_worldView);
-                    sf::Vector2f screenPosF(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
-                    selectionRect.setPosition(screenPosF);
-                    target.draw(selectionRect);
-                    break;
-                }
+                sf::Vector2f position;
+                float rotation;
+                // Updated call to calculateScreenPositionAndRotation
+                m_vehicleRenderer.calculateScreenPositionAndRotation(
+                    *vehicle,
+                    m_trackRenderer,
+                    m_worldOriginOffsetPx,
+                    position,
+                    rotation);
+                sf::Vector2i screenPos = target.mapCoordsToPixel(position, m_worldView);
+                sf::Vector2f screenPosF(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
+                selectionRect.setPosition(screenPosF);
+                target.draw(selectionRect);
+                break;
             }
         }
-        else if (m_selectedObject->getType() == gui::SimObjectType::Device)
-        {
-            // TODO: 实现设备选择高亮效果 (e.g., draw a rectangle around m_selectedObject->getPosition() transformed to UI view)
-            // Example for device selection highlight:
-            // sf::Vector2f devicePos = m_selectedObject->getPosition(); // This is world position
-            // sf::Vector2i screenPos = target.mapCoordsToPixel(devicePos, m_worldView);
-            // sf::CircleShape selectionCircle(10.f); // Or RectangleShape
-            // selectionCircle.setOrigin(10.f, 10.f);
-            // selectionCircle.setPosition(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
-            // selectionCircle.setFillColor(sf::Color::Transparent);
-            // selectionCircle.setOutlineColor(sf::Color::Cyan);
-            // selectionCircle.setOutlineThickness(2.0f);
-            // target.draw(selectionCircle);
-        }
+
+        // Example for device selection highlight:
+        // sf::Vector2f devicePos = m_selectedObject->getPosition(); // This is world position
+        // sf::Vector2i screenPos = target.mapCoordsToPixel(devicePos, m_worldView);
+        // sf::CircleShape selectionCircle(10.f); // Or RectangleShape
+        // selectionCircle.setOrigin(10.f, 10.f);
+        // selectionCircle.setPosition(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
+        // selectionCircle.setFillColor(sf::Color::Transparent);
+        // selectionCircle.setOutlineColor(sf::Color::Cyan);
+        // selectionCircle.setOutlineThickness(2.0f);
+        // target.draw(selectionCircle);
     }
 }
 
@@ -422,37 +414,38 @@ void SimulationView::selectObjectAt(const sf::Vector2f &worldPos)
     {
         std::cout << "Selected Warehouse Interface ID: " << selectedInterface->id
                   << " at (" << selectedInterface->worldCenterPx.x << "," << selectedInterface->worldCenterPx.y << ")" << std::endl;
-        // Construct SimObject correctly
-        m_selectedObject = std::make_shared<gui::SimObject>(
-            gui::SimObjectType::Device, // Correct enum
-            std::to_string(selectedInterface->id),
-            selectedInterface->worldCenterPx);
+        // 注意：这里选择的是设备接口，不是车辆，所以设置为nullptr
+        m_selectedObject = nullptr;
         return;
     }
-
-    for (const auto &vehicle_state_obj : m_vehicles)
+    for (const auto &vehicle : m_vehicles)
     {
+        if (!vehicle)
+            continue; // 跳过空指针
+
         sf::Vector2f vehicleRenderPosPx;
         float vehicleRotation;
-        // Updated call to calculatePosition
-        m_vehicleRenderer.calculatePosition(
-            vehicle_state_obj, 
-            m_trackRenderer, 
-            m_worldOriginOffsetPx, 
-            vehicleRenderPosPx, 
+        // Updated call to calculateScreenPositionAndRotation
+        m_vehicleRenderer.calculateScreenPositionAndRotation(
+            *vehicle,
+            m_trackRenderer,
+            m_worldOriginOffsetPx,
+            vehicleRenderPosPx,
             vehicleRotation);
 
         float clickRadiusMm = 500.f;
         float clickRadiusPx = clickRadiusMm * m_trackRenderer.getMmToPxRatio();
-
         if (std::hypot(worldPos.x - vehicleRenderPosPx.x, worldPos.y - vehicleRenderPosPx.y) < clickRadiusPx)
         {
-            std::cout << "Selected Vehicle ID: " << vehicle_state_obj.getId() << std::endl;
-            // Construct SimObject correctly
-            m_selectedObject = std::make_shared<gui::SimObject>(
-                gui::SimObjectType::Vehicle, // Correct enum
-                vehicle_state_obj.getId(),
-                vehicleRenderPosPx);
+            std::cout << "Selected Vehicle ID: " << vehicle->getId() << std::endl;
+            // 设置选中的车辆
+            m_selectedObject = std::shared_ptr<Vehicle>(vehicle, [](Vehicle *) {}); // 非拥有的共享指针
+
+            // 调用车辆选择回调
+            if (m_onVehicleSelected)
+            {
+                m_onVehicleSelected(vehicle->getId());
+            }
             return;
         }
     }
@@ -462,7 +455,7 @@ void SimulationView::selectObjectAt(const sf::Vector2f &worldPos)
  * @brief 获取当前选中的对象
  * @return 选中对象指针（可能为nullptr）
  */
-std::shared_ptr<gui::SimObject> SimulationView::getSelectedObject() const
+std::shared_ptr<Vehicle> SimulationView::getSelectedObject() const
 {
     return m_selectedObject;
 }
@@ -471,7 +464,7 @@ std::shared_ptr<gui::SimObject> SimulationView::getSelectedObject() const
  * @brief 更新车辆状态
  * @param vehicles 车辆状态列表
  */
-void SimulationView::updateVehicles(const std::vector<gui::VehicleState> &vehicles)
+void SimulationView::updateVehicles(const std::vector<Vehicle *> &vehicles)
 {
     m_vehicles = vehicles;
 }
@@ -480,10 +473,19 @@ void SimulationView::updateVehicles(const std::vector<gui::VehicleState> &vehicl
  * @brief 更新设备状态
  * @param devices 设备状态列表
  */
-void SimulationView::updateDevices(const std::vector<gui::DeviceState> &devices)
+void SimulationView::updateDevices(const std::vector<DeviceBase *> &devices)
 {
     m_devices = devices;
     m_warehouseRenderer.updateDeviceStates(m_devices);
+}
+
+/**
+ * @brief 设置车辆选择回调
+ * @param callback 车辆选择回调函数，参数为车辆ID，-1表示取消选择
+ */
+void SimulationView::setVehicleSelectedCallback(std::function<void(int)> callback)
+{
+    m_onVehicleSelected = callback;
 }
 
 void SimulationView::resize(unsigned int width, unsigned int height)
@@ -503,5 +505,4 @@ void SimulationView::resize(unsigned int width, unsigned int height)
     m_worldView.setCenter(m_viewCenter); // Ensure center is maintained
     float zoomMethodFactor = std::pow(2.0f, m_zoomLevel);
     m_worldView.zoom(1.0f / zoomMethodFactor); // Re-apply zoom to the new size
-
 }

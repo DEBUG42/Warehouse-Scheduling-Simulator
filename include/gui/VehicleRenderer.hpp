@@ -1,8 +1,8 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Transformable.hpp>
-#include "gui/TrackRenderer.hpp"
-#include "Core/Vehicle.hpp" // No Core:: prefix needed for types from here
+#include "TrackRenderer.hpp"
+#include "../src/Core/Vehicle.hpp"
 
 // Bring Core types into the current namespace for easier use
 // using Core::Vehicle;
@@ -75,7 +75,7 @@ public:
     /**
      * @brief 构造函数，加载资源
      */
-    VehicleRenderer(const sf::Font &font, TrackRenderer &trackRenderer); // Added TrackRenderer reference
+    VehicleRenderer(const sf::Font &font, TrackRenderer &trackRenderer);
 
     /**
      * @brief 初始化车辆纹理和视觉比例
