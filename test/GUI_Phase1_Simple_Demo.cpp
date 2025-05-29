@@ -57,27 +57,34 @@ public:
             }
         }
         return true;
-    }
-
-    void initializeComponents()
+    }    void initializeComponents()
     {
-        // 创建工具栏
+        // 创建工具栏 - 修正参数顺序：(font, width, height)
         toolbar = std::make_unique<Toolbar>(font, window.getSize().x, TOOLBAR_HEIGHT);
 
         // 创建状态面板
         statusPanel = std::make_unique<StatusPanel>(font);
         statusPanel->resize(window.getSize().y - TOOLBAR_HEIGHT);
+        
         // 创建车辆信息面板
         vehicleInfoPanel = std::make_unique<VehicleInfoPanel>(font, STATUS_PANEL_WIDTH, 400.0f);
+        
+        // 设置工具栏回调
+        toolbar->setOnPlayPauseToggled([this]() {
+            isRunning = !isRunning;
+            std::cout << "仿真状态: " << (isRunning ? "运行" : "暂停") << std::endl;
+        });
+        
+        toolbar->setOnTimeScaleChanged([this](float speed) {
+            std::cout << "速度调整为: " << speed << "x" << std::endl;
+        });
 
         // 设置初始状态
         statusPanel->setSimulationTime(0.0f);
         statusPanel->setVehicleCount(3);
         statusPanel->setCompletedTaskCount(0);
         statusPanel->setPendingTaskCount(5);
-    }
-
-    void handleEvents()
+    }    void handleEvents()
     {
         sf::Event event;
         while (window.pollEvent(event))
@@ -87,17 +94,28 @@ public:
                 window.close();
             }
 
+            // 获取鼠标位置
+            sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
+            sf::Vector2f mousePos = window.mapPixelToCoords(mousePixelPos);
+
+            // 工具栏事件处理
+            if (toolbar->handleEvent(event, mousePos)) {
+                continue; // 工具栏消费了事件，跳过其他处理
+            }
+
             if (event.type == sf::Event::KeyPressed)
             {
                 switch (event.key.code)
                 {
                 case sf::Keyboard::Space:
                     isRunning = !isRunning;
+                    toolbar->setPlaying(isRunning);
                     std::cout << "仿真状态: " << (isRunning ? "运行" : "暂停") << std::endl;
                     break;
                 case sf::Keyboard::R:
                     simulationTime = 0.0f;
                     isRunning = false;
+                    toolbar->setPlaying(false);
                     std::cout << "重置仿真" << std::endl;
                     break;
                 case sf::Keyboard::Escape:

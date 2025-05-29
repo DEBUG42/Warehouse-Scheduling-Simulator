@@ -1,108 +1,126 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include <vector>
-#include <memory>
 #include <functional>
-#include "UIControls.hpp"
-
-class TimeDisplay;
-class SpeedControl;
+#include <string>
 
 /**
- * @brief 工具栏类
+ * @brief 现代化工具栏类
  *
- * 位于界面顶部，提供仿真控制功能
- * 包括播放/暂停按钮、时间显示、速度调节滑块等组件
- * 处理用户交互并发送控制命令到仿真引擎
+ * 重新设计的工具栏，解决文字可见性和交互问题
+ * 采用分段布局，确保组件之间无重叠
+ * 自动调整文字颜色以保证可读性
  */
 class Toolbar
 {
 private:
-    // 控件集合
-    std::unique_ptr<Button> m_playPauseButton;      // 播放/暂停按钮
-    std::vector<std::unique_ptr<Button>> m_buttons; // 功能按钮
-    std::unique_ptr<TimeDisplay> m_timeDisplay;     // 时间显示组件
-    std::unique_ptr<SpeedControl> m_speedControl;   // 速度调节滑块
-
-    // 布局参数
-    float m_height;                                  // 工具栏高度
-    float m_width;                                   // 工具栏宽度
-    sf::RectangleShape m_background;                 // 背景矩形
-    sf::Font &m_font;                                // 字体引用    // 回调函数
-    std::function<void(float)> m_onTimeScaleChanged; // 时间缩放回调
-    std::function<void()> m_onPlayPauseToggled;      // 播放/暂停回调
-    std::function<void()> m_onResetView;             // 视图复位回调
+    // 核心属性
+    sf::Font &m_font;
+    float m_width;
+    float m_height;
+    
+    // 背景和分割
+    sf::RectangleShape m_background;
+    sf::RectangleShape m_separator;
+    
+    // 播放控制区域
+    sf::RectangleShape m_playButton;
+    sf::Text m_playButtonText;
+    bool m_isPlaying;
+    sf::FloatRect m_playButtonBounds;
+    
+    // 时间显示区域
+    sf::RectangleShape m_timeBackground;
+    sf::Text m_timeText;
+    sf::FloatRect m_timeAreaBounds;
+    
+    // 速度控制区域
+    sf::RectangleShape m_speedSliderTrack;
+    sf::RectangleShape m_speedSliderHandle;
+    sf::Text m_speedLabel;
+    sf::Text m_speedValue;
+    sf::FloatRect m_speedAreaBounds;
+    float m_currentSpeed;
+    float m_minSpeed;
+    float m_maxSpeed;
+    bool m_isDragging;
+    
+    // 布局常量
+    static constexpr float PADDING = 10.0f;
+    static constexpr float BUTTON_WIDTH = 80.0f;
+    static constexpr float TIME_AREA_WIDTH = 200.0f;
+    static constexpr float SPEED_AREA_WIDTH = 250.0f;
+    static constexpr float COMPONENT_HEIGHT = 30.0f;
+    
+    // 回调函数
+    std::function<void(float)> m_onTimeScaleChanged;
+    std::function<void()> m_onPlayPauseToggled;
+    
+    // 智能颜色选择
+    sf::Color getOptimalTextColor(const sf::Color& backgroundColor) const;
+    sf::Color getContrastColor(const sf::Color& color) const;
+    
+    // 布局计算
+    void calculateLayout();
+    void updateSpeedSlider();
+    
+    // 格式化函数
+    std::string formatTime(float seconds) const;
+    std::string formatSpeed(float speed) const;
 
 public:
     /**
      * @brief 构造函数
      * @param font 字体引用
-     * @param height 工具栏高度
      * @param width 工具栏宽度
+     * @param height 工具栏高度
      */
-    Toolbar(sf::Font &font, float height, float width);
+    Toolbar(sf::Font &font, float width, float height);
 
     /**
-     * @brief 创建功能按钮
+     * @brief 处理事件
+     * @param event SFML事件
+     * @param mousePos 鼠标位置
+     * @return 是否消费了事件
      */
-    void createFunctionButtons();
-
-    /**
-     * @brief 处理工具栏区域输入事件
-     * @param event SFML事件对象
-     * @param mousePos 鼠标位置（相对窗口坐标）
-     * @return 是否消耗了该事件
-     */
-    bool handleEvent(const sf::Event &event, const sf::Vector2f &mousePos); /**
-                                                                             * @brief 更新时间显示数值
-                                                                             * @param simTime 当前仿真时间
-                                                                             */
-    void updateTimeDisplay(float simTime);
+    bool handleEvent(const sf::Event &event, const sf::Vector2f &mousePos);
 
     /**
      * @brief 渲染工具栏
      * @param target 渲染目标
-     * @param position 工具栏左上角位置
+     * @param position 位置
      */
     void render(sf::RenderTarget &target, const sf::Vector2f &position);
 
     /**
-     * @brief 调整工具栏宽度
-     * @param width 新的宽度值
+     * @brief 更新时间显示
+     * @param simTime 仿真时间（秒）
      */
-    void resize(float width);
+    void updateTimeDisplay(float simTime);
 
     /**
-     * @brief 设置时间缩放回调
-     * @param callback 回调函数
+     * @brief 设置播放状态
+     * @param playing 是否播放
      */
-    void setTimeScaleCallback(std::function<void(float)> callback);
+    void setPlaying(bool playing);
 
     /**
-     * @brief 设置播放/暂停回调
-     * @param callback 回调函数
+     * @brief 获取当前速度
+     * @return 当前倍速值
      */
-    void setPlayPauseCallback(std::function<void()> callback); /**
-                                                                * @brief 设置视图复位回调
-                                                                * @param callback 回调函数
-                                                                */
-    void setResetViewCallback(std::function<void()> callback);
+    float getCurrentSpeed() const { return m_currentSpeed; }
 
     /**
-     * @brief 更新时间缩放值
-     * @param scale 新的时间缩放值
+     * @brief 设置速度范围
+     * @param minSpeed 最小速度
+     * @param maxSpeed 最大速度
      */
-    void updateTimeScale(float scale);
+    void setSpeedRange(float minSpeed, float maxSpeed);
 
-    /**
-     * @brief 更新播放/暂停状态，并改变按钮标签
-     * @param isPlaying 是否正在播放
-     */
-    void updatePlayPauseState(bool isPlaying);
+    // 回调设置
+    void setOnTimeScaleChanged(std::function<void(float)> callback) { m_onTimeScaleChanged = callback; }
+    void setOnPlayPauseToggled(std::function<void()> callback) { m_onPlayPauseToggled = callback; }
 
-    /**
-     * @brief 获取当前时间缩放控件的值
-     * @return 当前速度控件设置的时间缩放比例
-     */
-    float getTimeScaleValue() const;
+    // 尺寸获取
+    float getHeight() const { return m_height; }
+    float getWidth() const { return m_width; }
 };
