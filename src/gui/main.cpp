@@ -1,7 +1,7 @@
 /**
  * @file main.cpp
  * @brief 物流仓库仿真系统的主入口程序
- * @author GitHub Copilot
+ * @author Bai Minghui
  * @date 2025-05-19
  */
 
