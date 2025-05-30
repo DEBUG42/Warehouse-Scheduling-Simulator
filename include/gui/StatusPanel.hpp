@@ -72,14 +72,19 @@ public:
      */
     void refreshContent(const void *selectedObject,
                         const std::string &objectType,
-                        const std::vector<std::string> &pendingTasks);
-
-    /**
+                        const std::vector<std::string> &pendingTasks);    /**
      * @brief Render panel interface
      * @param target Render target
      * @param position Panel top-left position
      */
     void render(sf::RenderTarget &target, const sf::Vector2f &position);
+
+    /**
+     * @brief Render panel interface with automatic right-alignment
+     * @param target Render target
+     * @param windowSize Window size for calculating right-aligned position
+     */
+    void render(sf::RenderTarget &target, const sf::Vector2u &windowSize);
 
     /**
      * @brief Handle input events within panel area

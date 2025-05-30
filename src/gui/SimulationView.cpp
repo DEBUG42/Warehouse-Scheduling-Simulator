@@ -23,10 +23,10 @@ SimulationView::SimulationView(sf::Font &font)
  */
 void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterface> simInterface, const sf::Vector2f &initialViewSize)
 {
-    m_simInterface = simInterface;    // 渲染参数设置（与VehiclePathPositionTest.cpp一致）
-    float mmToPxRatio = 0.01f;    // 毫米到像素转换比例
-    float scaleFactor = 2.0f;     // 渲染缩放因子
-    float trackWidthMm = 1200.0f; // 轨道宽度（1.2米）
+    m_simInterface = simInterface; // 渲染参数设置（与VehiclePathPositionTest.cpp一致）
+    float mmToPxRatio = 0.01f;     // 毫米到像素转换比例
+    float scaleFactor = 2.0f;      // 渲染缩放因子
+    float trackWidthMm = 1200.0f;  // 轨道宽度（1.2米）
 
     // 世界坐标原点偏移量（与测试文件一致）
     m_worldOriginOffsetPx = sf::Vector2f(0.0f, 0.0f);
@@ -109,10 +109,10 @@ void SimulationView::renderWorld(sf::RenderTarget &target)
 {
     // 保存当前视图
     sf::View originalView = target.getView();
-    
+
     // 不要清除整个窗口！这会覆盖GUI组件
     // target.clear(sf::Color(230, 240, 230)); // 删除这行
-    
+
     // 设置世界坐标系视图
     target.setView(m_worldView);
 
@@ -120,7 +120,7 @@ void SimulationView::renderWorld(sf::RenderTarget &target)
     sf::FloatRect viewport = m_worldView.getViewport();
     sf::Vector2f viewSize = m_worldView.getSize();
     sf::Vector2f viewCenter = m_worldView.getCenter();
-    
+
     sf::RectangleShape background;
     background.setSize(viewSize);
     background.setOrigin(viewSize.x / 2.0f, viewSize.y / 2.0f);
@@ -387,6 +387,8 @@ std::shared_ptr<Vehicle> SimulationView::getSelectedObject() const
 void SimulationView::updateVehicles(const std::vector<Vehicle *> &vehicles)
 {
     m_vehicles = vehicles;
+    m_vehicleRenderer.setVehiclesToRender(m_vehicles);
+    // m_vehicleRenderer.updateVehicleStates(m_vehicles);
 }
 
 /**
@@ -455,9 +457,8 @@ void SimulationView::renderGrid(sf::RenderTarget &target)
     {
         float x = i * gridSpacing;
         sf::Vertex line[] = {
-            sf::Vertex(sf::Vector2f(x, viewTop), sf::Color(200, 200, 200, 100)), 
-            sf::Vertex(sf::Vector2f(x, viewBottom), sf::Color(200, 200, 200, 100))
-        };
+            sf::Vertex(sf::Vector2f(x, viewTop), sf::Color(200, 200, 200, 100)),
+            sf::Vertex(sf::Vector2f(x, viewBottom), sf::Color(200, 200, 200, 100))};
         target.draw(line, 2, sf::Lines);
     }
 
@@ -466,23 +467,20 @@ void SimulationView::renderGrid(sf::RenderTarget &target)
     {
         float y = i * gridSpacing;
         sf::Vertex line[] = {
-            sf::Vertex(sf::Vector2f(viewLeft, y), sf::Color(200, 200, 200, 100)), 
-            sf::Vertex(sf::Vector2f(viewRight, y), sf::Color(200, 200, 200, 100))
-        };
+            sf::Vertex(sf::Vector2f(viewLeft, y), sf::Color(200, 200, 200, 100)),
+            sf::Vertex(sf::Vector2f(viewRight, y), sf::Color(200, 200, 200, 100))};
         target.draw(line, 2, sf::Lines);
     }
-    
+
     // 原点十字线（在世界坐标系的原点位置）
     sf::Vertex originCrossH[] = {
-        sf::Vertex(sf::Vector2f(-50000 * m_trackRenderer.getMmToPxRatio(), 0), sf::Color(255, 0, 0, 150)), 
-        sf::Vertex(sf::Vector2f(50000 * m_trackRenderer.getMmToPxRatio(), 0), sf::Color(255, 0, 0, 150))
-    };
+        sf::Vertex(sf::Vector2f(-50000 * m_trackRenderer.getMmToPxRatio(), 0), sf::Color(255, 0, 0, 150)),
+        sf::Vertex(sf::Vector2f(50000 * m_trackRenderer.getMmToPxRatio(), 0), sf::Color(255, 0, 0, 150))};
     target.draw(originCrossH, 2, sf::Lines);
-    
+
     sf::Vertex originCrossV[] = {
-        sf::Vertex(sf::Vector2f(0, -50000 * m_trackRenderer.getMmToPxRatio()), sf::Color(255, 0, 0, 150)), 
-        sf::Vertex(sf::Vector2f(0, 50000 * m_trackRenderer.getMmToPxRatio()), sf::Color(255, 0, 0, 150))
-    };
+        sf::Vertex(sf::Vector2f(0, -50000 * m_trackRenderer.getMmToPxRatio()), sf::Color(255, 0, 0, 150)),
+        sf::Vertex(sf::Vector2f(0, 50000 * m_trackRenderer.getMmToPxRatio()), sf::Color(255, 0, 0, 150))};
     target.draw(originCrossV, 2, sf::Lines);
 }
 
@@ -495,7 +493,7 @@ void SimulationView::renderPathOriginMarker(sf::RenderTarget &target)
     // 绘制路径距离为0的标记
     sf::Vector2f originPosPx;
     float originAngleRad;
-    
+
     if (m_trackRenderer.getPointAndOrientationOnCenterLine(0.0f, originPosPx, originAngleRad, m_worldOriginOffsetPx))
     {
         sf::CircleShape originMarker(5.0f * m_trackRenderer.getScaleFactor());
@@ -503,7 +501,7 @@ void SimulationView::renderPathOriginMarker(sf::RenderTarget &target)
         originMarker.setOrigin(originMarker.getRadius(), originMarker.getRadius());
         originMarker.setPosition(originPosPx);
         target.draw(originMarker);
-        
+
         // 可以在这里添加文本标签，但需要字体支持
         // drawText(target, "Path Origin (0mm)", originPosPx + sf::Vector2f(10, -10) * m_trackRenderer.getScaleFactor(), font, 9, sf::Color::Black);
     }
@@ -572,7 +570,7 @@ void SimulationView::renderDebugInfo(sf::RenderTarget &target)
     // 创建调试文本
     static sf::Text debugText;
     static bool textInitialized = false;
-    
+
     if (!textInitialized)
     {
         // 注意：这里需要字体支持，但为了避免依赖问题，我们先创建文本对象
@@ -580,79 +578,76 @@ void SimulationView::renderDebugInfo(sf::RenderTarget &target)
         debugText.setFillColor(sf::Color::White);
         textInitialized = true;
     }
-    
+
     // 获取当前视图信息
     sf::Vector2f viewCenter = m_worldView.getCenter();
     sf::Vector2f viewSize = m_worldView.getSize();
     float zoomFactor = std::pow(2.0f, m_zoomLevel);
-    
+
     // 获取轨道信息
     float trackLength = m_trackRenderer.getTrackLength();
     float curveRadius = m_trackRenderer.getCurveRadius();
     float totalPathLength = m_trackRenderer.getTotalCenterLineLengthMm();
-    
+
     // 构建调试信息字符串
     char debugBuffer[512];
     snprintf(debugBuffer, sizeof(debugBuffer),
-        "=== SimulationView Debug Info ===\n"
-        "View Center: (%.1f, %.1f)\n"
-        "View Size: (%.1f, %.1f)\n"
-        "Zoom Level: %.2f (Factor: %.2fx)\n"
-        "Track Length: %.0fmm\n"
-        "Curve Radius: %.0fmm\n"
-        "Total Path: %.0fmm\n"
-        "Vehicle Count: %d\n"
-        "Grid: %s | Warehouses: %s | Vehicles: %s\n"
-        "Track Scale: %.2f | MmToPx: %.4f",
-        viewCenter.x, viewCenter.y,
-        viewSize.x, viewSize.y,
-        m_zoomLevel, zoomFactor,
-        trackLength, curveRadius, totalPathLength,
-        (int)m_vehicles.size(),
-        m_showGrid ? "ON" : "OFF",
-        m_showWarehouses ? "ON" : "OFF", 
-        m_showVehicles ? "ON" : "OFF",
-        m_trackRenderer.getScaleFactor(),
-        m_trackRenderer.getMmToPxRatio()
-    );
-    
+             "=== SimulationView Debug Info ===\n"
+             "View Center: (%.1f, %.1f)\n"
+             "View Size: (%.1f, %.1f)\n"
+             "Zoom Level: %.2f (Factor: %.2fx)\n"
+             "Track Length: %.0fmm\n"
+             "Curve Radius: %.0fmm\n"
+             "Total Path: %.0fmm\n"
+             "Vehicle Count: %d\n"
+             "Grid: %s | Warehouses: %s | Vehicles: %s\n"
+             "Track Scale: %.2f | MmToPx: %.4f",
+             viewCenter.x, viewCenter.y,
+             viewSize.x, viewSize.y,
+             m_zoomLevel, zoomFactor,
+             trackLength, curveRadius, totalPathLength,
+             (int)m_vehicles.size(),
+             m_showGrid ? "ON" : "OFF",
+             m_showWarehouses ? "ON" : "OFF",
+             m_showVehicles ? "ON" : "OFF",
+             m_trackRenderer.getScaleFactor(),
+             m_trackRenderer.getMmToPxRatio());
+
     // 设置调试文本位置（世界坐标系中的固定位置）
     sf::Vector2f debugPos = viewCenter - viewSize * 0.4f; // 左上角区域
     debugText.setPosition(debugPos);
     debugText.setString(debugBuffer);
-    
+
     // 绘制半透明背景
     sf::RectangleShape debugBackground;
     debugBackground.setSize(sf::Vector2f(400, 200));
     debugBackground.setPosition(debugPos - sf::Vector2f(5, 5));
     debugBackground.setFillColor(sf::Color(0, 0, 0, 128));
     target.draw(debugBackground);
-    
+
     // 绘制调试文本（如果有字体支持）
     target.draw(debugText);
-    
+
     // 绘制坐标系原点标记
     sf::CircleShape originMarker(8.0f);
     originMarker.setFillColor(sf::Color::Red);
     originMarker.setOrigin(8.0f, 8.0f);
     originMarker.setPosition(m_worldOriginOffsetPx);
     target.draw(originMarker);
-    
+
     // 绘制坐标轴
     float axisLength = 100.0f * m_trackRenderer.getMmToPxRatio() * m_trackRenderer.getScaleFactor();
-    
+
     // X轴（红色）
     sf::Vertex xAxis[] = {
         sf::Vertex(m_worldOriginOffsetPx, sf::Color::Red),
-        sf::Vertex(m_worldOriginOffsetPx + sf::Vector2f(axisLength, 0), sf::Color::Red)
-    };
+        sf::Vertex(m_worldOriginOffsetPx + sf::Vector2f(axisLength, 0), sf::Color::Red)};
     target.draw(xAxis, 2, sf::Lines);
-    
+
     // Y轴（绿色）
     sf::Vertex yAxis[] = {
         sf::Vertex(m_worldOriginOffsetPx, sf::Color::Green),
-        sf::Vertex(m_worldOriginOffsetPx + sf::Vector2f(0, -axisLength), sf::Color::Green)
-    };
+        sf::Vertex(m_worldOriginOffsetPx + sf::Vector2f(0, -axisLength), sf::Color::Green)};
     target.draw(yAxis, 2, sf::Lines);
 }
 

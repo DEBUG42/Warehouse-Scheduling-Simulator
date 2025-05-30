@@ -164,10 +164,18 @@ void StatusPanel::render(sf::RenderTarget &target, const sf::Vector2f &position)
     }
 
     // Render TaskListView section
-    // Note: TaskListView rendering would go here if implemented
-
-    // Render ObjectInspector section  
+    // Note: TaskListView rendering would go here if implemented    // Render ObjectInspector section  
     // Note: ObjectInspector rendering would go here if implemented
+}
+
+void StatusPanel::render(sf::RenderTarget &target, const sf::Vector2u &windowSize)
+{
+    // Calculate right-aligned position
+    float rightAlignedX = static_cast<float>(windowSize.x) - m_panelWidth;
+    sf::Vector2f rightAlignedPosition(rightAlignedX, 0.0f);
+    
+    // Call the existing render method with calculated position
+    render(target, rightAlignedPosition);
 }
 
 bool StatusPanel::handleEvent(const sf::Event &event, const sf::Vector2f &localPos)

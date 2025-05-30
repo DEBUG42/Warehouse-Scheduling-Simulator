@@ -38,8 +38,9 @@ private:
     sf::Font font; // GUI组件
     std::unique_ptr<Toolbar> toolbar;
     std::unique_ptr<StatusPanel> statusPanel;
-    std::unique_ptr<VehicleInfoPanel> vehicleInfoPanel;    std::unique_ptr<SimulationView> simulationView;
-    
+    std::unique_ptr<VehicleInfoPanel> vehicleInfoPanel;
+    std::unique_ptr<SimulationView> simulationView;
+
     // 仿真数据 - 多个车辆实现
     std::vector<std::unique_ptr<Vehicle>> vehicles;
     std::vector<std::unique_ptr<DeviceBase>> devices;
@@ -58,17 +59,17 @@ public:
         loadFont();
         initializeSimulationData();
         initializeComponents();
-    }    bool loadFont()
+    }
+    bool loadFont()
     {
-        // 尝试多个字体路径
+        // 尝试多个字体路径 - 优先中文字体
         std::vector<std::string> fontPaths = {
             "C:/Windows/Fonts/COOPBL.TTF",
             "C:/Windows/Fonts/arial.ttf",
             "C:/Windows/Fonts/calibri.ttf",
             "C:/Windows/Fonts/tahoma.ttf",
             "C:/Windows/Fonts/verdana.ttf",
-            "assets/fonts/arial.ttf"
-        };
+            "assets/fonts/arial.ttf"};
 
         for (const auto &fontPath : fontPaths)
         {
@@ -77,20 +78,22 @@ public:
                 std::cout << "Font loaded successfully: " << fontPath << std::endl;
                 return true;
             }
-        }        std::cerr << "Failed to load any font! UI text will not display correctly." << std::endl;
+        }
+
+        std::cerr << "Cannot load any font! UI text may not display correctly." << std::endl;
         return false;
     }
-    
+
     void initializeSimulationData()
     {
         // 按照VehiclePathPositionTest.cpp和SimulationView_Test.cpp的方式创建3辆车辆，展示完整的轨道和车辆渲染
         const int vehicleCount = 3;
         vehicles.clear();
-        
+
         for (int i = 0; i < vehicleCount; ++i)
         {
             auto vehicle = std::make_unique<Vehicle>();
-            vehicle->id = i + 1; // ID从1开始
+            vehicle->id = i + 1;                                                // ID从1开始
             vehicle->position_m = (32.000 - 0.002 * i - vehicle->m_length * i); // 每辆车相距间距，按VehicleManager::initializeVehicles的方法
             vehicle->velocity_mps = 0.0f;
             vehicle->max_speed = 8.0f / 3.0f; // 使用VehicleManager的默认最大速度
@@ -110,12 +113,14 @@ public:
         }
 
         // 设置不同状态（与SimulationView_Test.cpp一致）
-        if (vehicles.size() >= 2) {
-            vehicles[1]->is_loaded = false; // 车辆2：空载状态
+        if (vehicles.size() >= 2)
+        {
+            vehicles[1]->is_loaded = false;                                    // 车辆2：空载状态
             vehicles[1]->m_state.motionState = Vehicle::MotionState::Cruising; // 巡航状态
         }
-        if (vehicles.size() >= 3) {
-            vehicles[2]->is_loaded = true;  // 车辆3：载货状态
+        if (vehicles.size() >= 3)
+        {
+            vehicles[2]->is_loaded = true;                                         // 车辆3：载货状态
             vehicles[2]->m_state.motionState = Vehicle::MotionState::Accelerating; // 加速状态
         }
 
@@ -128,9 +133,7 @@ public:
 
         // 创建状态面板
         statusPanel = std::make_unique<StatusPanel>(font);
-        statusPanel->resize(window.getSize().y - TOOLBAR_HEIGHT);
-
-        // 创建车辆信息面板
+        statusPanel->resize(window.getSize().y - TOOLBAR_HEIGHT); // 创建车辆信息面板
         vehicleInfoPanel = std::make_unique<VehicleInfoPanel>(font, STATUS_PANEL_WIDTH, 400.0f);
 
         // 创建仿真视图 - 使用正确的构造函数
@@ -148,7 +151,8 @@ public:
         simulationView->setShowVehicles(true);                         // 显示车辆
         simulationView->setShowDebugInfo(false);                       // 默认关闭调试信息        // 正确的做法：通过 SimulationView 的 updateVehicles 方法更新车辆数据
         std::vector<Vehicle *> vehiclePtrs;
-        for (auto& vehicle : vehicles) {
+        for (auto &vehicle : vehicles)
+        {
             vehiclePtrs.push_back(vehicle.get());
         }
         simulationView->updateVehicles(vehiclePtrs);
@@ -164,7 +168,7 @@ public:
             std::cout << "Simulation State: " << (isRunning ? "Running" : "Paused") << std::endl; });
 
         toolbar->setOnTimeScaleChanged([this](float speed)
-                                       { std::cout << "Speed adjusted to: " << speed << "x" << std::endl; });        // 设置初始状态
+                                       { std::cout << "Speed adjusted to: " << speed << "x" << std::endl; }); // 设置初始状态
         statusPanel->setSimulationTime(0.0f);
         statusPanel->setVehicleCount(vehicles.size());
         statusPanel->setCompletedTaskCount(0);
@@ -184,7 +188,87 @@ public:
             sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
             sf::Vector2f mousePos = window.mapPixelToCoords(mousePixelPos);
 
-            // 工具栏事件处理
+            // 1. 首先处理全局键盘事件（不受区域限制）
+            if (event.type == sf::Event::KeyPressed)
+            {
+                switch (event.key.code)
+                {
+                case sf::Keyboard::Space:
+                    isRunning = !isRunning;
+                    toolbar->setPlaying(isRunning);
+                    std::cout << "Simulation Status: " << (isRunning ? "Running" : "Paused") << std::endl;
+                    continue; // 键盘事件已处理，跳过其他处理
+                case sf::Keyboard::R:
+                    simulationTime = 0.0f;
+                    isRunning = false;
+                    toolbar->setPlaying(false);
+                    resetSimulation();
+                    std::cout << "Simulation reset" << std::endl;
+                    continue;
+                case sf::Keyboard::Escape:
+                    window.close();
+                    continue;
+
+                // 显示控制键
+                case sf::Keyboard::T:
+                    if (simulationView)
+                    {
+                        bool currentState = simulationView->getShowGrid();
+                        simulationView->setShowGrid(!currentState);
+                        std::cout << (currentState ? "Hide coordinate grid\n" : "Show coordinate grid\n");
+                    }
+                    continue;
+                case sf::Keyboard::G:
+                    if (simulationView)
+                    {
+                        bool currentState = simulationView->getShowWarehouses();
+                        simulationView->setShowWarehouses(!currentState);
+                        std::cout << (currentState ? "Hide warehouse\n" : "Show warehouse\n");
+                    }
+                    continue;
+                case sf::Keyboard::V:
+                    if (simulationView)
+                    {
+                        bool currentState = simulationView->getShowVehicles();
+                        simulationView->setShowVehicles(!currentState);
+                        std::cout << (currentState ? "Hide vehicles\n" : "Show vehicles\n");
+                    }
+                    continue;
+                case sf::Keyboard::C:
+                    if (simulationView)
+                    {
+                        bool currentState = simulationView->getShowDebugInfo();
+                        simulationView->setShowDebugInfo(!currentState);
+                        std::cout << (currentState ? "Hide debug info\n" : "Show debug info\n");
+                    }
+                    continue;
+
+                // 车辆控制键
+                case sf::Keyboard::Num1:
+                case sf::Keyboard::Num2:
+                case sf::Keyboard::Num3:
+                {
+                    int vehicleId = event.key.code - sf::Keyboard::Num0;
+                    if (vehicleId > 0 && vehicleId <= vehicles.size())
+                    {
+                        selectedVehicleId = vehicleId;
+                        std::cout << "Selected vehicle " << vehicleId << std::endl;
+                    }
+                }
+                    continue;
+                case sf::Keyboard::W:
+                case sf::Keyboard::A:
+                case sf::Keyboard::S:
+                case sf::Keyboard::D:
+                    if (selectedVehicleId > 0 && selectedVehicleId <= vehicles.size())
+                    {
+                        moveSelectedVehicle(event.key.code);
+                    }
+                    continue;
+                }
+            }
+
+            // 2. 工具栏事件处理（鼠标事件）
             if (toolbar->handleEvent(event, mousePos))
             {
                 continue; // 工具栏消费了事件，跳过其他处理
@@ -200,12 +284,12 @@ public:
                 bool inSimulationArea = (mousePos.x >= simulationViewLeft &&
                                          mousePos.x <= simulationViewLeft + simulationViewWidth &&
                                          mousePos.y >= simulationViewTop &&
-                                         mousePos.y <= simulationViewTop + simulationViewHeight);                // 只有在仿真区域内才处理仿真视图事件
+                                         mousePos.y <= simulationViewTop + simulationViewHeight); // 只有在仿真区域内才处理仿真视图事件
                 if (inSimulationArea)
                 {
                     // 处理仿真视图事件
                     simulationView->handleViewEvent(event, mousePos);
-                    
+
                     // 检查是否有车辆被选中 - 使用现有方法
                     auto selectedVehicle = simulationView->getSelectedObject();
                     if (selectedVehicle)
@@ -223,84 +307,6 @@ public:
                         std::cout << "Deselected vehicle" << std::endl;
                     }
                     continue; // 仿真视图消费了事件，跳过其他处理
-                }
-            }
-
-            if (event.type == sf::Event::KeyPressed)
-            {
-                switch (event.key.code)
-                {
-                case sf::Keyboard::Space:
-                    isRunning = !isRunning;
-                    toolbar->setPlaying(isRunning);
-                    std::cout << "Simulation State: " << (isRunning ? "Running" : "Paused") << std::endl;
-                    break;
-                case sf::Keyboard::R:
-                    simulationTime = 0.0f;
-                    isRunning = false;
-                    toolbar->setPlaying(false);
-                    resetSimulation();
-                    std::cout << "Reset Simulation" << std::endl;
-                    break;
-                case sf::Keyboard::Escape:
-                    window.close();
-                    break;
-
-                // 显示控制键（与VehiclePathPositionTest.cpp一致）
-                case sf::Keyboard::T:
-                    if (simulationView)
-                    {
-                        bool currentState = simulationView->getShowGrid();
-                        simulationView->setShowGrid(!currentState);
-                        std::cout << (currentState ? "隐藏坐标网格\n" : "显示坐标网格\n");
-                    }
-                    break;
-                case sf::Keyboard::G:
-                    if (simulationView)
-                    {
-                        bool currentState = simulationView->getShowWarehouses();
-                        simulationView->setShowWarehouses(!currentState);
-                        std::cout << (currentState ? "隐藏仓库\n" : "显示仓库\n");
-                    }
-                    break;
-                case sf::Keyboard::V:
-                    if (simulationView)
-                    {
-                        bool currentState = simulationView->getShowVehicles();
-                        simulationView->setShowVehicles(!currentState);
-                        std::cout << (currentState ? "隐藏车辆\n" : "显示车辆\n");
-                    }
-                    break;
-                case sf::Keyboard::C:
-                    if (simulationView)
-                    {
-                        bool currentState = simulationView->getShowDebugInfo();
-                        simulationView->setShowDebugInfo(!currentState);
-                        std::cout << (currentState ? "隐藏调试信息\n" : "显示调试信息\n");
-                    }
-                    break;                // 车辆控制键
-                case sf::Keyboard::Num1:
-                case sf::Keyboard::Num2:
-                case sf::Keyboard::Num3:
-                {
-                    int vehicleId = event.key.code - sf::Keyboard::Num0;
-                    if (vehicleId > 0 && vehicleId <= vehicles.size())
-                    {
-                        selectedVehicleId = vehicleId;
-                        // 注意：SimulationView 没有 setSelectedVehicleId 方法
-                        // 这里只更新本地选择状态，实际选择需要通过鼠标点击
-                        std::cout << "Selected vehicle " << vehicleId << " via keyboard" << std::endl;
-                    }
-                }
-                break;                case sf::Keyboard::W:
-                case sf::Keyboard::A:
-                case sf::Keyboard::S:
-                case sf::Keyboard::D:
-                    if (selectedVehicleId > 0 && selectedVehicleId <= vehicles.size())
-                    {
-                        moveSelectedVehicle(event.key.code);
-                    }
-                    break;
                 }
             }
         }
@@ -350,14 +356,16 @@ public:
 
         std::cout << "Record " << eventType << " event: "
                   << startSpeed << "m/s -> " << endSpeed << "m/s" << std::endl;
-    }    void moveSelectedVehicle(sf::Keyboard::Key key)
+    }
+    void moveSelectedVehicle(sf::Keyboard::Key key)
     {
         // 检查是否有有效的选中车辆
-        if (selectedVehicleId <= 0 || selectedVehicleId > vehicles.size()) {
+        if (selectedVehicleId <= 0 || selectedVehicleId > vehicles.size())
+        {
             return;
         }
-        
-        auto& vehicle = vehicles[selectedVehicleId - 1]; // ID从1开始，数组从0开始
+
+        auto &vehicle = vehicles[selectedVehicleId - 1]; // ID从1开始，数组从0开始
         float currentPos = vehicle->position_m;
         float newPos = currentPos;
 
@@ -394,17 +402,20 @@ public:
             if (simulationView)
             {
                 std::vector<Vehicle *> vehiclePtrs;
-                for (auto& v : vehicles) {
+                for (auto &v : vehicles)
+                {
                     vehiclePtrs.push_back(v.get());
                 }
                 simulationView->updateVehicles(vehiclePtrs);
             }
         }
-    }    void resetSimulation()
+    }
+    void resetSimulation()
     {
         // 重置所有车辆位置和状态
-        for (int i = 0; i < vehicles.size(); ++i) {
-            auto& vehicle = vehicles[i];
+        for (int i = 0; i < vehicles.size(); ++i)
+        {
+            auto &vehicle = vehicles[i];
             vehicle->position_m = (32.000 - 0.002 * i - vehicle->m_length * i); // 使用VehicleManager的初始位置方法
             vehicle->velocity_mps = 0.0f;
             vehicle->is_loaded = false;
@@ -414,12 +425,14 @@ public:
         }
 
         // 重新设置不同状态
-        if (vehicles.size() >= 2) {
-            vehicles[1]->is_loaded = false; // 车辆2：空载状态
+        if (vehicles.size() >= 2)
+        {
+            vehicles[1]->is_loaded = false;                                    // 车辆2：空载状态
             vehicles[1]->m_state.motionState = Vehicle::MotionState::Cruising; // 巡航状态
         }
-        if (vehicles.size() >= 3) {
-            vehicles[2]->is_loaded = true;  // 车辆3：载货状态
+        if (vehicles.size() >= 3)
+        {
+            vehicles[2]->is_loaded = true;                                         // 车辆3：载货状态
             vehicles[2]->m_state.motionState = Vehicle::MotionState::Accelerating; // 加速状态
         }
 
@@ -430,7 +443,8 @@ public:
         if (simulationView)
         {
             std::vector<Vehicle *> vehiclePtrs;
-            for (auto& vehicle : vehicles) {
+            for (auto &vehicle : vehicles)
+            {
                 vehiclePtrs.push_back(vehicle.get());
             }
             simulationView->updateVehicles(vehiclePtrs);
@@ -447,15 +461,16 @@ public:
     }
     void render()
     {
-        window.clear(sf::Color(245, 245, 245)); // 浅灰色背景
-
-        // 首先渲染仓库仿真视图（背景层）
+        window.clear(sf::Color(245, 245, 245)); // 浅灰色背景        // 首先渲染仓库仿真视图（背景层）
         if (simulationView)
-        {
-            // 设置仿真视图的视口（排除工具栏和状态面板区域）
-            float simulationViewLeft = SIMULATION_VIEW_MARGIN;
+        {                                                              // 计算VehicleInfoPanel的实际尺寸（与创建时保持一致）
+            const float VEHICLE_INFO_PANEL_WIDTH = STATUS_PANEL_WIDTH; // 使用与StatusPanel相同的宽度
+            const float VEHICLE_INFO_PANEL_HEIGHT = 400.0f;            // VehicleInfoPanel的高度
+
+            // 设置仿真视图的视口（排除工具栏、状态面板和车辆信息面板区域）
+            float simulationViewLeft = VEHICLE_INFO_PANEL_WIDTH + SIMULATION_VIEW_MARGIN * 2;
             float simulationViewTop = TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN;
-            float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 3;
+            float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - VEHICLE_INFO_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 4;
             float simulationViewHeight = window.getSize().y - TOOLBAR_HEIGHT - SIMULATION_VIEW_MARGIN * 2;
 
             sf::FloatRect simulationViewport(
@@ -468,17 +483,14 @@ public:
             simulationView->renderWorld(window);
         }
 
-        // 然后渲染GUI组件（顶层）- 确保在SimulationView之后渲染
-
-        // 渲染工具栏（顶部）
+        // 然后渲染GUI组件（顶层）- 确保在SimulationView之后渲染        // 渲染工具栏（顶部）
         toolbar->render(window, sf::Vector2f(0, 0));
 
-        // 渲染状态面板（右侧）
-        sf::Vector2f statusPanelPos(window.getSize().x - STATUS_PANEL_WIDTH, TOOLBAR_HEIGHT);
-        statusPanel->render(window, statusPanelPos);
+        // 渲染状态面板（右侧，自动贴在右边缘）
+        statusPanel->render(window, window.getSize());
 
-        // 渲染车辆信息面板（左下角）
-        sf::Vector2f vehicleInfoPos(10, TOOLBAR_HEIGHT + 10);
+        // 渲染车辆信息面板（左侧，不与轨道重叠）
+        sf::Vector2f vehicleInfoPos(SIMULATION_VIEW_MARGIN, TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN);
         vehicleInfoPanel->setPosition(vehicleInfoPos);
         window.draw(*vehicleInfoPanel);
 
@@ -494,29 +506,30 @@ public:
         instructions.setFont(font);
         instructions.setCharacterSize(14);
         instructions.setFillColor(sf::Color::Black);
-        instructions.setPosition(10, window.getSize().y - 150);        std::string text = "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles\n"
-                           "=== 仿真控制 ===\n"
-                           "Space: 开始/暂停仿真\n"
-                           "R: 重置仿真\n"
-                           "ESC: 退出程序\n"
-                           "\n=== 显示控制 ===\n"
-                           "T: 切换坐标网格显示\n"
-                           "G: 切换仓库显示\n"
-                           "V: 切换车辆显示\n"
-                           "C: 切换调试信息显示\n"
-                           "\n=== 车辆控制 ===\n"
-                           "1/2/3: 选择车辆(按编号)\n"
-                           "WASD: 移动选中的车辆\n"
-                           "鼠标: 点击选择车辆/设备\n"
-                           "\n=== 车辆状态 ===\n"
-                           "• 车辆1: 空载停止 (蓝色)\n"
-                           "• 车辆2: 空载巡航 (蓝色运动)\n"
-                           "• 车辆3: 载货加速 (橙色运动)\n"
-                           "\n=== GUI组件功能 ===\n"
-                           "• 工具栏: 时间显示(HH:MM:SS.mmm)\n"
-                           "• 状态面板: 仿真统计信息\n"
-                           "• 车辆信息面板: 加减速事件记录\n"
-                           "• 仿真视图: 轨道与多车辆渲染";
+        instructions.setPosition(10, window.getSize().y - 150);
+        std::string text = "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles\n"
+                           "=== Simulation Control ===\n"
+                           "Space: Start/Pause simulation\n"
+                           "R: Reset simulation\n"
+                           "ESC: Exit program\n"
+                           "\n=== Display Control ===\n"
+                           "T: Toggle coordinate grid display\n"
+                           "G: Toggle warehouse display\n"
+                           "V: Toggle vehicle display\n"
+                           "C: Toggle debug info display\n"
+                           "\n=== Vehicle Control ===\n"
+                           "1/2/3: Select vehicle (by number)\n"
+                           "WASD: Move selected vehicle\n"
+                           "Mouse: Click to select vehicle/device\n"
+                           "\n=== Vehicle Status ===\n"
+                           "• Vehicle 1: Empty Stopped (Blue)\n"
+                           "• Vehicle 2: Empty Cruising (Blue Moving)\n"
+                           "• Vehicle 3: Loaded Accelerating (Orange Moving)\n"
+                           "\n=== GUI Components ===\n"
+                           "• Toolbar: Time display (HH:MM:SS.mmm)\n"
+                           "• Status Panel: Simulation statistics\n"
+                           "• Vehicle Info Panel: Acceleration/Deceleration events\n"
+                           "• Simulation View: Track & multi-vehicle rendering";
         instructions.setString(text);
 
         window.draw(instructions);
@@ -524,7 +537,8 @@ public:
 
     void run()
     {
-        sf::Clock clock;        std::cout << "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles Started" << std::endl;
+        sf::Clock clock;
+        std::cout << "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles Started" << std::endl;
         std::cout << "Features:" << std::endl;
         std::cout << "1. Toolbar - Time format display (HH:MM:SS.mmm)" << std::endl;
         std::cout << "2. StatusPanel - 25:35:40 ratio layout" << std::endl;
