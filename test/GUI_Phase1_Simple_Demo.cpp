@@ -50,11 +50,13 @@ private:
     bool isRunning = false;
     int selectedVehicleId = -1; // 布局参数
     static constexpr float TOOLBAR_HEIGHT = 50.0f;
-    static constexpr float STATUS_PANEL_WIDTH = 350.0f;
+    static constexpr float STATUS_PANEL_WIDTH = 290.0f;
     static constexpr float SIMULATION_VIEW_MARGIN = 10.0f;
+    static constexpr float VEHICLE_INFO_PANEL_WIDTH = 350.0f;  // 车辆信息面板宽度
+    static constexpr float VEHICLE_INFO_PANEL_HEIGHT = 415.0f; // 车辆信息面板高度
 
 public:
-    SimpleDemoApp() : window(sf::VideoMode(1800, 800), "GUI Phase 1 - Enhanced Demo with Warehouse & Vehicles")
+    SimpleDemoApp() : window(sf::VideoMode(1800, 630), "GUI Phase 1 - Enhanced Demo with Warehouse & Vehicles")
     {
         loadFont();
         initializeSimulationData();
@@ -62,7 +64,7 @@ public:
     }
     bool loadFont()
     {
-        // 尝试多个字体路径 - 优先中文字体
+        // 尝试多个字体路径 - 优先英文字体
         std::vector<std::string> fontPaths = {
             "C:/Windows/Fonts/COOPBL.TTF",
             "C:/Windows/Fonts/arial.ttf",
@@ -133,8 +135,8 @@ public:
 
         // 创建状态面板
         statusPanel = std::make_unique<StatusPanel>(font);
-        statusPanel->resize(window.getSize().y - TOOLBAR_HEIGHT); // 创建车辆信息面板
-        vehicleInfoPanel = std::make_unique<VehicleInfoPanel>(font, STATUS_PANEL_WIDTH, 400.0f);
+        statusPanel->resize(window.getSize().y - 10.0f); // 创建车辆信息面板
+        vehicleInfoPanel = std::make_unique<VehicleInfoPanel>(font, VEHICLE_INFO_PANEL_WIDTH, VEHICLE_INFO_PANEL_HEIGHT);
 
         // 创建仿真视图 - 使用正确的构造函数
         simulationView = std::make_unique<SimulationView>(font);
@@ -255,7 +257,8 @@ public:
                         std::cout << "Selected vehicle " << vehicleId << std::endl;
                     }
                 }
-                    continue;                case sf::Keyboard::Up:
+                    continue;
+                case sf::Keyboard::Up:
                 case sf::Keyboard::Down:
                     if (selectedVehicleId > 0 && selectedVehicleId <= vehicles.size())
                     {
@@ -281,7 +284,7 @@ public:
                 bool inSimulationArea = (mousePos.x >= simulationViewLeft &&
                                          mousePos.x <= simulationViewLeft + simulationViewWidth &&
                                          mousePos.y >= simulationViewTop &&
-                                         mousePos.y <= simulationViewTop + simulationViewHeight);                // 只有在仿真区域内才处理仿真视图事件
+                                         mousePos.y <= simulationViewTop + simulationViewHeight); // 只有在仿真区域内才处理仿真视图事件
                 if (inSimulationArea)
                 {
                     // 处理仿真视图事件
@@ -356,7 +359,8 @@ public:
 
         std::cout << "Record " << eventType << " event: "
                   << startSpeed << "m/s -> " << endSpeed << "m/s" << std::endl;
-    }    void moveSelectedVehicle(sf::Keyboard::Key key)
+    }
+    void moveSelectedVehicle(sf::Keyboard::Key key)
     {
         // 检查是否有有效的选中车辆
         if (selectedVehicleId <= 0 || selectedVehicleId > vehicles.size())
@@ -379,7 +383,7 @@ public:
             break;
         default:
             return;
-        }        // 获取轨道总长度（使用 TrackRenderer 的实际数据）
+        } // 获取轨道总长度（使用 TrackRenderer 的实际数据）
         float maxTrackLengthMm = simulationView->getTrackRenderer().getTotalCenterLineLengthMm();
         float maxTrackLength = maxTrackLengthMm / 1000.0f; // 转换为米
 
@@ -464,10 +468,7 @@ public:
     {
         window.clear(sf::Color(245, 245, 245)); // 浅灰色背景        // 首先渲染仓库仿真视图（背景层）
         if (simulationView)
-        {                                                              // 计算VehicleInfoPanel的实际尺寸（与创建时保持一致）
-            const float VEHICLE_INFO_PANEL_WIDTH = STATUS_PANEL_WIDTH; // 使用与StatusPanel相同的宽度
-            const float VEHICLE_INFO_PANEL_HEIGHT = 400.0f;            // VehicleInfoPanel的高度
-
+        {
             // 设置仿真视图的视口（排除工具栏、状态面板和车辆信息面板区域）
             float simulationViewLeft = VEHICLE_INFO_PANEL_WIDTH + SIMULATION_VIEW_MARGIN * 2;
             float simulationViewTop = TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN;
@@ -517,7 +518,8 @@ public:
                            "T: Toggle coordinate grid display\n"
                            "G: Toggle warehouse display\n"
                            "V: Toggle vehicle display\n"
-                           "C: Toggle debug info display\n"                           "\n=== Vehicle Control ===\n"
+                           "C: Toggle debug info display\n"
+                           "\n=== Vehicle Control ===\n"
                            "1/2/3: Select vehicle (by number)\n"
                            "W/S: Move selected vehicle forward/backward along track\n"
                            "Mouse: Click to select vehicle/device\n"
@@ -554,7 +556,7 @@ public:
         while (window.isOpen())
         {
             float deltaTime = clock.restart().asSeconds();
-
+            printf("Delta Time: %.3f seconds\n", deltaTime); // 输出每帧的时间间隔
             handleEvents();
             update(deltaTime);
             render();
