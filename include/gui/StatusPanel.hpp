@@ -4,6 +4,10 @@
 #include <vector>
 #include "gui/TaskListView.hpp"
 #include "gui/ObjectInspector.hpp"
+#include "../src/Core/Task.hpp" // For Task class definition
+
+// Forward declaration for Task
+class Task;
 
 /**
  * @brief Modern Status Panel Class
@@ -72,7 +76,17 @@ public:
      */
     void refreshContent(const void *selectedObject,
                         const std::string &objectType,
-                        const std::vector<std::string> &pendingTasks);    /**
+                        const std::vector<std::string> &pendingTasks);
+    /**
+     * @brief Update panel display content (with Task objects)
+     * @param selectedObject Currently selected object (can be nullptr)
+     * @param objectType Object type string
+     * @param pendingTasksData Global pending task queue (as Task objects)
+     */
+    void refreshContent(const void *selectedObject,
+                        const std::string &objectType,
+                        const std::vector<Task> &pendingTasksData);
+    /**
      * @brief Render panel interface
      * @param target Render target
      * @param position Panel top-left position

@@ -48,21 +48,38 @@ void ObjectInspector::rebuildDisplay()
     m_titleText.setString("Object Details");
     m_titleText.setPosition(m_padding, m_padding);
 
-    // 简化版本的显示 - 仅显示基本信息
-    addDetailLine("Type: ", m_objectType, currentY);
-    addDetailLine("Status: ", "Active", currentY);
-
     if (m_objectType == "Vehicle")
     {
-        addDetailLine("Speed: ", "1.5 m/s", currentY);
-        addDetailLine("State: ", "Moving", currentY);
-        addDetailLine("Position: ", "(12.5, 8.3)", currentY);
+        const Vehicle* vehicle = static_cast<const Vehicle*>(m_currentObject); // Changed core::Vehicle to Vehicle
+        if (vehicle) {
+            addDetailLine("Type: ", "Vehicle", currentY);
+            addDetailLine("ID: ", std::to_string(vehicle->id), currentY);
+            
+            std::ostringstream speedStream;
+            speedStream << std::fixed << std::setprecision(2) << vehicle->m_state.currentSpeed << " m/s";
+            addDetailLine("Speed: ", speedStream.str(), currentY);
+
+            addDetailLine("State: ", vehicleStatusToString(static_cast<int>(vehicle->m_state.motionState)), currentY);
+            
+            std::ostringstream posStream;
+            posStream << std::fixed << std::setprecision(2) << vehicle->m_state.position << " m";
+            addDetailLine("Position: ", posStream.str(), currentY);
+            addDetailLine("Loaded: ", vehicle->is_loaded ? "Yes" : "No", currentY);
+        }
     }
     else if (m_objectType == "Device")
     {
-        addDetailLine("Device Type: ", "Storage", currentY);
-        addDetailLine("Capacity: ", "100 units", currentY);
-        addDetailLine("Status: ", "Available", currentY);
+        // Assuming Device is similar or you have a way to cast and get its details
+        // const core::Device* device = static_cast<const core::Device*>(m_currentObject);
+        // if (device) { ... }
+        addDetailLine("Type: ", "Device", currentY);
+        addDetailLine("Status: ", "Active", currentY); // Placeholder
+        addDetailLine("Device Type: ", "Storage", currentY); // Placeholder
+        addDetailLine("Capacity: ", "100 units", currentY); // Placeholder
+    }
+    else {
+        addDetailLine("Type: ", m_objectType, currentY);
+        addDetailLine("Status: ", "Unknown", currentY);
     }
 }
 
@@ -95,7 +112,22 @@ void ObjectInspector::draw(sf::RenderTarget &target, sf::RenderStates states) co
 // 简化的辅助方法
 std::string ObjectInspector::vehicleStatusToString(int status) const
 {
-    return "Moving"; // 简化版本
+    // Assuming Vehicle::MotionState is the enum used
+    switch (static_cast<Vehicle::MotionState>(status)) // Changed core::Vehicle to Vehicle
+    {
+        case Vehicle::MotionState::Stopped:
+            return "Stopped";
+        case Vehicle::MotionState::Accelerating:
+            return "Accelerating";
+        case Vehicle::MotionState::Decelerating:
+            return "Decelerating";
+        case Vehicle::MotionState::Cruising:
+            return "Cruising";
+        // case Vehicle::MotionState::EmergencyStop: // EmergencyStop is not in the provided Vehicle.hpp
+        //     return "EmergencyStop";
+        default:
+            return "Unknown";
+    }
 }
 
 std::string ObjectInspector::deviceTypeToString(int type) const
@@ -149,4 +181,11 @@ bool ObjectInspector::handleEvent(const sf::Event &event, const sf::Vector2f &lo
         }
     }
     return false; // 默认不消耗事件
+}
+
+void ObjectInspector::setSize(float width, float height) {
+    m_width = width;
+    // m_height = height; // ObjectInspector's height is managed by its content or StatusPanel layout
+    // If you need to explicitly set height for background or clipping, uncomment and use m_height
+    rebuildDisplay(); // May need to adjust layout if size changes significantly
 }

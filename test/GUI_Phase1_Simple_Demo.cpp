@@ -19,6 +19,7 @@
 // Core组件包含
 #include "../src/Core/Vehicle.hpp"
 #include "../src/Core/Device.hpp"
+#include "../src/Core/Task.hpp" // Include Task.hpp for Task structure
 
 /**
  * @brief GUI优化第一阶段增强演示测试
@@ -35,7 +36,7 @@ class SimpleDemoApp
 {
 private:
     sf::RenderWindow window;
-    sf::Font font; // GUI组件
+    sf::Font font;    // GUI组件
     std::unique_ptr<Toolbar> toolbar;
     std::unique_ptr<StatusPanel> statusPanel;
     std::unique_ptr<VehicleInfoPanel> vehicleInfoPanel;
@@ -48,12 +49,16 @@ private:
     // 仿真状态
     float simulationTime = 0.0f;
     bool isRunning = false;
-    int selectedVehicleId = -1; // 布局参数
+    int selectedVehicleId = -1;    // 布局参数
     static constexpr float TOOLBAR_HEIGHT = 50.0f;
     static constexpr float STATUS_PANEL_WIDTH = 290.0f;
+    static constexpr float VEHICLE_INFO_PANEL_WIDTH = 300.0f;
+    static constexpr float VEHICLE_INFO_PANEL_HEIGHT = 250.0f;
     static constexpr float SIMULATION_VIEW_MARGIN = 10.0f;
-    static constexpr float VEHICLE_INFO_PANEL_WIDTH = 350.0f;  // 车辆信息面板宽度
-    static constexpr float VEHICLE_INFO_PANEL_HEIGHT = 415.0f; // 车辆信息面板高度
+
+    // Sample Tasks for TaskListView
+    std::vector<Task> sampleTasks;
+    // std::vector<std::string> sampleTaskStrings; // No longer primary, but can be kept for compatibility or removed
 
 public:
     SimpleDemoApp() : window(sf::VideoMode(1800, 630), "GUI Phase 1 - Enhanced Demo with Warehouse & Vehicles")
@@ -61,6 +66,7 @@ public:
         loadFont();
         initializeSimulationData();
         initializeComponents();
+        createSampleTasks(); // Create sample tasks
     }
     bool loadFont()
     {
@@ -131,18 +137,18 @@ public:
     void initializeComponents()
     {
         // 创建工具栏 - 修正参数顺序：(font, width, height)
-        toolbar = std::make_unique<Toolbar>(font, window.getSize().x, TOOLBAR_HEIGHT);
-
-        // 创建状态面板
+        toolbar = std::make_unique<Toolbar>(font, window.getSize().x, TOOLBAR_HEIGHT);        // 创建状态面板
         statusPanel = std::make_unique<StatusPanel>(font);
-        statusPanel->resize(window.getSize().y - 10.0f); // 创建车辆信息面板
+        statusPanel->resize(window.getSize().y - 10.0f);
+
+        // 创建车辆信息面板
         vehicleInfoPanel = std::make_unique<VehicleInfoPanel>(font, VEHICLE_INFO_PANEL_WIDTH, VEHICLE_INFO_PANEL_HEIGHT);
 
         // 创建仿真视图 - 使用正确的构造函数
         simulationView = std::make_unique<SimulationView>(font);
 
         // 初始化仿真视图 - 使用参考实现的参数设置
-        float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 3;
+        float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 2; // Adjusted width
         float simulationViewHeight = window.getSize().y - TOOLBAR_HEIGHT - SIMULATION_VIEW_MARGIN * 2;
         sf::Vector2f simulationViewSize(simulationViewWidth, simulationViewHeight);
 
@@ -174,8 +180,40 @@ public:
         statusPanel->setSimulationTime(0.0f);
         statusPanel->setVehicleCount(vehicles.size());
         statusPanel->setCompletedTaskCount(0);
-        statusPanel->setPendingTaskCount(5);
+        statusPanel->setPendingTaskCount(5); // Initial placeholder, will be updated by sample tasks
     }
+
+    void createSampleTasks() {
+        sampleTasks.clear();
+        // sampleTaskStrings.clear(); // If removing
+
+        for (int i = 0; i < 5; ++i) {
+            Task task;
+            task.id = 100 + i;
+            task.material_id = "MAT_" + std::to_string(i);
+            task.type = (i % 2 == 0) ? TaskType::INBOUND : TaskType::OUTBOUND;
+            task.start_device_id = 1 + i;
+            task.end_device_id = 6 + i;
+            task.is_assigned = (i % 3 == 0);
+            task.assigned_vehicle_id = task.is_assigned ? ( (i/3) % vehicles.size() ) + 1 : -1;
+            task.ready_time = simulationTime + i * 10.0; // Stagger ready times
+            sampleTasks.push_back(task);
+
+            // Create string representation for current TaskListView (if still needed for compatibility)
+            /* std::string taskStr = "Task " + std::to_string(task.id) + ": " + 
+                                (task.type == TaskType::INBOUND ? "IN" : "OUT") + 
+                                " M" + task.material_id + 
+                                " D" + std::to_string(task.start_device_id) + "->D" + std::to_string(task.end_device_id) + 
+                                (task.is_assigned ? " (V" + std::to_string(task.assigned_vehicle_id) + ")" : " (Unassigned)");
+            sampleTaskStrings.push_back(taskStr); */
+        }
+        // Update status panel with these tasks
+        if (statusPanel) {
+            // Pass the actual Task objects now
+            statusPanel->refreshContent(nullptr, "", sampleTasks);
+        }
+    }
+
     void handleEvents()
     {
         sf::Event event;
@@ -252,9 +290,15 @@ public:
                 {
                     int vehicleId = event.key.code - sf::Keyboard::Num0;
                     if (vehicleId > 0 && vehicleId <= vehicles.size())
-                    {
-                        selectedVehicleId = vehicleId;
+                    {                        selectedVehicleId = vehicleId;
                         std::cout << "Selected vehicle " << vehicleId << std::endl;
+                        // Update panels with selected vehicle info
+                        if (statusPanel) {
+                            statusPanel->refreshContent(vehicles[selectedVehicleId - 1].get(), "Vehicle", sampleTasks);
+                        }
+                        if (vehicleInfoPanel) {
+                            vehicleInfoPanel->setVehicle(vehicles[selectedVehicleId - 1].get());
+                        }
                     }
                 }
                     continue;
@@ -278,7 +322,7 @@ public:
                 // 检查鼠标是否在仿真视图区域内
                 float simulationViewLeft = SIMULATION_VIEW_MARGIN;
                 float simulationViewTop = TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN;
-                float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 3;
+                float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 2;
                 float simulationViewHeight = window.getSize().y - TOOLBAR_HEIGHT - SIMULATION_VIEW_MARGIN * 2;
 
                 bool inSimulationArea = (mousePos.x >= simulationViewLeft &&
@@ -300,15 +344,45 @@ public:
                             if (newSelectedId != selectedVehicleId)
                             {
                                 selectedVehicleId = newSelectedId;
-                                std::cout << "Mouse selected vehicle ID: " << selectedVehicleId << std::endl;
+                                std::cout << "Mouse selected vehicle ID: " << selectedVehicleId << std::endl;                                // Update panels with selected vehicle info
+                                if (statusPanel && selectedVehicleId > 0 && selectedVehicleId <= vehicles.size()) {
+                                    statusPanel->refreshContent(vehicles[selectedVehicleId - 1].get(), "Vehicle", sampleTasks);
+                                }
+                                if (vehicleInfoPanel && selectedVehicleId > 0 && selectedVehicleId <= vehicles.size()) {
+                                    vehicleInfoPanel->setVehicle(vehicles[selectedVehicleId - 1].get());
+                                }
                             }
                         }
                         else if (selectedVehicleId != -1)
                         {
                             selectedVehicleId = -1;
-                            std::cout << "Mouse deselected vehicle" << std::endl;
+                            std::cout << "Mouse deselected vehicle" << std::endl;                            // Clear panels or set to no selection
+                            if (statusPanel) {
+                                statusPanel->refreshContent(nullptr, "", sampleTasks);
+                            }
+                            if (vehicleInfoPanel) {
+                                vehicleInfoPanel->setVehicle(nullptr);
+                            }
                         }
                     }
+                    // Forward scroll events to StatusPanel if mouse is over it
+                    float statusPanelX = window.getSize().x - STATUS_PANEL_WIDTH;
+                    if (event.type == sf::Event::MouseWheelScrolled && 
+                        mousePixelPos.x >= statusPanelX) {
+                        sf::Vector2f localPosToStatusPanel(mousePixelPos.x - statusPanelX, mousePixelPos.y);
+                        if (statusPanel) {
+                            statusPanel->handleEvent(event, localPosToStatusPanel);
+                        }
+                    }
+                    // Forward click events to StatusPanel if mouse is over it
+                    if (event.type == sf::Event::MouseButtonPressed && 
+                        mousePixelPos.x >= statusPanelX) {
+                        sf::Vector2f localPosToStatusPanel(mousePixelPos.x - statusPanelX, mousePixelPos.y);
+                        if (statusPanel) {
+                            statusPanel->handleEvent(event, localPosToStatusPanel);
+                        }
+                    }
+
                     continue; // 仿真视图消费了事件，跳过其他处理
                 }
             }
@@ -323,43 +397,22 @@ public:
             simulationTime += deltaTime * timeScale;
 
             // 更新工具栏时间显示
-            toolbar->updateTimeDisplay(simulationTime);
+            toolbar->updateTimeDisplay(simulationTime);            // 更新状态面板
+            statusPanel->setSimulationTime(simulationTime);
 
-            // 更新状态面板
-            statusPanel->setSimulationTime(simulationTime); // 更新仿真视图
+            // 更新车辆信息面板
+            if (vehicleInfoPanel) {
+                vehicleInfoPanel->updateInfo(simulationTime);
+            }
+
+            // 更新仿真视图
             if (simulationView)
             {
                 simulationView->updateViewTransforms(deltaTime * timeScale);
             }
-
-            // 模拟车辆加减速事件（每3秒一次）
-            static float lastEventTime = 0.0f;
-            if (simulationTime - lastEventTime > 3.0f)
-            {
-                addSimulatedAccelerationEvent();
-                lastEventTime = simulationTime;
-            }
         }
     }
 
-    void addSimulatedAccelerationEvent()
-    {
-        static int eventCounter = 0;
-        eventCounter++;
-
-        float startTime = simulationTime - 2.0f;
-        float endTime = simulationTime;
-        float startSpeed = 0.0f + (eventCounter % 3) * 0.5f;
-        float endSpeed = 1.5f + (eventCounter % 4) * 0.3f;
-        float acceleration = (endSpeed - startSpeed) / (endTime - startTime);
-        std::string eventType = (eventCounter % 2 == 0) ? "Acceleration" : "Deceleration";
-
-        vehicleInfoPanel->recordAccelerationEvent(
-            startTime, endTime, startSpeed, endSpeed, acceleration, eventType);
-
-        std::cout << "Record " << eventType << " event: "
-                  << startSpeed << "m/s -> " << endSpeed << "m/s" << std::endl;
-    }
     void moveSelectedVehicle(sf::Keyboard::Key key)
     {
         // 检查是否有有效的选中车辆
@@ -470,9 +523,10 @@ public:
         if (simulationView)
         {
             // 设置仿真视图的视口（排除工具栏、状态面板和车辆信息面板区域）
-            float simulationViewLeft = VEHICLE_INFO_PANEL_WIDTH + SIMULATION_VIEW_MARGIN * 2;
+            // Adjust SimulationView position and width calculation
+            float simulationViewLeft = SIMULATION_VIEW_MARGIN; // Starts from left margin
             float simulationViewTop = TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN;
-            float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - VEHICLE_INFO_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 4;
+            float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 2; // Adjusted width
             float simulationViewHeight = window.getSize().y - TOOLBAR_HEIGHT - SIMULATION_VIEW_MARGIN * 2;
 
             sf::FloatRect simulationViewport(
@@ -486,15 +540,14 @@ public:
         }
 
         // 然后渲染GUI组件（顶层）- 确保在SimulationView之后渲染        // 渲染工具栏（顶部）
-        toolbar->render(window, sf::Vector2f(0, 0));
-
-        // 渲染状态面板（右侧，自动贴在右边缘）
-        statusPanel->render(window, window.getSize());
-
-        // 渲染车辆信息面板（左侧，不与轨道重叠）
-        sf::Vector2f vehicleInfoPos(SIMULATION_VIEW_MARGIN, TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN);
-        vehicleInfoPanel->setPosition(vehicleInfoPos);
-        window.draw(*vehicleInfoPanel);
+        toolbar->render(window, sf::Vector2f(0, 0));        // 渲染状态面板（右侧，自动贴在右边缘）
+        statusPanel->render(window, window.getSize());        // 渲染车辆信息面板（左上角）
+        if (vehicleInfoPanel) {
+            float vehicleInfoX = SIMULATION_VIEW_MARGIN;
+            float vehicleInfoY = TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN; // 在工具栏下方
+            vehicleInfoPanel->setPosition(vehicleInfoX, vehicleInfoY);
+            window.draw(*vehicleInfoPanel);
+        }
 
         // 渲染演示说明文字（最顶层）
         renderInstructions();
@@ -530,7 +583,6 @@ public:
                            "\n=== GUI Components ===\n"
                            "• Toolbar: Time display (HH:MM:SS.mmm)\n"
                            "• Status Panel: Simulation statistics\n"
-                           "• Vehicle Info Panel: Acceleration/Deceleration events\n"
                            "• Simulation View: Track & multi-vehicle rendering";
         instructions.setString(text);
 

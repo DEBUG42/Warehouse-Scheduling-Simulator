@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "../src/Core/Task.hpp" // 使用Core的Task定义
+#include "../../src/Core/Task.hpp" // 使用Core的Task定义
 
 // 不再定义重复的Task结构
 
@@ -19,7 +19,8 @@ private:
     sf::Font &m_font;                 // 外部传入的字体引用
     float m_width;                    // 视图宽度
     float m_height = 200.0f;          // 视图高度 (StatusPanel会设置一个默认值或者通过setViewHeight更新)
-    std::vector<std::string> m_tasks; // 当前要显示的任务列表（简化版）
+    // std::vector<std::string> m_tasks; // 当前要显示的任务列表（简化版）
+    std::vector<Task> m_tasksData; // Store actual Task objects
 
     // 滚动相关
     float m_scrollOffset = 0.0f;       // 当前滚动偏移量（像素）
@@ -36,11 +37,17 @@ public:
      * @param font 字体引用
      * @param width 视图宽度
      */
-    TaskListView(sf::Font &font, float width); /**
+    TaskListView(sf::Font &font, float width);/**
                                                 * @brief 更新要显示的任务列表
-                                                * @param tasks 新的任务列表
+                                                * @param tasks 新的任务列表 (std::vector<std::string> for now)
                                                 */
     void updateTasks(const std::vector<std::string> &tasks);
+
+    /**
+     * @brief 更新要显示的任务列表 (with actual Task objects)
+     * @param tasksData 新的任务列表
+     */
+    void updateTasks(const std::vector<Task> &tasksData);
 
     /**
      * @brief 处理鼠标滚轮事件以实现滚动
@@ -55,6 +62,12 @@ public:
      * @param height 高度值
      */
     void setViewHeight(float height) { m_height = height; }
+
+    /**
+     * @brief 设置视图的宽度
+     * @param width 宽度值
+     */
+    void setWidth(float width) { m_width = width; }
 
     /**
      * @brief 处理对任务列表的点击事件

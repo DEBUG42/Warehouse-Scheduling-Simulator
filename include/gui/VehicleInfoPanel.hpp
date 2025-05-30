@@ -159,6 +159,13 @@ private:
     std::string formatSpeed(float speed) const;
 
     /**
+     * @brief 将车辆状态转换为字符串
+     * @param status 状态枚举值
+     * @return 状态字符串
+     */
+    std::string vehicleStatusToString(int status) const;
+
+    /**
      * @brief 渲染函数（继承自sf::Drawable）
      */
     virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override;

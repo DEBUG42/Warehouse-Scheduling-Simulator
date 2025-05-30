@@ -27,8 +27,39 @@ TaskListView::TaskListView(sf::Font &font, float width)
  */
 void TaskListView::updateTasks(const std::vector<std::string> &tasks)
 {
-    m_tasks = tasks;
-    m_totalContentHeight = m_tasks.size() * m_itemHeight;
+    // This version can be kept for compatibility or removed if only std::vector<Task> is used.
+    // For now, let's clear m_tasksData if this is called, to avoid confusion.
+    m_tasksData.clear(); 
+    // If you want to convert string tasks to Task objects, implement that logic here.
+    // For this example, we assume this string version is less detailed.
+    // m_tasks = tasks; // If you still need m_tasks for some reason.
+
+    // To make it functional with strings, we can create placeholder Task objects
+    for(const auto& s_task : tasks) {
+        Task t; // Default task
+        t.id = -1; // Indicate it's a string-based placeholder
+        t.material_id = s_task; // Store the string here for display
+        m_tasksData.push_back(t);
+    }
+    m_totalContentHeight = m_tasksData.size() * m_itemHeight;
+    if (m_scrollOffset > m_totalContentHeight - m_height && m_totalContentHeight > m_height)
+    {
+        m_scrollOffset = m_totalContentHeight - m_height;
+    }
+    if (m_scrollOffset < 0 || m_totalContentHeight <= m_height)
+    {
+        m_scrollOffset = 0;
+    }
+}
+
+/**
+ * @brief 更新要显示的任务列表 (with actual Task objects)
+ * @param tasksData 新的任务列表
+ */
+void TaskListView::updateTasks(const std::vector<Task> &tasksData)
+{
+    m_tasksData = tasksData;
+    m_totalContentHeight = m_tasksData.size() * m_itemHeight;
     // 重置滚动条位置，如果内容变少
     if (m_scrollOffset > m_totalContentHeight - m_height && m_totalContentHeight > m_height)
     {
@@ -91,8 +122,9 @@ void TaskListView::draw(sf::RenderTarget &target, sf::RenderStates states) const
     float yPos = titleHeight;  // 任务项从标题下方开始绘制，相对于TaskListView的(0,0)
     int drawnCount = 0;
 
-    for (size_t i = 0; i < m_tasks.size(); ++i)
+    for (size_t i = 0; i < m_tasksData.size(); ++i)
     {
+        const auto& task = m_tasksData[i];
         float itemTopY_local = yPos - m_scrollOffset;            // 任务项顶部在TaskListView滚动视图内的Y坐标
         float itemBottomY_local = itemTopY_local + m_itemHeight; // 任务项底部
 
@@ -100,8 +132,22 @@ void TaskListView::draw(sf::RenderTarget &target, sf::RenderStates states) const
         // 可视区域的顶部是 titleHeight，底部是 m_height
         if (itemBottomY_local > titleHeight && itemTopY_local < m_height)
         {
-            // 简化版本：直接显示任务字符串
-            std::string taskLine = "Task " + std::to_string(i + 1) + ": " + m_tasks[i];
+            std::string taskLine;
+            if (task.id != -1) { // Full Task object
+                 taskLine = "ID:" + std::to_string(task.id) + 
+                                   (task.type == TaskType::INBOUND ? " IN " : " OUT ") + 
+                                   "M:" + task.material_id + 
+                                   " S:" + std::to_string(task.start_device_id) + 
+                                   " E:" + std::to_string(task.end_device_id);
+                if (task.is_assigned && task.assigned_vehicle_id != -1) {
+                    taskLine += " (V:" + std::to_string(task.assigned_vehicle_id) + ")";
+                } else {
+                    taskLine += " (Unassigned)";
+                }
+            } else { // Placeholder string task
+                taskLine = task.material_id; // The string was stored in material_id
+            }
+
             sf::Text taskText(taskLine, m_font, 12);      // 任务文本字号
             taskText.setFillColor(sf::Color(70, 70, 70)); // 深灰色任务文本
             taskText.setPosition(5.0f, itemTopY_local);
@@ -133,8 +179,9 @@ bool TaskListView::handleClick(const sf::Vector2f &localMousePos)
         return false;
     }
     float currentItemY = titleHeight; // 第一个任务项的顶部Y坐标（无滚动时）
-    for (size_t i = 0; i < m_tasks.size(); ++i)
+    for (size_t i = 0; i < m_tasksData.size(); ++i)
     {
+        const auto& task = m_tasksData[i]; // Use m_tasksData
         // 计算当前任务项在视图中的实际显示边界 (考虑滚动)
         float itemTopInView = currentItemY - m_scrollOffset;
         float itemBottomInView = itemTopInView + m_itemHeight;
@@ -147,7 +194,8 @@ bool TaskListView::handleClick(const sf::Vector2f &localMousePos)
         // 并且鼠标点击在该项的边界内
         if (itemBottomInView > titleHeight && itemTopInView < m_height && itemBounds.contains(localMousePos))
         {
-            std::cout << "[调试] TaskListView: Clicked on Task " << (i + 1) << ": " << m_tasks[i]
+            std::string taskDesc = (task.id != -1) ? ("Task ID " + std::to_string(task.id)) : task.material_id;
+            std::cout << "[调试] TaskListView: Clicked on " << taskDesc
                       << " (Mouse Y: " << localMousePos.y << ", Item Top: " << itemTopInView << ")"
                       << std::endl;
             // TODO: 在这里可以触发更复杂的操作，例如通知外部监听器，或改变任务项的显示状态
