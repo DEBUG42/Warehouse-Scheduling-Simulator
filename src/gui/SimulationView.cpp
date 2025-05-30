@@ -691,3 +691,8 @@ bool SimulationView::getShowDebugInfo() const
 {
     return m_showDebugInfo;
 }
+
+const TrackRenderer& SimulationView::getTrackRenderer() const
+{
+    return m_trackRenderer;
+}

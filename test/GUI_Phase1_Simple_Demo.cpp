@@ -255,11 +255,8 @@ public:
                         std::cout << "Selected vehicle " << vehicleId << std::endl;
                     }
                 }
-                    continue;
-                case sf::Keyboard::W:
-                case sf::Keyboard::A:
-                case sf::Keyboard::S:
-                case sf::Keyboard::D:
+                    continue;                case sf::Keyboard::Up:
+                case sf::Keyboard::Down:
                     if (selectedVehicleId > 0 && selectedVehicleId <= vehicles.size())
                     {
                         moveSelectedVehicle(event.key.code);
@@ -284,27 +281,30 @@ public:
                 bool inSimulationArea = (mousePos.x >= simulationViewLeft &&
                                          mousePos.x <= simulationViewLeft + simulationViewWidth &&
                                          mousePos.y >= simulationViewTop &&
-                                         mousePos.y <= simulationViewTop + simulationViewHeight); // 只有在仿真区域内才处理仿真视图事件
+                                         mousePos.y <= simulationViewTop + simulationViewHeight);                // 只有在仿真区域内才处理仿真视图事件
                 if (inSimulationArea)
                 {
                     // 处理仿真视图事件
                     simulationView->handleViewEvent(event, mousePos);
 
-                    // 检查是否有车辆被选中 - 使用现有方法
-                    auto selectedVehicle = simulationView->getSelectedObject();
-                    if (selectedVehicle)
+                    // 只有当发生鼠标点击事件时才检查车辆选择，避免键盘选择被覆盖
+                    if (event.type == sf::Event::MouseButtonPressed)
                     {
-                        int newSelectedId = selectedVehicle->id;
-                        if (newSelectedId != selectedVehicleId)
+                        auto selectedVehicle = simulationView->getSelectedObject();
+                        if (selectedVehicle)
                         {
-                            selectedVehicleId = newSelectedId;
-                            std::cout << "Selected vehicle ID: " << selectedVehicleId << std::endl;
+                            int newSelectedId = selectedVehicle->id;
+                            if (newSelectedId != selectedVehicleId)
+                            {
+                                selectedVehicleId = newSelectedId;
+                                std::cout << "Mouse selected vehicle ID: " << selectedVehicleId << std::endl;
+                            }
                         }
-                    }
-                    else if (selectedVehicleId != -1)
-                    {
-                        selectedVehicleId = -1;
-                        std::cout << "Deselected vehicle" << std::endl;
+                        else if (selectedVehicleId != -1)
+                        {
+                            selectedVehicleId = -1;
+                            std::cout << "Mouse deselected vehicle" << std::endl;
+                        }
                     }
                     continue; // 仿真视图消费了事件，跳过其他处理
                 }
@@ -356,8 +356,7 @@ public:
 
         std::cout << "Record " << eventType << " event: "
                   << startSpeed << "m/s -> " << endSpeed << "m/s" << std::endl;
-    }
-    void moveSelectedVehicle(sf::Keyboard::Key key)
+    }    void moveSelectedVehicle(sf::Keyboard::Key key)
     {
         // 检查是否有有效的选中车辆
         if (selectedVehicleId <= 0 || selectedVehicleId > vehicles.size())
@@ -369,45 +368,47 @@ public:
         float currentPos = vehicle->position_m;
         float newPos = currentPos;
 
-        const float moveSpeed = 5.0f; // 移动速度（米）- 减小步长以便精细控制
-
+        const float moveSpeed = 2.0f; // 移动速度（米）- 轨道距离步长        // 只支持前后移动，基于轨道距离
         switch (key)
         {
-        case sf::Keyboard::W:
-        case sf::Keyboard::D:
-            newPos += moveSpeed; // 向前移动
+        case sf::Keyboard::Up:
+            newPos += moveSpeed; // 沿轨道向前移动（增加距离）
             break;
-        case sf::Keyboard::S:
-        case sf::Keyboard::A:
-            newPos -= moveSpeed; // 向后移动
+        case sf::Keyboard::Down:
+            newPos -= moveSpeed; // 沿轨道向后移动（减少距离）
             break;
         default:
             return;
+        }        // 获取轨道总长度（使用 TrackRenderer 的实际数据）
+        float maxTrackLengthMm = simulationView->getTrackRenderer().getTotalCenterLineLengthMm();
+        float maxTrackLength = maxTrackLengthMm / 1000.0f; // 转换为米
+
+        // 实现绕圈移动（超过总长度时回到起点，小于0时到终点）
+        if (newPos >= maxTrackLength)
+        {
+            newPos = std::fmod(newPos, maxTrackLength);
+        }
+        else if (newPos < 0)
+        {
+            newPos = maxTrackLength + std::fmod(newPos, maxTrackLength);
         }
 
-        // 边界检查（保持在轨道范围内）
-        // 获取轨道的实际总长度（毫米转米）
-        float maxTrackLengthMm = 2 * 40000.0f + 2 * M_PI * 2500.0f; // ≈ 95700mm
-        float maxTrackLength = maxTrackLengthMm / 1000.0f;          // 转换为米，≈95.7米
+        // 更新车辆位置
+        vehicle->position_m = newPos;
+        vehicle->m_state.position = newPos;
+        vehicle->m_state.motionState = Vehicle::MotionState::Cruising;
 
-        if (newPos >= 0.0f && newPos <= maxTrackLength)
+        std::cout << "Vehicle " << selectedVehicleId << " moved along track to position: " << newPos << "m (Track length: " << maxTrackLength << "m)" << std::endl;
+
+        // 更新仿真视图中的车辆数据
+        if (simulationView)
         {
-            vehicle->position_m = newPos;
-            vehicle->m_state.position = newPos;
-            vehicle->m_state.motionState = Vehicle::MotionState::Cruising;
-
-            std::cout << "Vehicle " << selectedVehicleId << " moved to position: " << newPos << "m" << std::endl;
-
-            // 更新仿真视图中的车辆数据
-            if (simulationView)
+            std::vector<Vehicle *> vehiclePtrs;
+            for (auto &v : vehicles)
             {
-                std::vector<Vehicle *> vehiclePtrs;
-                for (auto &v : vehicles)
-                {
-                    vehiclePtrs.push_back(v.get());
-                }
-                simulationView->updateVehicles(vehiclePtrs);
+                vehiclePtrs.push_back(v.get());
             }
+            simulationView->updateVehicles(vehiclePtrs);
         }
     }
     void resetSimulation()
@@ -516,10 +517,9 @@ public:
                            "T: Toggle coordinate grid display\n"
                            "G: Toggle warehouse display\n"
                            "V: Toggle vehicle display\n"
-                           "C: Toggle debug info display\n"
-                           "\n=== Vehicle Control ===\n"
+                           "C: Toggle debug info display\n"                           "\n=== Vehicle Control ===\n"
                            "1/2/3: Select vehicle (by number)\n"
-                           "WASD: Move selected vehicle\n"
+                           "W/S: Move selected vehicle forward/backward along track\n"
                            "Mouse: Click to select vehicle/device\n"
                            "\n=== Vehicle Status ===\n"
                            "• Vehicle 1: Empty Stopped (Blue)\n"

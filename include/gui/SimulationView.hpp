@@ -134,8 +134,13 @@ public:
     bool getShowWarehouses() const;
     void setShowVehicles(bool show);
     bool getShowVehicles() const;
-    void setShowDebugInfo(bool show);
-    bool getShowDebugInfo() const;
+    void setShowDebugInfo(bool show);    bool getShowDebugInfo() const;
+
+    /**
+     * @brief 获取轨道渲染器引用，用于访问轨道几何信息
+     * @return TrackRenderer 的引用
+     */
+    const TrackRenderer& getTrackRenderer() const;
 
 private:
     /**
