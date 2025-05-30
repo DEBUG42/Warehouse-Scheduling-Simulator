@@ -16,9 +16,9 @@
 class TaskListView : public sf::Drawable, public sf::Transformable
 {
 private:
-    sf::Font &m_font;                 // 外部传入的字体引用
-    float m_width;                    // 视图宽度
-    float m_height = 200.0f;          // 视图高度 (StatusPanel会设置一个默认值或者通过setViewHeight更新)
+    sf::Font &m_font;        // 外部传入的字体引用
+    float m_width;           // 视图宽度
+    float m_height = 200.0f; // 视图高度 (StatusPanel会设置一个默认值或者通过setViewHeight更新)
     // std::vector<std::string> m_tasks; // 当前要显示的任务列表（简化版）
     std::vector<Task> m_tasksData; // Store actual Task objects
 
@@ -37,7 +37,7 @@ public:
      * @param font 字体引用
      * @param width 视图宽度
      */
-    TaskListView(sf::Font &font, float width);/**
+    TaskListView(sf::Font &font, float width); /**
                                                 * @brief 更新要显示的任务列表
                                                 * @param tasks 新的任务列表 (std::vector<std::string> for now)
                                                 */

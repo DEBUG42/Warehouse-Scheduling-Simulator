@@ -158,18 +158,19 @@ void VehicleInfoPanel::updateInfo(float currentTime)
 
     // Use actual data from m_selectedVehicle
     m_motionStateText.setString("Motion State: " + vehicleStatusToString(static_cast<int>(m_selectedVehicle->m_state.motionState)));
-    
+
     std::ostringstream speedStream;
     speedStream << std::fixed << std::setprecision(2) << m_selectedVehicle->m_state.currentSpeed << " m/s";
-    m_currentSpeedText.setString("Current Speed: " + speedStream.str());    // Acceleration might need to be calculated or stored if not directly available
+    m_currentSpeedText.setString("Current Speed: " + speedStream.str()); // Acceleration might need to be calculated or stored if not directly available
     // For now, let's assume it's 0 if not accelerating/decelerating, or use a placeholder
     float currentAcceleration = 0.0f;
-    if (m_selectedVehicle->m_state.motionState == Vehicle::MotionState::Accelerating || 
-        m_selectedVehicle->m_state.motionState == Vehicle::MotionState::Decelerating) {
+    if (m_selectedVehicle->m_state.motionState == Vehicle::MotionState::Accelerating ||
+        m_selectedVehicle->m_state.motionState == Vehicle::MotionState::Decelerating)
+    {
         // This is a placeholder. Actual acceleration would be (currentSpeed - previousSpeed) / deltaTime
         // or from a vehicle property if it stores its current acceleration value.
         // For the demo, we can use a fixed placeholder or leave as 0.
-        // currentAcceleration = (m_selectedVehicle->m_state.motionState == core::Vehicle::MotionState::Accelerating) ? 1.0f : -1.0f; 
+        // currentAcceleration = (m_selectedVehicle->m_state.motionState == core::Vehicle::MotionState::Accelerating) ? 1.0f : -1.0f;
     }
     std::ostringstream accelStream;
     accelStream << std::fixed << std::setprecision(2) << currentAcceleration << " m/s^2"; // Placeholder
@@ -180,7 +181,7 @@ void VehicleInfoPanel::updateInfo(float currentTime)
     m_positionText.setString("Position: " + posStream.str());
 
     // Update statistics display (assuming m_statistics is updated elsewhere or based on m_selectedVehicle)
-    // For this demo, we'll keep the existing statistics update logic as it was, 
+    // For this demo, we'll keep the existing statistics update logic as it was,
     // as it seems to be driven by recordAccelerationEvent rather than directly from vehicle state.
     m_totalRunTimeText.setString("Total Run Time: " + formatTime(m_statistics.totalRunTime));
     m_stopCountText.setString("Stop Count: " + std::to_string(m_statistics.stopCount));
@@ -300,19 +301,20 @@ std::string VehicleInfoPanel::formatSpeed(float speed) const
     return oss.str();
 }
 
-std::string VehicleInfoPanel::vehicleStatusToString(int status) const {
+std::string VehicleInfoPanel::vehicleStatusToString(int status) const
+{
     switch (static_cast<Vehicle::MotionState>(status))
     {
-        case Vehicle::MotionState::Stopped:
-            return "Stopped";
-        case Vehicle::MotionState::Accelerating:
-            return "Accelerating";
-        case Vehicle::MotionState::Decelerating:
-            return "Decelerating";
-        case Vehicle::MotionState::Cruising:
-            return "Cruising";
-        default:
-            return "Unknown";
+    case Vehicle::MotionState::Stopped:
+        return "Stopped";
+    case Vehicle::MotionState::Accelerating:
+        return "Accelerating";
+    case Vehicle::MotionState::Decelerating:
+        return "Decelerating";
+    case Vehicle::MotionState::Cruising:
+        return "Cruising";
+    default:
+        return "Unknown";
     }
 }
 

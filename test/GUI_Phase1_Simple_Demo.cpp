@@ -36,7 +36,7 @@ class SimpleDemoApp
 {
 private:
     sf::RenderWindow window;
-    sf::Font font;    // GUI组件
+    sf::Font font; // GUI组件
     std::unique_ptr<Toolbar> toolbar;
     std::unique_ptr<StatusPanel> statusPanel;
     std::unique_ptr<VehicleInfoPanel> vehicleInfoPanel;
@@ -49,7 +49,7 @@ private:
     // 仿真状态
     float simulationTime = 0.0f;
     bool isRunning = false;
-    int selectedVehicleId = -1;    // 布局参数
+    int selectedVehicleId = -1; // 布局参数
     static constexpr float TOOLBAR_HEIGHT = 50.0f;
     static constexpr float STATUS_PANEL_WIDTH = 290.0f;
     static constexpr float VEHICLE_INFO_PANEL_WIDTH = 300.0f;
@@ -137,7 +137,7 @@ public:
     void initializeComponents()
     {
         // 创建工具栏 - 修正参数顺序：(font, width, height)
-        toolbar = std::make_unique<Toolbar>(font, window.getSize().x, TOOLBAR_HEIGHT);        // 创建状态面板
+        toolbar = std::make_unique<Toolbar>(font, window.getSize().x, TOOLBAR_HEIGHT); // 创建状态面板
         statusPanel = std::make_unique<StatusPanel>(font);
         statusPanel->resize(window.getSize().y - 10.0f);
 
@@ -183,11 +183,13 @@ public:
         statusPanel->setPendingTaskCount(5); // Initial placeholder, will be updated by sample tasks
     }
 
-    void createSampleTasks() {
+    void createSampleTasks()
+    {
         sampleTasks.clear();
         // sampleTaskStrings.clear(); // If removing
 
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 5; ++i)
+        {
             Task task;
             task.id = 100 + i;
             task.material_id = "MAT_" + std::to_string(i);
@@ -195,20 +197,21 @@ public:
             task.start_device_id = 1 + i;
             task.end_device_id = 6 + i;
             task.is_assigned = (i % 3 == 0);
-            task.assigned_vehicle_id = task.is_assigned ? ( (i/3) % vehicles.size() ) + 1 : -1;
+            task.assigned_vehicle_id = task.is_assigned ? ((i / 3) % vehicles.size()) + 1 : -1;
             task.ready_time = simulationTime + i * 10.0; // Stagger ready times
             sampleTasks.push_back(task);
 
             // Create string representation for current TaskListView (if still needed for compatibility)
-            /* std::string taskStr = "Task " + std::to_string(task.id) + ": " + 
-                                (task.type == TaskType::INBOUND ? "IN" : "OUT") + 
-                                " M" + task.material_id + 
-                                " D" + std::to_string(task.start_device_id) + "->D" + std::to_string(task.end_device_id) + 
+            /* std::string taskStr = "Task " + std::to_string(task.id) + ": " +
+                                (task.type == TaskType::INBOUND ? "IN" : "OUT") +
+                                " M" + task.material_id +
+                                " D" + std::to_string(task.start_device_id) + "->D" + std::to_string(task.end_device_id) +
                                 (task.is_assigned ? " (V" + std::to_string(task.assigned_vehicle_id) + ")" : " (Unassigned)");
             sampleTaskStrings.push_back(taskStr); */
         }
         // Update status panel with these tasks
-        if (statusPanel) {
+        if (statusPanel)
+        {
             // Pass the actual Task objects now
             statusPanel->refreshContent(nullptr, "", sampleTasks);
         }
@@ -290,13 +293,16 @@ public:
                 {
                     int vehicleId = event.key.code - sf::Keyboard::Num0;
                     if (vehicleId > 0 && vehicleId <= vehicles.size())
-                    {                        selectedVehicleId = vehicleId;
+                    {
+                        selectedVehicleId = vehicleId;
                         std::cout << "Selected vehicle " << vehicleId << std::endl;
                         // Update panels with selected vehicle info
-                        if (statusPanel) {
+                        if (statusPanel)
+                        {
                             statusPanel->refreshContent(vehicles[selectedVehicleId - 1].get(), "Vehicle", sampleTasks);
                         }
-                        if (vehicleInfoPanel) {
+                        if (vehicleInfoPanel)
+                        {
                             vehicleInfoPanel->setVehicle(vehicles[selectedVehicleId - 1].get());
                         }
                     }
@@ -344,11 +350,13 @@ public:
                             if (newSelectedId != selectedVehicleId)
                             {
                                 selectedVehicleId = newSelectedId;
-                                std::cout << "Mouse selected vehicle ID: " << selectedVehicleId << std::endl;                                // Update panels with selected vehicle info
-                                if (statusPanel && selectedVehicleId > 0 && selectedVehicleId <= vehicles.size()) {
+                                std::cout << "Mouse selected vehicle ID: " << selectedVehicleId << std::endl; // Update panels with selected vehicle info
+                                if (statusPanel && selectedVehicleId > 0 && selectedVehicleId <= vehicles.size())
+                                {
                                     statusPanel->refreshContent(vehicles[selectedVehicleId - 1].get(), "Vehicle", sampleTasks);
                                 }
-                                if (vehicleInfoPanel && selectedVehicleId > 0 && selectedVehicleId <= vehicles.size()) {
+                                if (vehicleInfoPanel && selectedVehicleId > 0 && selectedVehicleId <= vehicles.size())
+                                {
                                     vehicleInfoPanel->setVehicle(vehicles[selectedVehicleId - 1].get());
                                 }
                             }
@@ -356,29 +364,35 @@ public:
                         else if (selectedVehicleId != -1)
                         {
                             selectedVehicleId = -1;
-                            std::cout << "Mouse deselected vehicle" << std::endl;                            // Clear panels or set to no selection
-                            if (statusPanel) {
+                            std::cout << "Mouse deselected vehicle" << std::endl; // Clear panels or set to no selection
+                            if (statusPanel)
+                            {
                                 statusPanel->refreshContent(nullptr, "", sampleTasks);
                             }
-                            if (vehicleInfoPanel) {
+                            if (vehicleInfoPanel)
+                            {
                                 vehicleInfoPanel->setVehicle(nullptr);
                             }
                         }
                     }
                     // Forward scroll events to StatusPanel if mouse is over it
                     float statusPanelX = window.getSize().x - STATUS_PANEL_WIDTH;
-                    if (event.type == sf::Event::MouseWheelScrolled && 
-                        mousePixelPos.x >= statusPanelX) {
+                    if (event.type == sf::Event::MouseWheelScrolled &&
+                        mousePixelPos.x >= statusPanelX)
+                    {
                         sf::Vector2f localPosToStatusPanel(mousePixelPos.x - statusPanelX, mousePixelPos.y);
-                        if (statusPanel) {
+                        if (statusPanel)
+                        {
                             statusPanel->handleEvent(event, localPosToStatusPanel);
                         }
                     }
                     // Forward click events to StatusPanel if mouse is over it
-                    if (event.type == sf::Event::MouseButtonPressed && 
-                        mousePixelPos.x >= statusPanelX) {
+                    if (event.type == sf::Event::MouseButtonPressed &&
+                        mousePixelPos.x >= statusPanelX)
+                    {
                         sf::Vector2f localPosToStatusPanel(mousePixelPos.x - statusPanelX, mousePixelPos.y);
-                        if (statusPanel) {
+                        if (statusPanel)
+                        {
                             statusPanel->handleEvent(event, localPosToStatusPanel);
                         }
                     }
@@ -397,11 +411,12 @@ public:
             simulationTime += deltaTime * timeScale;
 
             // 更新工具栏时间显示
-            toolbar->updateTimeDisplay(simulationTime);            // 更新状态面板
+            toolbar->updateTimeDisplay(simulationTime); // 更新状态面板
             statusPanel->setSimulationTime(simulationTime);
 
             // 更新车辆信息面板
-            if (vehicleInfoPanel) {
+            if (vehicleInfoPanel)
+            {
                 vehicleInfoPanel->updateInfo(simulationTime);
             }
 
@@ -540,9 +555,10 @@ public:
         }
 
         // 然后渲染GUI组件（顶层）- 确保在SimulationView之后渲染        // 渲染工具栏（顶部）
-        toolbar->render(window, sf::Vector2f(0, 0));        // 渲染状态面板（右侧，自动贴在右边缘）
-        statusPanel->render(window, window.getSize());        // 渲染车辆信息面板（左上角）
-        if (vehicleInfoPanel) {
+        toolbar->render(window, sf::Vector2f(0, 0));   // 渲染状态面板（右侧，自动贴在右边缘）
+        statusPanel->render(window, window.getSize()); // 渲染车辆信息面板（左上角）
+        if (vehicleInfoPanel)
+        {
             float vehicleInfoX = SIMULATION_VIEW_MARGIN;
             float vehicleInfoY = TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN; // 在工具栏下方
             vehicleInfoPanel->setPosition(vehicleInfoX, vehicleInfoY);
