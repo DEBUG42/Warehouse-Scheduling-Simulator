@@ -8,7 +8,8 @@
 Toolbar::Toolbar(sf::Font &font, float width, float height)
     : m_font(font), m_width(width), m_height(height),
       m_isPlaying(false), m_isDragging(false),
-      m_currentSpeed(1.0f), m_minSpeed(0.1f), m_maxSpeed(10.0f)
+      m_currentSpeed(1.0f), m_minSpeed(0.1f), m_maxSpeed(10.0f),
+      m_currentMode(SimulationMode::TASK1)
 {
     calculateLayout();
 
@@ -49,11 +50,13 @@ Toolbar::Toolbar(sf::Font &font, float width, float height)
     m_speedLabel.setCharacterSize(12);
     m_speedLabel.setFillColor(sf::Color(180, 180, 180));
     m_speedLabel.setString("Speed:");
-
     m_speedValue.setFont(m_font);
     m_speedValue.setCharacterSize(12);
     m_speedValue.setFillColor(sf::Color(180, 180, 180));
     m_speedValue.setString(formatSpeed(m_currentSpeed));
+
+    // 初始化模式切换按钮
+    initializeModeButtons();
 
     updateSpeedSlider();
 }
@@ -74,6 +77,10 @@ void Toolbar::calculateLayout()
 
     // 速度控制区域
     m_speedAreaBounds = sf::FloatRect(currentX, componentY, SPEED_AREA_WIDTH, COMPONENT_HEIGHT);
+    currentX += SPEED_AREA_WIDTH + PADDING;
+
+    // 模式切换按钮区域
+    m_modeAreaBounds = sf::FloatRect(currentX, componentY, MODE_AREA_WIDTH, COMPONENT_HEIGHT);
 }
 
 void Toolbar::updateSpeedSlider()
@@ -209,6 +216,24 @@ bool Toolbar::handleEvent(const sf::Event &event, const sf::Vector2f &mousePos)
         }
     }
 
+    // 处理模式切换按钮
+    for (auto &modeButton : m_modeButtons)
+    {
+        if (modeButton.bounds.contains(mousePos))
+        {
+            if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
+            {
+                setCurrentMode(modeButton.mode);
+
+                if (m_onModeChanged)
+                {
+                    m_onModeChanged(m_currentMode);
+                }
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 
@@ -274,6 +299,16 @@ void Toolbar::render(sf::RenderTarget &target, const sf::Vector2f &position)
         position.x + m_speedAreaBounds.left + 220.0f,
         position.y + m_speedAreaBounds.top + (COMPONENT_HEIGHT - 12.0f) / 2.0f);
     target.draw(m_speedValue);
+
+    // 绘制模式切换按钮
+    for (auto &modeButton : m_modeButtons)
+    {
+        modeButton.button.setPosition(position.x + modeButton.bounds.left, position.y + modeButton.bounds.top);
+        target.draw(modeButton.button);
+
+        // 绘制模式按钮文字
+        target.draw(modeButton.text);
+    }
 }
 
 void Toolbar::updateTimeDisplay(float simTime)
@@ -304,4 +339,85 @@ void Toolbar::resize(float width)
 
     // 重新计算布局
     updateSpeedSlider();
+}
+
+void Toolbar::initializeModeButtons()
+{
+    // 清空现有按钮
+    m_modeButtons.clear();
+
+    // 定义四个模式
+    struct ModeInfo
+    {
+        SimulationMode mode;
+        std::string text;
+    };
+
+    std::vector<ModeInfo> modes = {
+        {SimulationMode::TASK1, "Task1"},
+        {SimulationMode::TASK2_1, "Task2.1"},
+        {SimulationMode::TASK2_2, "Task2.2"},
+        {SimulationMode::TASK2_3, "Task2.3"}};
+
+    float startX = m_modeAreaBounds.left;
+    float y = m_modeAreaBounds.top;
+    float buttonSpacing = 5.0f;
+
+    for (size_t i = 0; i < modes.size(); ++i)
+    {
+        ModeButton modeButton;
+        modeButton.mode = modes[i].mode;
+        modeButton.isActive = (modes[i].mode == m_currentMode);
+
+        // 设置按钮外观
+        float buttonX = startX + i * (MODE_BUTTON_WIDTH + buttonSpacing);
+        modeButton.bounds = sf::FloatRect(buttonX, y, MODE_BUTTON_WIDTH, COMPONENT_HEIGHT);
+
+        modeButton.button.setSize(sf::Vector2f(MODE_BUTTON_WIDTH, COMPONENT_HEIGHT));
+        modeButton.button.setPosition(buttonX, y);
+
+        // 根据是否激活设置颜色
+        if (modeButton.isActive)
+        {
+            modeButton.button.setFillColor(sf::Color(100, 150, 255)); // 激活状态 - 蓝色
+        }
+        else
+        {
+            modeButton.button.setFillColor(sf::Color(70, 70, 70)); // 非激活状态 - 深灰色
+        }
+
+        // 设置文本
+        modeButton.text.setFont(m_font);
+        modeButton.text.setCharacterSize(12);
+        modeButton.text.setFillColor(sf::Color::White);
+        modeButton.text.setString(modes[i].text);
+
+        // 居中文本
+        sf::FloatRect textBounds = modeButton.text.getLocalBounds();
+        modeButton.text.setPosition(
+            buttonX + (MODE_BUTTON_WIDTH - textBounds.width) / 2.0f,
+            y + (COMPONENT_HEIGHT - textBounds.height) / 2.0f - textBounds.top);
+
+        m_modeButtons.push_back(modeButton);
+    }
+}
+
+void Toolbar::setCurrentMode(SimulationMode mode)
+{
+    m_currentMode = mode;
+
+    // 更新按钮状态
+    for (auto &modeButton : m_modeButtons)
+    {
+        modeButton.isActive = (modeButton.mode == mode);
+
+        if (modeButton.isActive)
+        {
+            modeButton.button.setFillColor(sf::Color(100, 150, 255)); // 激活状态
+        }
+        else
+        {
+            modeButton.button.setFillColor(sf::Color(70, 70, 70)); // 非激活状态
+        }
+    }
 }

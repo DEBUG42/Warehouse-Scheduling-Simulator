@@ -7,6 +7,18 @@
 #include "../src/Core/Device.hpp"
 
 /**
+ * @brief 仿真模式枚举
+ * 定义四种不同的仿真任务模式
+ */
+enum class SimulationMode
+{
+    TASK1,   ///< 任务1模式
+    TASK2_1, ///< 任务2.1模式
+    TASK2_2, ///< 任务2.2模式
+    TASK2_3  ///< 任务2.3模式
+};
+
+/**
  * @class SimulationInterface
  * @brief 前后端通信接口类，负责处理GUI与仿真引擎之间的数据交换
  *
@@ -14,6 +26,7 @@
  * 1. 获取车辆和设备状态
  * 2. 控制仿真速度和暂停/继续
  * 3. 注册状态更新回调
+ * 4. 切换仿真模式
  */
 class SimulationInterface
 {
@@ -68,12 +81,22 @@ public:
     /**
      * @brief 恢复仿真
      */
-    virtual void resumeSimulation() = 0;
+    virtual void resumeSimulation() = 0; /**
+                                          * @brief 重置仿真
+                                          */
+    virtual void resetSimulation() = 0;
 
     /**
-     * @brief 重置仿真
+     * @brief 设置仿真模式
+     * @param mode 仿真模式枚举值
      */
-    virtual void resetSimulation() = 0;
+    virtual void setSimulationMode(SimulationMode mode) = 0;
+
+    /**
+     * @brief 获取当前仿真模式
+     * @return 当前仿真模式
+     */
+    virtual SimulationMode getCurrentSimulationMode() const = 0;
 
     /**
      * @brief 注册仿真状态更新回调函数

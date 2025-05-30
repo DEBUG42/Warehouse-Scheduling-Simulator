@@ -103,6 +103,12 @@ public:
     // 输出: 无
     void handleEvent(Event &e);
 
+    // 获取所有设备列表（为GUI提供访问）
+    // 输入: 无
+    // 输出: const std::vector<DeviceBase>& - 设备列表的常引用
+    const std::vector<DeviceBase> &getDevices() const;
+
 private:
     std::map<int, DeviceState> devices;
+    std::vector<DeviceBase> device_list; // 添加设备列表存储
 };

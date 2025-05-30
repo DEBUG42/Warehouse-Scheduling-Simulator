@@ -8,6 +8,7 @@
 #include "SimulationInterface.hpp"
 #include "TaskListView.hpp"
 #include "../src/Core/Vehicle.hpp"
+#include "../src/Core/Device.hpp"
 #include "../src/Core/Task.hpp"
 
 /**
@@ -21,7 +22,7 @@ class MainWindow : public sf::RenderWindow
 {
 private:
     // 窗口布局参数
-    sf::Vector2u m_initialSize{1280, 720};                // 初始分辨率
+    sf::Vector2u m_initialSize{1800, 800};                // 初始分辨率
     const float m_toolbarHeight = 30.0f;                  // 工具栏高度    // 子视图组件
     std::unique_ptr<SimulationView> m_simView;            // 仿真视图区域
     std::unique_ptr<StatusPanel> m_statusPanel;           // 右侧状态面板

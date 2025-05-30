@@ -100,6 +100,11 @@ public:
     // 输出: 所有车辆的列表 (const std::vector<Vehicle>&)
     std::vector<Vehicle> &getVehicles();
 
+    // 返回所有车辆的常量引用（const版本）
+    // 输入: 无
+    // 输出: 所有车辆的列表 (const std::vector<Vehicle>&)
+    const std::vector<Vehicle> &getVehicles() const;
+
 public:
     std::vector<Vehicle> vehicles;                           // 定义 vehicles 容器
     constexpr static double LOOP_LENGTH = 99.47787445225672; // 环道总长度（可调）

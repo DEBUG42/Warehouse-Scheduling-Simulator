@@ -71,6 +71,11 @@ void MainWindow::initialize(std::shared_ptr<SimulationInterface> simInterface)
         } else {
             m_simInterface->pauseSimulation();
         } });
+    m_toolbar->setOnModeChanged([this](SimulationMode mode)
+                                {
+        // 设置仿真模式
+        m_simInterface->setSimulationMode(mode);
+        std::cout << "Simulation mode changed to: " << static_cast<int>(mode) << std::endl; });
 
     // 设置车辆选择回调
     m_simView->setVehicleSelectedCallback([this](int vehicleId)
@@ -290,7 +295,7 @@ void MainWindow::updateVehicleInfoPanel(const std::vector<Vehicle *> &vehicleSta
     } // 查找选中的车辆状态
     for (const auto &vehicle : vehicleStates)
     {
-        if (vehicle && vehicle->getId() == m_selectedVehicleId)
+        if (vehicle && vehicle->id == m_selectedVehicleId)
         {
             // 直接使用Vehicle指针更新VehicleInfoPanel
             m_vehicleInfoPanel->setVehicle(vehicle);

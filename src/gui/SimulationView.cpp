@@ -23,66 +23,63 @@ SimulationView::SimulationView(sf::Font &font)
  */
 void SimulationView::initialize(sf::Font &font, std::shared_ptr<SimulationInterface> simInterface, const sf::Vector2f &initialViewSize)
 {
-    m_simInterface = simInterface;
+    m_simInterface = simInterface;    // 渲染参数设置（与VehiclePathPositionTest.cpp一致）
+    float mmToPxRatio = 0.01f;    // 毫米到像素转换比例
+    float scaleFactor = 2.0f;     // 渲染缩放因子
+    float trackWidthMm = 1200.0f; // 轨道宽度（1.2米）
 
-    float mmToPxRatio = 0.04f;
-    float trackWidthMm = 40000.0f;
-
-    // The track's (0,0) doc origin is at world (0,0) for now.
+    // 世界坐标原点偏移量（与测试文件一致）
     m_worldOriginOffsetPx = sf::Vector2f(0.0f, 0.0f);
 
-    // Initialize Track Renderer
+    // 初始化轨道渲染器
     m_trackRenderer.setMmToPxRatio(mmToPxRatio);
+    m_trackRenderer.setScaleFactor(scaleFactor);
     m_trackRenderer.setTrackWidth(trackWidthMm);
-    m_trackRenderer.generateGeometry(m_trackLength, m_curveRadius); // Pass MM dimensions
+    m_trackRenderer.generateGeometry(m_trackLength, m_curveRadius);
 
-    // Initialize Warehouse Renderer
+    // 初始化仓库渲染器
     m_warehouseRenderer.initialize(m_trackRenderer, m_worldOriginOffsetPx, "resources/icons/");
 
-    // Store the initial size as the base size for zoom level 0
-    m_unzoomedWorldViewSize = initialViewSize;
-    m_worldView.setSize(m_unzoomedWorldViewSize); // Set initial size
+    // 初始化车辆渲染器（已在构造函数中初始化，这里可以设置额外参数）
+    // m_vehicleRenderer 已通过构造函数初始化
 
+    // 设置视图参数
+    m_unzoomedWorldViewSize = initialViewSize;
+    m_worldView.setSize(m_unzoomedWorldViewSize);
     m_viewCenter = m_worldOriginOffsetPx;
     m_worldView.setCenter(m_viewCenter);
 
-    // Calculate the zoom factor needed to fit the track into 90% of the view width
-    float estimatedTrackSystemWidthPx = (m_trackLength + 2.0f * m_curveRadius) * mmToPxRatio;
+    // 计算适合轨道显示的初始缩放
+    float estimatedTrackSystemWidthPx = (m_trackLength + 2.0f * m_curveRadius) * mmToPxRatio * scaleFactor;
     float desiredViewWidthForTrackPx = initialViewSize.x * 0.9f;
-    float targetZoomFactor = 1.0f; // This is the factor for sf::View::zoom()
+    float targetZoomFactor = 1.0f;
 
     if (desiredViewWidthForTrackPx > 0 && estimatedTrackSystemWidthPx > 0)
     {
         targetZoomFactor = estimatedTrackSystemWidthPx / desiredViewWidthForTrackPx;
     }
 
-    // Apply this initial zoom directly
+    // 应用初始缩放
     m_worldView.zoom(targetZoomFactor);
-
-    // Set m_zoomLevel (abstract, for mouse wheel) based on this targetZoomFactor
-    // targetZoomFactor = 1.0f / pow(2.0f, m_zoomLevel_abstract)
-    // pow(2.0f, m_zoomLevel_abstract) = 1.0f / targetZoomFactor
-    // m_zoomLevel_abstract = log2(1.0f / targetZoomFactor)
     if (targetZoomFactor > 0.0001f)
     {
         m_zoomLevel = -std::log2(targetZoomFactor);
     }
     else
     {
-        m_zoomLevel = 0.0f; // Default if targetZoomFactor is problematic
+        m_zoomLevel = 0.0f;
     }
 
+    // 设置UI视图
     m_uiView.setSize(initialViewSize);
     m_uiView.setCenter(initialViewSize.x / 2.0f, initialViewSize.y / 2.0f);
 
-    // Get initial simulation states
+    // 获取初始仿真状态
     if (m_simInterface)
     {
         m_vehicles = m_simInterface->getVehicleStates();
         m_devices = m_simInterface->getDeviceStates();
         m_warehouseRenderer.updateDeviceStates(m_devices);
-        // m_vehicleRenderer might need an update too, if it uses m_trackLength, m_curveRadius and mmToPxRatio
-        // It seems VehicleRenderer::calculatePosition already takes these as params.
     }
 }
 
@@ -105,168 +102,72 @@ void SimulationView::updateViewTransforms(float deltaTime)
 }
 
 /**
- * @brief 渲染世界场景
+ * @brief 渲染世界场景 - 按照VehiclePathPositionTest.cpp的验证方法
  * @param target SFML渲染目标
  */
 void SimulationView::renderWorld(sf::RenderTarget &target)
 {
-    // 设置世界坐标系视图（用于场景元素）
+    // 保存当前视图
+    sf::View originalView = target.getView();
+    
+    // 不要清除整个窗口！这会覆盖GUI组件
+    // target.clear(sf::Color(230, 240, 230)); // 删除这行
+    
+    // 设置世界坐标系视图
     target.setView(m_worldView);
 
-    // 渲染轨道
-    renderTrack(target);
+    // 绘制仿真区域的背景色（只在视口内）
+    sf::FloatRect viewport = m_worldView.getViewport();
+    sf::Vector2f viewSize = m_worldView.getSize();
+    sf::Vector2f viewCenter = m_worldView.getCenter();
+    
+    sf::RectangleShape background;
+    background.setSize(viewSize);
+    background.setOrigin(viewSize.x / 2.0f, viewSize.y / 2.0f);
+    background.setPosition(viewCenter);
+    background.setFillColor(sf::Color(230, 240, 230));
+    target.draw(background);
 
-    // 渲染仓库/接口设备
-    renderWarehouses(target);
+    // 1. 渲染网格（如果启用）
+    if (m_showGrid)
+    {
+        renderGrid(target);
+    }
 
-    // 渲染车辆
-    renderVehicles(target);
+    // 2. 渲染轨道（使用测试文件验证的方法）
+    target.draw(m_trackRenderer);
 
-    // 切换到UI视图（用于叠加元素）
+    // 3. 渲染仓库设备（如果启用）
+    if (m_showWarehouses)
+    {
+        target.draw(m_warehouseRenderer);
+    }
+
+    // 4. 渲染车辆（使用测试文件验证的VehicleRenderer方法）
+    if (m_showVehicles && !m_vehicles.empty())
+    {
+        // 更新车辆渲染器状态
+        m_vehicleRenderer.setVehiclesToRender(m_vehicles);
+        target.draw(m_vehicleRenderer);
+    }
+
+    // 5. 渲染路径原点标记（与测试文件一致）
+    renderPathOriginMarker(target);
+
+    // 6. 渲染调试信息（如果启用）
+    if (m_showDebugInfo)
+    {
+        renderDebugInfo(target);
+    }
+
+    // 切换到UI视图渲染叠加层
     target.setView(m_uiView);
 
-    // 渲染UI层（选择框、提示文本等）
-    renderUI(target);
+    // 7. 渲染UI叠加层（选择框、HUD等）
+    renderUIOverlay(target);
 
-    // 重置为默认视图
-    target.setView(target.getDefaultView());
-}
-
-/**
- * @brief 渲染轨道
- * @param target SFML渲染目标
- */
-void SimulationView::renderTrack(sf::RenderTarget &target)
-{
-    sf::RenderStates trackStates;
-    // TrackRenderer is assumed to draw its geometry relative to its own (0,0),
-    // which corresponds to the documentation's origin point (bottom-left inner track point).
-    // m_worldOriginOffsetPx shifts this entire track system in the world.
-    trackStates.transform.translate(m_worldOriginOffsetPx);
-    target.draw(m_trackRenderer, trackStates);
-}
-
-/**
- * @brief 渲染仓库/接口设备
- * @param target SFML渲染目标
- */
-void SimulationView::renderWarehouses(sf::RenderTarget &target)
-{
-    // WarehouseRenderer has been initialized with the trackRenderer and worldOriginOffsetPx,
-    // so it should be drawing its devices directly in the correct world coordinates.
-    // No additional transform should be needed here if WarehouseRenderer handles it.
-    target.draw(m_warehouseRenderer);
-}
-
-/**
- * @brief 渲染车辆
- * @param target SFML渲染目标
- */
-void SimulationView::renderVehicles(sf::RenderTarget &target)
-{
-    // 创建临时数组存储车辆位置和旋转角度，避免重复计算
-    struct VehiclePositionData
-    {
-        sf::Vector2f position;
-        float rotation;
-    };
-
-    std::vector<VehiclePositionData> vehiclePositions(m_vehicles.size());
-    static float lastCalculatedTime = 0.0f;
-    static sf::Clock positionUpdateClock;
-
-    // 如果车辆数量大于0且自上次计算以来至少过了16.67ms (60fps)，则重新计算位置
-    float currentTime = positionUpdateClock.getElapsedTime().asSeconds();
-    bool shouldRecalculate = (currentTime - lastCalculatedTime) > 0.01667f || vehiclePositions.empty();
-
-    if (shouldRecalculate)
-    {
-        // 先计算所有车辆的位置和朝向
-        for (size_t i = 0; i < m_vehicles.size(); ++i)
-        {
-            // 使用车辆渲染器计算位置
-            m_vehicleRenderer.calculateScreenPositionAndRotation(
-                *m_vehicles[i],        // Dereference pointer to get Vehicle reference
-                m_trackRenderer,       // Pass TrackRenderer reference
-                m_worldOriginOffsetPx, // Pass world origin offset
-                vehiclePositions[i].position,
-                vehiclePositions[i].rotation);
-        }
-        lastCalculatedTime = currentTime;
-    }
-
-    // 先绘制所有车辆阴影（增强3D效果），确保阴影在车辆下方
-    for (size_t i = 0; i < m_vehicles.size(); ++i)
-    {
-        m_vehicleRenderer.renderShadow(
-            target,
-            vehiclePositions[i].position,
-            vehiclePositions[i].rotation);
-    } // 然后绘制所有车辆
-    for (size_t i = 0; i < m_vehicles.size(); ++i)
-    {
-        m_vehicleRenderer.renderSingleVehicle(
-            target,
-            *m_vehicles[i], // Dereference pointer to get Vehicle reference
-            vehiclePositions[i].position,
-            vehiclePositions[i].rotation);
-    }
-}
-
-/**
- * @brief 渲染UI层
- * @param target SFML渲染目标
- */
-void SimulationView::renderUI(sf::RenderTarget &target)
-{ // 如果有选中对象，显示选择框或高亮效果
-    if (m_selectedObject)
-    {
-        // 对象为车辆（m_selectedObject is always a Vehicle pointer now）
-        std::string vehicleId = std::to_string(m_selectedObject->getId());
-        static const float selectionWidth = 50.0f;
-        static const float selectionHeight = 25.0f;
-        static sf::RectangleShape selectionRect(sf::Vector2f(selectionWidth, selectionHeight));
-        static bool shapeInitialized = false;
-        if (!shapeInitialized)
-        {
-            selectionRect.setOrigin(selectionWidth / 2, selectionHeight / 2);
-            selectionRect.setFillColor(sf::Color::Transparent);
-            selectionRect.setOutlineColor(sf::Color::Yellow);
-            selectionRect.setOutlineThickness(2.0f);
-            shapeInitialized = true;
-        }
-        for (const auto &vehicle : m_vehicles)
-        {
-            if (vehicle && vehicle->getId() == std::stoi(vehicleId))
-            {
-                sf::Vector2f position;
-                float rotation;
-                // Updated call to calculateScreenPositionAndRotation
-                m_vehicleRenderer.calculateScreenPositionAndRotation(
-                    *vehicle,
-                    m_trackRenderer,
-                    m_worldOriginOffsetPx,
-                    position,
-                    rotation);
-                sf::Vector2i screenPos = target.mapCoordsToPixel(position, m_worldView);
-                sf::Vector2f screenPosF(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
-                selectionRect.setPosition(screenPosF);
-                target.draw(selectionRect);
-                break;
-            }
-        }
-
-        // Example for device selection highlight:
-        // sf::Vector2f devicePos = m_selectedObject->getPosition(); // This is world position
-        // sf::Vector2i screenPos = target.mapCoordsToPixel(devicePos, m_worldView);
-        // sf::CircleShape selectionCircle(10.f); // Or RectangleShape
-        // selectionCircle.setOrigin(10.f, 10.f);
-        // selectionCircle.setPosition(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
-        // selectionCircle.setFillColor(sf::Color::Transparent);
-        // selectionCircle.setOutlineColor(sf::Color::Cyan);
-        // selectionCircle.setOutlineThickness(2.0f);
-        // target.draw(selectionCircle);
-    }
+    // 恢复原始视图而不是重置为默认视图
+    target.setView(originalView);
 }
 
 /**
@@ -402,49 +303,68 @@ sf::Vector2f SimulationView::screenToWorld(const sf::Vector2f &screenPos) const
 }
 
 /**
- * @brief 选择指定位置的对象
+ * @brief 选择指定位置的对象 - 统一的对象选择逻辑
  * @param worldPos 世界坐标位置
  */
 void SimulationView::selectObjectAt(const sf::Vector2f &worldPos)
 {
     m_selectedObject = nullptr;
 
+    // 1. 优先检查设备/接口的选择
     const auto *selectedInterface = m_warehouseRenderer.getInterfaceAt(worldPos);
     if (selectedInterface)
     {
         std::cout << "Selected Warehouse Interface ID: " << selectedInterface->id
                   << " at (" << selectedInterface->worldCenterPx.x << "," << selectedInterface->worldCenterPx.y << ")" << std::endl;
-        // 注意：这里选择的是设备接口，不是车辆，所以设置为nullptr
-        m_selectedObject = nullptr;
+        // 注意：当前只支持车辆选择，设备选择暂时不存储
         return;
     }
-    for (const auto &vehicle : m_vehicles)
+
+    // 2. 检查车辆的选择
+    selectVehicleAt(worldPos);
+}
+
+/**
+ * @brief 选择指定位置的车辆
+ * @param worldPos 世界坐标位置
+ */
+void SimulationView::selectVehicleAt(const sf::Vector2f &worldPos)
+{
+    const float clickRadius = 5.0f; // 点击检测半径（像素）
+
+    for (const auto *vehicle : m_vehicles)
     {
         if (!vehicle)
-            continue; // 跳过空指针
+            continue;
 
-        sf::Vector2f vehicleRenderPosPx;
+        sf::Vector2f vehiclePosition;
         float vehicleRotation;
-        // Updated call to calculateScreenPositionAndRotation
+
+        // 计算车辆的渲染位置
         m_vehicleRenderer.calculateScreenPositionAndRotation(
             *vehicle,
             m_trackRenderer,
             m_worldOriginOffsetPx,
-            vehicleRenderPosPx,
+            vehiclePosition,
             vehicleRotation);
 
-        float clickRadiusMm = 500.f;
-        float clickRadiusPx = clickRadiusMm * m_trackRenderer.getMmToPxRatio();
-        if (std::hypot(worldPos.x - vehicleRenderPosPx.x, worldPos.y - vehicleRenderPosPx.y) < clickRadiusPx)
-        {
-            std::cout << "Selected Vehicle ID: " << vehicle->getId() << std::endl;
-            // 设置选中的车辆
-            m_selectedObject = std::shared_ptr<Vehicle>(vehicle, [](Vehicle *) {}); // 非拥有的共享指针
+        // 计算点击位置与车辆位置的距离
+        float distance = std::hypot(worldPos.x - vehiclePosition.x, worldPos.y - vehiclePosition.y);
 
-            // 调用车辆选择回调
+        if (distance < clickRadius)
+        {
+            std::cout << "Selected Vehicle ID: " << vehicle->id << std::endl;
+
+            // 创建非拥有的共享指针
+            m_selectedObject = std::shared_ptr<Vehicle>(
+                const_cast<Vehicle *>(vehicle),
+                [](Vehicle *) {} // 空删除器，因为我们不拥有这个指针
+            );
+
+            // 触发车辆选择回调
             if (m_onVehicleSelected)
             {
-                m_onVehicleSelected(vehicle->getId());
+                m_onVehicleSelected(vehicle->id);
             }
             return;
         }
@@ -505,4 +425,274 @@ void SimulationView::resize(unsigned int width, unsigned int height)
     m_worldView.setCenter(m_viewCenter); // Ensure center is maintained
     float zoomMethodFactor = std::pow(2.0f, m_zoomLevel);
     m_worldView.zoom(1.0f / zoomMethodFactor); // Re-apply zoom to the new size
+}
+
+/**
+ * @brief 渲染网格 - 按照VehiclePathPositionTest.cpp的方法
+ * @param target SFML渲染目标
+ */
+void SimulationView::renderGrid(sf::RenderTarget &target)
+{
+    // 获取当前视图的可见区域
+    sf::Vector2f viewCenter = m_worldView.getCenter();
+    sf::Vector2f viewSize = m_worldView.getSize();
+    float gridSpacing = 500.0f * m_trackRenderer.getMmToPxRatio() * m_trackRenderer.getScaleFactor(); // 网格间距，对应500mm
+
+    // 计算视图边界
+    float viewLeft = viewCenter.x - viewSize.x / 2;
+    float viewRight = viewCenter.x + viewSize.x / 2;
+    float viewTop = viewCenter.y - viewSize.y / 2;
+    float viewBottom = viewCenter.y + viewSize.y / 2;
+
+    // 计算网格起始和结束的线数
+    int startX = static_cast<int>(viewLeft / gridSpacing);
+    int endX = static_cast<int>(viewRight / gridSpacing);
+    int startY = static_cast<int>(viewTop / gridSpacing);
+    int endY = static_cast<int>(viewBottom / gridSpacing);
+
+    // 绘制垂直网格线
+    for (int i = startX; i <= endX; ++i)
+    {
+        float x = i * gridSpacing;
+        sf::Vertex line[] = {
+            sf::Vertex(sf::Vector2f(x, viewTop), sf::Color(200, 200, 200, 100)), 
+            sf::Vertex(sf::Vector2f(x, viewBottom), sf::Color(200, 200, 200, 100))
+        };
+        target.draw(line, 2, sf::Lines);
+    }
+
+    // 绘制水平网格线
+    for (int i = startY; i <= endY; ++i)
+    {
+        float y = i * gridSpacing;
+        sf::Vertex line[] = {
+            sf::Vertex(sf::Vector2f(viewLeft, y), sf::Color(200, 200, 200, 100)), 
+            sf::Vertex(sf::Vector2f(viewRight, y), sf::Color(200, 200, 200, 100))
+        };
+        target.draw(line, 2, sf::Lines);
+    }
+    
+    // 原点十字线（在世界坐标系的原点位置）
+    sf::Vertex originCrossH[] = {
+        sf::Vertex(sf::Vector2f(-50000 * m_trackRenderer.getMmToPxRatio(), 0), sf::Color(255, 0, 0, 150)), 
+        sf::Vertex(sf::Vector2f(50000 * m_trackRenderer.getMmToPxRatio(), 0), sf::Color(255, 0, 0, 150))
+    };
+    target.draw(originCrossH, 2, sf::Lines);
+    
+    sf::Vertex originCrossV[] = {
+        sf::Vertex(sf::Vector2f(0, -50000 * m_trackRenderer.getMmToPxRatio()), sf::Color(255, 0, 0, 150)), 
+        sf::Vertex(sf::Vector2f(0, 50000 * m_trackRenderer.getMmToPxRatio()), sf::Color(255, 0, 0, 150))
+    };
+    target.draw(originCrossV, 2, sf::Lines);
+}
+
+/**
+ * @brief 渲染路径原点标记 - 按照VehiclePathPositionTest.cpp的方法
+ * @param target SFML渲染目标
+ */
+void SimulationView::renderPathOriginMarker(sf::RenderTarget &target)
+{
+    // 绘制路径距离为0的标记
+    sf::Vector2f originPosPx;
+    float originAngleRad;
+    
+    if (m_trackRenderer.getPointAndOrientationOnCenterLine(0.0f, originPosPx, originAngleRad, m_worldOriginOffsetPx))
+    {
+        sf::CircleShape originMarker(5.0f * m_trackRenderer.getScaleFactor());
+        originMarker.setFillColor(sf::Color::Yellow);
+        originMarker.setOrigin(originMarker.getRadius(), originMarker.getRadius());
+        originMarker.setPosition(originPosPx);
+        target.draw(originMarker);
+        
+        // 可以在这里添加文本标签，但需要字体支持
+        // drawText(target, "Path Origin (0mm)", originPosPx + sf::Vector2f(10, -10) * m_trackRenderer.getScaleFactor(), font, 9, sf::Color::Black);
+    }
+}
+
+/**
+ * @brief 渲染UI叠加层 - 包括选择框等
+ * @param target SFML渲染目标
+ */
+void SimulationView::renderUIOverlay(sf::RenderTarget &target)
+{
+    if (m_selectedObject)
+    {
+        // 创建高亮矩形
+        static sf::RectangleShape selectionRect;
+        static bool initialized = false;
+
+        if (!initialized)
+        {
+            selectionRect.setFillColor(sf::Color::Transparent);
+            selectionRect.setOutlineColor(sf::Color::Yellow);
+            selectionRect.setOutlineThickness(3.0f);
+            initialized = true;
+        }
+
+        // 查找选中的车辆并计算其屏幕位置
+        for (const auto *vehicle : m_vehicles)
+        {
+            if (vehicle && vehicle->id == m_selectedObject->id)
+            {
+                sf::Vector2f position;
+                float rotation;
+
+                // 计算车辆的屏幕位置
+                m_vehicleRenderer.calculateScreenPositionAndRotation(
+                    *vehicle,
+                    m_trackRenderer,
+                    m_worldOriginOffsetPx,
+                    position,
+                    rotation);
+
+                // 转换为屏幕坐标用于UI层绘制
+                sf::Vector2i screenPos = target.mapCoordsToPixel(position, m_worldView);
+                sf::Vector2f screenPosF(static_cast<float>(screenPos.x), static_cast<float>(screenPos.y));
+
+                // 设置高亮框的大小和位置
+                const float highlightSize = 60.0f;
+                selectionRect.setSize(sf::Vector2f(highlightSize, highlightSize * 0.6f));
+                selectionRect.setOrigin(highlightSize / 2.0f, highlightSize * 0.3f);
+                selectionRect.setPosition(screenPosF);
+                selectionRect.setRotation(rotation);
+
+                target.draw(selectionRect);
+                break;
+            }
+        }
+    }
+}
+
+/**
+ * @brief 渲染调试信息
+ * @param target SFML渲染目标
+ */
+void SimulationView::renderDebugInfo(sf::RenderTarget &target)
+{
+    // 创建调试文本
+    static sf::Text debugText;
+    static bool textInitialized = false;
+    
+    if (!textInitialized)
+    {
+        // 注意：这里需要字体支持，但为了避免依赖问题，我们先创建文本对象
+        debugText.setCharacterSize(12);
+        debugText.setFillColor(sf::Color::White);
+        textInitialized = true;
+    }
+    
+    // 获取当前视图信息
+    sf::Vector2f viewCenter = m_worldView.getCenter();
+    sf::Vector2f viewSize = m_worldView.getSize();
+    float zoomFactor = std::pow(2.0f, m_zoomLevel);
+    
+    // 获取轨道信息
+    float trackLength = m_trackRenderer.getTrackLength();
+    float curveRadius = m_trackRenderer.getCurveRadius();
+    float totalPathLength = m_trackRenderer.getTotalCenterLineLengthMm();
+    
+    // 构建调试信息字符串
+    char debugBuffer[512];
+    snprintf(debugBuffer, sizeof(debugBuffer),
+        "=== SimulationView Debug Info ===\n"
+        "View Center: (%.1f, %.1f)\n"
+        "View Size: (%.1f, %.1f)\n"
+        "Zoom Level: %.2f (Factor: %.2fx)\n"
+        "Track Length: %.0fmm\n"
+        "Curve Radius: %.0fmm\n"
+        "Total Path: %.0fmm\n"
+        "Vehicle Count: %d\n"
+        "Grid: %s | Warehouses: %s | Vehicles: %s\n"
+        "Track Scale: %.2f | MmToPx: %.4f",
+        viewCenter.x, viewCenter.y,
+        viewSize.x, viewSize.y,
+        m_zoomLevel, zoomFactor,
+        trackLength, curveRadius, totalPathLength,
+        (int)m_vehicles.size(),
+        m_showGrid ? "ON" : "OFF",
+        m_showWarehouses ? "ON" : "OFF", 
+        m_showVehicles ? "ON" : "OFF",
+        m_trackRenderer.getScaleFactor(),
+        m_trackRenderer.getMmToPxRatio()
+    );
+    
+    // 设置调试文本位置（世界坐标系中的固定位置）
+    sf::Vector2f debugPos = viewCenter - viewSize * 0.4f; // 左上角区域
+    debugText.setPosition(debugPos);
+    debugText.setString(debugBuffer);
+    
+    // 绘制半透明背景
+    sf::RectangleShape debugBackground;
+    debugBackground.setSize(sf::Vector2f(400, 200));
+    debugBackground.setPosition(debugPos - sf::Vector2f(5, 5));
+    debugBackground.setFillColor(sf::Color(0, 0, 0, 128));
+    target.draw(debugBackground);
+    
+    // 绘制调试文本（如果有字体支持）
+    target.draw(debugText);
+    
+    // 绘制坐标系原点标记
+    sf::CircleShape originMarker(8.0f);
+    originMarker.setFillColor(sf::Color::Red);
+    originMarker.setOrigin(8.0f, 8.0f);
+    originMarker.setPosition(m_worldOriginOffsetPx);
+    target.draw(originMarker);
+    
+    // 绘制坐标轴
+    float axisLength = 100.0f * m_trackRenderer.getMmToPxRatio() * m_trackRenderer.getScaleFactor();
+    
+    // X轴（红色）
+    sf::Vertex xAxis[] = {
+        sf::Vertex(m_worldOriginOffsetPx, sf::Color::Red),
+        sf::Vertex(m_worldOriginOffsetPx + sf::Vector2f(axisLength, 0), sf::Color::Red)
+    };
+    target.draw(xAxis, 2, sf::Lines);
+    
+    // Y轴（绿色）
+    sf::Vertex yAxis[] = {
+        sf::Vertex(m_worldOriginOffsetPx, sf::Color::Green),
+        sf::Vertex(m_worldOriginOffsetPx + sf::Vector2f(0, -axisLength), sf::Color::Green)
+    };
+    target.draw(yAxis, 2, sf::Lines);
+}
+
+// 显示控制方法实现
+void SimulationView::setShowGrid(bool show)
+{
+    m_showGrid = show;
+}
+
+bool SimulationView::getShowGrid() const
+{
+    return m_showGrid;
+}
+
+void SimulationView::setShowWarehouses(bool show)
+{
+    m_showWarehouses = show;
+}
+
+bool SimulationView::getShowWarehouses() const
+{
+    return m_showWarehouses;
+}
+
+void SimulationView::setShowVehicles(bool show)
+{
+    m_showVehicles = show;
+}
+
+bool SimulationView::getShowVehicles() const
+{
+    return m_showVehicles;
+}
+
+void SimulationView::setShowDebugInfo(bool show)
+{
+    m_showDebugInfo = show;
+}
+
+bool SimulationView::getShowDebugInfo() const
+{
+    return m_showDebugInfo;
 }

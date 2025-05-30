@@ -26,16 +26,19 @@ public:
     // Alternative constructor: Takes existing backend components (e.g., for testing or if managed externally)
     // RealBackendAdapter(VehicleManager& vm, DeviceManager& dm, Scheduler& scheduler);
 
-    virtual ~RealBackendAdapter() override; // --- Implementation of SimulationInterface ---
+    virtual ~RealBackendAdapter() override;
 
+    // --- Implementation of SimulationInterface ---
     SimulationState getSimulationState() const override;
     std::vector<Vehicle *> getVehicleStates() const override;
     std::vector<DeviceBase *> getDeviceStates() const override;
-
     void setSimulationSpeedFactor(float speedFactor) override;
     void pauseSimulation() override;
     void resumeSimulation() override;
     void resetSimulation() override;
+
+    void setSimulationMode(SimulationMode mode) override;
+    SimulationMode getCurrentSimulationMode() const override;
 
     void registerStateUpdateCallback(StateUpdateCallback callback) override;
     void registerVehicleUpdateCallback(VehicleUpdateCallback callback) override;
@@ -63,9 +66,10 @@ private:
     // If Vehicle and Device management is within Scheduler or other combined classes:
     Scheduler m_scheduler; // Assuming Scheduler might manage vehicles and devices or provide access.
                            // This needs to align with actual Core architecture.
-                           // For now, let's assume Scheduler is the main entry point to the backend logic.
+                           // For now, let's assume Scheduler is the main entry point to the backend logic.    SimulationState m_currentSimState;
 
-    SimulationState m_currentSimState;
+    // Current simulation mode
+    SimulationMode m_currentMode;
 
     // Callbacks
     StateUpdateCallback m_stateUpdateCallback;
@@ -78,20 +82,19 @@ private:
     void fetchDeviceStatesFromBackend();
 
     // Temporary storage for exposing pointers to Core objects
-    // The GUI will receive pointers to these objects.
-    // The RealBackendAdapter needs to ensure these pointers remain valid
+    // The GUI will receive pointers to these objects.    // The RealBackendAdapter needs to ensure these pointers remain valid
     // for the duration they are used by the GUI in a given frame.
     // This might involve copying data if the backend objects are frequently reallocated,
     // or ensuring the backend provides stable pointers/references.
     // For now, assuming VehicleManager and DeviceManager (if they exist) return stable collections.
-    std::vector<Core::Vehicle> m_cachedVehicles;   // If backend returns by value and we need to provide pointers
-    std::vector<Core::DeviceBase> m_cachedDevices; // If backend returns by value
+    std::vector<Vehicle> m_cachedVehicles;   // If backend returns by value and we need to provide pointers
+    std::vector<DeviceBase> m_cachedDevices; // If backend returns by value
 
     // Pointers to be returned by getVehicleStates() and getDeviceStates()
     // These will point to elements within m_cachedVehicles and m_cachedDevices,
     // or directly to objects managed by the backend if their lifetime is suitable.
-    std::vector<Core::Vehicle *> m_vehiclePtrs;
-    std::vector<Core::DeviceBase *> m_devicePtrs;
+    std::vector<Vehicle *> m_vehiclePtrs;
+    std::vector<DeviceBase *> m_devicePtrs;
 
     // TODO: Determine how to get vehicle and device data.
     // Does Scheduler own VehicleManager and DeviceManager?

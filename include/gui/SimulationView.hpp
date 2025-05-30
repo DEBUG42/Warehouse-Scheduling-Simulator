@@ -6,7 +6,6 @@
 // #include "DeviceRenderer.hpp" // Removed
 #include "VehicleRenderer.hpp"
 #include "WarehouseRenderer.hpp"
-#include "gui/DeviceState.hpp"
 #include "SimulationInterface.hpp"
 #include "../src/Core/Vehicle.hpp"
 #include "../src/Core/Device.hpp"
@@ -50,10 +49,12 @@ private:
     std::shared_ptr<Vehicle> m_selectedObject; // 存储的状态数据
     std::vector<Vehicle *> m_vehicles;         // 车辆状态
     std::vector<DeviceBase *> m_devices;       // 设备状态（使用Core设备指针）// 视图控制参数
-    sf::Vector2f m_unzoomedWorldViewSize;      // 世界视图在 m_zoomLevel = 0 时的基础大小
-
-    // 回调函数
-    std::function<void(int)> m_onVehicleSelected; // 车辆选择回调
+    sf::Vector2f m_unzoomedWorldViewSize;      // 世界视图在 m_zoomLevel = 0 时的基础大小    // 回调函数
+    std::function<void(int)> m_onVehicleSelected; // 车辆选择回调    // 显示控制变量
+    bool m_showGrid = false;       // 显示网格
+    bool m_showWarehouses = true;  // 显示仓库
+    bool m_showVehicles = true;    // 显示车辆
+    bool m_showDebugInfo = false;  // 显示调试信息
 
 public:
     /**
@@ -125,33 +126,43 @@ public:
      * @brief 设置车辆选择回调
      * @param callback 车辆选择回调函数，参数为车辆ID，-1表示取消选择
      */
-    void setVehicleSelectedCallback(std::function<void(int)> callback);
-
-    // 调整视图大小
-    void resize(unsigned int width, unsigned int height);
+    void setVehicleSelectedCallback(std::function<void(int)> callback);    // 调整视图大小
+    void resize(unsigned int width, unsigned int height);    // 显示控制方法
+    void setShowGrid(bool show);
+    bool getShowGrid() const;
+    void setShowWarehouses(bool show);
+    bool getShowWarehouses() const;
+    void setShowVehicles(bool show);
+    bool getShowVehicles() const;
+    void setShowDebugInfo(bool show);
+    bool getShowDebugInfo() const;
 
 private:
     /**
-     * @brief 渲染轨道
-     * @param target SFML渲染目标
+     * @brief 选择指定位置的车辆
+     * @param worldPos 世界坐标位置
      */
-    void renderTrack(sf::RenderTarget &target);
+    void selectVehicleAt(const sf::Vector2f &worldPos);
 
     /**
-     * @brief 渲染仓库/接口设备
+     * @brief 渲染网格
      * @param target SFML渲染目标
      */
-    void renderWarehouses(sf::RenderTarget &target);
+    void renderGrid(sf::RenderTarget &target);
 
     /**
-     * @brief 渲染车辆
+     * @brief 渲染路径原点标记
      * @param target SFML渲染目标
      */
-    void renderVehicles(sf::RenderTarget &target);
+    void renderPathOriginMarker(sf::RenderTarget &target);    /**
+     * @brief 渲染UI叠加层
+     * @param target SFML渲染目标
+     */
+    void renderUIOverlay(sf::RenderTarget &target);
 
     /**
-     * @brief 渲染UI层
+     * @brief 渲染调试信息
      * @param target SFML渲染目标
      */
-    void renderUI(sf::RenderTarget &target);
+    void renderDebugInfo(sf::RenderTarget &target);
 };
