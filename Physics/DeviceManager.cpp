@@ -7,9 +7,9 @@
 // 输出: 设备状态引用 (const DeviceState&)
 DeviceState& DeviceManager::getState(int device_id) {
     // 在设备列表中查找指定ID的设备
-    auto it = devices.find(device_id);
+    auto it = deviceStates.find(device_id);
     // 如果找到，则返回该设备的状态
-    if (it != devices.end()) return it->second;
+    if (it != deviceStates.end()) return it->second;
 
     // 如果未找到，返回一个空的设备状态
     static DeviceState dummy;
@@ -21,7 +21,7 @@ DeviceState& DeviceManager::getState(int device_id) {
 // 输出: 无
 void DeviceManager::reserve(int device_id, int task_id, double until_time) {
     // 获取或创建指定ID的设备状态
-    auto& state = devices[device_id];
+    auto& state = deviceStates[device_id];
     // 设置设备为已预约状态
     state.is_reserved = true;
     // 记录预约该设备的任务ID
@@ -38,7 +38,7 @@ void DeviceManager::reserve(int device_id, int task_id, double until_time) {
 // 输出: 无
 void DeviceManager::release(int device_id, int task_id) {
     // 获取指定ID的设备状态
-    auto& state = devices[device_id];
+    auto& state = deviceStates[device_id];
     // 如果当前任务ID与预约该设备的任务ID匹配，则释放设备
     if (state.reserved_by == task_id) {
         state.is_reserved = false;
@@ -55,7 +55,7 @@ void DeviceManager::release(int device_id, int task_id) {
 // 输出: 无
 void DeviceManager::update(double current_time) {
     // 遍历所有设备
-    for (auto& [id, state] : devices) {
+    for (auto& [id, state] : deviceStates) {
         // 如果设备已预约且当前时间超过预约结束时间，则自动释放设备
         if (state.is_reserved && current_time >= state.reserved_until) {
             state.is_reserved = false;
@@ -75,22 +75,22 @@ void DeviceManager::handleEvent(const Event& e) {
     switch (e.type) {
         case EventType::HUMAN_UNLOAD_AT_OUT_PORT:
             // 出库口货物被人工搬空 → 标记为空
-            DeviceState[e.device_id].has_goods = false;
+            deviceStates[e.device_id].has_goods = false;
             break;
 
         case EventType::STACKER_PUT_TO_OUT_INTERFACE:
             // 堆垛机已把货物放到接口设备上
-            DeviceState[e.device_id].has_goods = true;
+            deviceStates[e.device_id].has_goods = true;
             break;
 
         case EventType::FORKLIFT_PUT_TO_IN_PORT:
             // 入库口叉车放货完成
-            DeviceState[e.device_id].has_goods = true;
+            deviceStates[e.device_id].has_goods = true;
             break;
 
         case EventType::STACKER_PICK_FROM_IN_INTERFACE:
             // 堆垛机取走入库接口设备货物
-            DeviceState[e.device_id].has_goods = false;
+            deviceStates[e.device_id].has_goods = false;
             break;
 
         default:

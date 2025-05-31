@@ -97,5 +97,5 @@ public:
     void handleEvent(const Event& e);
 
 private:
-    std::map<int, DeviceState> devices;
+    std::map<int, DeviceState> deviceStates;
 };
