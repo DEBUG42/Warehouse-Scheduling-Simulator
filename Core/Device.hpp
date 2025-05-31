@@ -71,6 +71,8 @@ public:
 // 设备管理类
 class DeviceManager {
 public:
+    void initializeDevices();
+
     // 更新设备状态
     // 输入: double current_time - 当前时间
     // 输出: 无
@@ -79,12 +81,12 @@ public:
     // 获取设备状态
     // 输入: int device_id - 设备唯一标识
     // 输出: DeviceState& - 设备状态的引用
-    DeviceState& getState(int device_id);
+    const DeviceState& getDeviceState(int id) const;
 
     // 预约设备
     // 输入: int device_id - 设备唯一标识, int task_id - 任务唯一标识, double until_time - 设备预计释放时间
     // 输出: 无
-    void reserve(int device_id, int task_id, double until_time);
+    void reserve(const Task& task, double current_time);
 
     // 释放设备
     // 输入: int device_id - 设备唯一标识, int task_id - 任务唯一标识

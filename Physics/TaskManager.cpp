@@ -8,9 +8,25 @@
 #include <iostream>
 #include <string>
 //辅助函数：从被保护的task容器中获取task对象
-std::vector<Task>& TaskManager::getTasks(){return tasks;}
-
-
+std::vector<Task>& TaskManager::getAllTasks() {
+    return tasks;
+}
+// Physics/TaskManager.cpp
+// Physics/TaskManager.cpp
+Task& TaskManager::getTask(int task_id) {
+    // 假设 TaskManager 内部用一个名为 'tasks_' 的 std::vector 存储所有任务
+    for (auto& task : tasks) { // 遍历 tasks_ 向量中的每个任务
+        if (task.id == task_id) { // 如果找到匹配的 ID
+            return task; // 返回该任务的常量引用
+        }
+    }
+    // 如果循环结束仍未找到任务，则返回一个默认的 Task 对象
+    // 这是一个安全措施，防止返回无效引用。
+    // 你应该确保这个默认任务有一个可识别的无效 ID (例如 -1)
+    static Task dummy_task;
+    dummy_task.id = -1; // 设置一个无效的任务ID，以便调用方可以检查
+    return dummy_task;
+}
 //辅助函数：将枚举型 TaskType 转换为字符串
 std::string TaskManager::taskTypeToString(TaskType type) {
     switch (type) {
@@ -112,8 +128,8 @@ std::vector<Task*> TaskManager::getReadyTasks(double current_time,  DeviceManage
         // 检查任务的就绪时间是否已经到达，并且设备状态是否允许任务执行
         if (task.ready_time > current_time) continue;
 
-        auto& dev_start = device_manager.getState(task.start_device_id);
-        auto& dev_end = device_manager.getState(task.end_device_id);
+        auto& dev_start = device_manager.getDeviceState(task.start_device_id);
+        auto& dev_end = device_manager.getDeviceState(task.end_device_id);
         if (dev_start.is_reserved || dev_end.is_reserved) continue;
 
         // 将满足条件的任务加入 ready 列表
@@ -156,38 +172,38 @@ void TaskManager::markTaskAssigned(int task_id, int vehicle_id, double assign_ti
 
 
 
-// 尝试分派任务给可用的车辆
-// 输入: 无（依赖于类的成员变量）
-// 输出: 无
-void Scheduler::tryDispatchTasks() {
-    auto ready_tasks = task_manager.getReadyTasks(current_time, device_manager);
+// // 尝试分派任务给可用的车辆
+// // 输入: 无（依赖于类的成员变量）
+// // 输出: 无
+// void Scheduler::tryDispatchTasks() {
+//     auto ready_tasks = task_manager.getReadyTasks(current_time, device_manager);
 
-    for (Task* task : ready_tasks) {
-        if (task->is_assigned) continue;
+//     for (Task* task : ready_tasks) {
+//         if (task->is_assigned) continue;
 
-        auto candidates = vehicle_manager.getAvailableVehicles(*task, current_time);
-        if (candidates.empty()) continue;
+//         auto candidates = vehicle_manager.getAvailableVehicles(*task, current_time);
+//         if (candidates.empty()) continue;
 
-        Vehicle* best_vehicle = vehicle_manager.selectBestVehicle(*task, candidates, current_time);
-        if (!best_vehicle) continue;
+//         Vehicle* best_vehicle = vehicle_manager.selectBestVehicle(*task, candidates, current_time);
+//         if (!best_vehicle) continue;
 
-        // 分配任务
-        vehicle_manager.applyTaskToVehicle(*best_vehicle, *task, current_time);
-        task_manager.markTaskAssigned(task->id, best_vehicle->id, current_time);
-        device_manager.reserve(task->start_device_id, task->id, current_time + 5.0);  // 假设锁定5s
+//         // 分配任务
+//         vehicle_manager.applyTaskToVehicle(*best_vehicle, *task, current_time);
+//         task_manager.markTaskAssigned(task->id, best_vehicle->id, current_time);
+//         device_manager.reserve(task->start_device_id, task->id, current_time + 5.0);  // 假设锁定5s
 
-        // 如果任务为出库任务，添加“人工卸货完成”延迟事件
-        if (task->type == TaskType::OUTBOUND) {
-            Event e {
-                .time = current_time + 30.0,
-                .type = EventType::DEVICE_BECOMES_EMPTY,
-                .device_id = task->end_device_id,
-                .task_id = task->id
-            };
-            event_queue.addEvent(e);
-        }
+//         // 如果任务为出库任务，添加“人工卸货完成”延迟事件
+//         if (task->type == TaskType::OUTBOUND) {
+//             Event e {
+//                 .time = current_time + 30.0,
+//                 .type = EventType::DEVICE_BECOMES_EMPTY,
+//                 .device_id = task->end_device_id,
+//                 .task_id = task->id
+//             };
+//             event_queue.addEvent(e);
+//         }
 
-        // 日志记录任务分配情况
-        logger.logTaskAssignment(*task, *best_vehicle);
-    }
-}
+//         // 日志记录任务分配情况
+//         logger.logTaskAssignment(*task, *best_vehicle);
+//     }
+// }

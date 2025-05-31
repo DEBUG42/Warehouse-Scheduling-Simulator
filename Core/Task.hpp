@@ -35,10 +35,14 @@ struct Task {
 class TaskManager {
 public:
     void loadFromFile(const std::string& filepath);     // 从文件中加载任务信息
+
+    std::vector<Task>& getAllTasks();
+    Task& getTask(int task_id);
+
     std::vector<Task*> getReadyTasks(double current_time,  DeviceManager& device_manager);     // 获取当前时间点可调度的任务
     bool allTasksCompleted(); // 是否所有任务都已完成
     void markTaskAssigned(int task_id, int vehicle_id, double assign_time); // 标记任务已分配
-    std::vector<Task>& getTasks();
+
     std::string taskTypeToString(TaskType type); // 任务类型转换为字符串
     std::vector<std::string> split(const std::string& s, char delimiter);
 

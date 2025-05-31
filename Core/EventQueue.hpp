@@ -11,6 +11,7 @@ public:
     Event peek();
     Event pop();
     bool empty();
+    void initializeInitialEvents();
 
 
 

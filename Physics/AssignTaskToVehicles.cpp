@@ -10,6 +10,14 @@
 
 constexpr double LOOP_LENGTH = 99.47787445225672;  // 环道总长度（可调）
 
+// 获取所有车辆
+// 输入: 无
+// 输出: std::vector<Vehicle>& - 所有车辆的引用列表
+std::vector<Vehicle>& VehicleManager::getVehicles()  {
+    return vehicles;
+}
+
+
 // 初始化指定数量的车辆
 // 输入: int count - 车辆数量
 // 输出: 无
@@ -18,7 +26,7 @@ void VehicleManager::initializeVehicles(int count) {
     for (int i = 0; i < count; ++i) {
         Vehicle vehicle;
         vehicle.id = i;
-        vehicle.position_m = 32.000-0.002*i-vehicle.m_length*i;
+        vehicle.position_m = 26.000-0.002*i-vehicle.m_length*i;
         vehicle.next_available_time = 0.0;
         vehicle.is_executing = false;
         vehicle.is_loaded = false;
@@ -182,21 +190,15 @@ void VehicleManager::updateVehicle(float current_time, float deltaTime, Vehicle*
 	else if((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed)/(2*vehicle->m_acceleration)<= ((device_position[vehicle->towards_device]-VehiclePosition))){
 			vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
 		}
-//弯道减速	
-	//处理下面那个弯道的减速
-	else if((VehiclePosition>=0.f) && (VehiclePosition<=40.0f)){
-            if((40.0f-VehiclePosition)<=(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration)){
-				vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-
-			}
-	}
-	//处理上面那个弯道的减速
-	else if((VehiclePosition>=49.5209372261538)&&(VehiclePosition<=89.5209372261538)){
-            if((87.835981634f-VehiclePosition)<=(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration)){
-				vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-			}
-	}
-//不减速即设定为加速，更快运动
+//弯道减速  
+//     处理下面那个弯道的减速
+     else if((VehiclePosition>=0.f) && (VehiclePosition<=40.0f)&&((40.0f-VehiclePosition)<=(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration))){
+        vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+    }
+//     处理上面那个弯道的减速
+     else if((VehiclePosition>=49.5209372261538)&&(VehiclePosition<=89.5209372261538)&&((87.835981634f-VehiclePosition)<=(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration))){
+         vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+    }//不减速即设定为加速，更快运动
 //	else{
 //		vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
 //	}
@@ -359,9 +361,3 @@ void VehicleManager::applyTaskToVehicle(Vehicle& vehicle, Task& task, double cur
     std::cout << "[Assign] Vehicle #" << vehicle.id << " → Task #" << task.id << "\n";
 }
 
-// 获取所有车辆
-// 输入: 无
-// 输出: std::vector<Vehicle>& - 所有车辆的引用列表
-std::vector<Vehicle>& VehicleManager::getVehicles()  {
-    return vehicles;
-}

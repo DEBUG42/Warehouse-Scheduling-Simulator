@@ -55,7 +55,7 @@ public:
         float currentSpeed;           // 当前速度（米/秒）
         MotionState motionState;      // 当前运动状态
         Task* currentTask = nullptr; // 当前执行的任务
-        float operationTimer;     // 装卸货操作计时器
+        float operationTimer=0.0f;     // 装卸货操作计时器
     } m_state;
 };
 
