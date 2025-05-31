@@ -122,11 +122,13 @@ void Scheduler::tryDispatchTasks() {
 void Scheduler::run(double frequency, float timescale) {
     dt = 1.0 / frequency * timescale;
     current_time = 0.0; 
-    // std::cout << "这里表示所有任务是否已完成"<<task_manager.allTasksCompleted() << std::endl;
-//  std::cout << "[INFO] Starting simulation at " << frequency << "Hz..." << std::endl;
+    
+    std::cout << "这里表示进入了run循环哦"<< std::endl;
+    std::cout << "这里表示所有任务是否已完成"<<task_manager.allTasksCompleted() << std::endl;
 
     int step_count = 0;
     while (!task_manager.allTasksCompleted()) {
+        std::cout << "这里表示进入了while循环哦"<< std::endl;
         processEvents();
         updateSystemStates();
         tryDispatchTasks();
