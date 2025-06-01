@@ -3,7 +3,7 @@
 #include <map>
 #include <queue>
 #include <vector>
-
+#include <unordered_map>
 // 前向声明
 class DeviceManager;
 
@@ -48,7 +48,8 @@ public:
 
 private:
     std::vector<Task> tasks;
-    std::map<int, int> next_task_id; // 起始设备 → 当前待调度任务编号
+
+    std::unordered_map<int, int> next_task_id; // 起始设备 → 当前待调度任务编号
     friend void testTasks(TaskManager& taskmanager);//用于调试的友元函数
 };
 

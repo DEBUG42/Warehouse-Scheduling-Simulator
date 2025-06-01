@@ -112,27 +112,37 @@ void TaskManager::loadFromFile(const std::string& filepath) {
     std::cout << "[INFO] Loaded " << tasks.size() << " tasks from " << filepath << std::endl;
 }
 
-// 获取当前时间可以执行的任务
-// 输入: 当前时间 (double current_time), 设备管理器引用 (const DeviceManager& device_manager)
-// 输出: 准备好执行的任务列表 (std::vector<Task*>)
-std::vector<Task*> TaskManager::getReadyTasks(double current_time,  DeviceManager& device_manager) {
+// 获取当前时间点下所有可以立即执行的任务。
+// 一个任务被认为是“准备好执行”的，如果它满足以下所有条件：
+// 1. 尚未被分配（即没有人或设备在处理它）。
+// 2. 满足顺序约束（如果存在）。例如，一个任务可能需要前一个任务完成后才能开始。
+// 3. 任务的就绪时间 (ready_time) 已经到达或过去。
+// 4. 任务所需的起始设备和结束设备目前都未被保留（即空闲）。
+
+// 输入:
+//   current_time: 当前仿真的时间戳 (double类型)。
+//   device_manager: 设备管理器的常量引用。用于查询设备当前的占用状态。
+//
+// 输出:
+//   std::vector<Task*>: 一个指向所有当前准备好执行任务的指针列表。
+//                        返回指针是为了避免复制大型 Task 对象，并允许直接操作原始任务。
+std::vector<Task*> TaskManager::getReadyTasks(double current_time, DeviceManager& device_manager) {
     std::vector<Task*> ready;
 
-    // 遍历所有任务，检查哪些任务已经准备好执行
     for (Task& task : tasks) {
         if (task.is_assigned) continue;
 
-        // 检查任务是否满足顺序约束（即必须先完成前一个任务）
+        // 顺序限制
         if (task.id != next_task_id[task.start_device_id]) continue;
 
-        // 检查任务的就绪时间是否已经到达，并且设备状态是否允许任务执行
         if (task.ready_time > current_time) continue;
 
-        auto& dev_start = device_manager.getDeviceState(task.start_device_id);
-        auto& dev_end = device_manager.getDeviceState(task.end_device_id);
-        if (dev_start.is_reserved || dev_end.is_reserved) continue;
+        const auto& dev_start = device_manager.getDeviceState(task.start_device_id);
+        const auto& dev_end = device_manager.getDeviceState(task.end_device_id);
 
-        // 将满足条件的任务加入 ready 列表
+        if (dev_start.is_reserved || dev_end.is_reserved || !dev_start.has_goods)
+            continue;
+
         ready.push_back(&task);
     }
     return ready;
@@ -141,13 +151,17 @@ std::vector<Task*> TaskManager::getReadyTasks(double current_time,  DeviceManage
 // 检查所有任务是否已经完成
 // 输入: 无
 // 输出: 布尔值，指示所有任务是否已完成 (bool)
+// TaskManager.cpp 中实现
 bool TaskManager::allTasksCompleted() {
-    // 检查所有任务是否已经完成
-    for (auto& task : tasks) {
-        if (!task.is_assigned || task.complete_time < 0) return false;
+    for (const auto& task : tasks) {
+        // 任务未被分配，或者未完成，都不算完成
+        if (!task.is_assigned || task.complete_time < 0.0) {
+            return false;
+        }
     }
     return true;
 }
+
 
 // 标记指定的任务已分配给车辆，并记录分配时间和车辆ID
 // 输入: 任务ID (int task_id), 车辆ID (int vehicle_id), 分配时间 (double assign_time)
