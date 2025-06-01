@@ -26,14 +26,18 @@ void VehicleManager::initializeVehicles(int count) {
     for (int i = 0; i < count; ++i) {
         Vehicle vehicle;
         vehicle.id = i;
-        vehicle.position_m = 26.000-0.002*i-vehicle.m_length*i;
+		vehicle.m_length = 2.0;
+        vehicle.position_m = 26.000-0.2*i-vehicle.m_length*i;
+		vehicle.m_maxCurveSpeed = 2.0 / 3.0;
+		vehicle.m_maxStraightSpeed = 8.0 / 3.0;
+		vehicle.m_acceleration = 0.5;
         vehicle.next_available_time = 0.0;
+		vehicle.m_loadTime=7.5;
         vehicle.is_executing = false;
         vehicle.is_loaded = false;
         vehicle.towards_device =0;
         vehicle.velocity_mps = 0.0;
         vehicle.max_speed = 8.0 / 3.0;
-
         vehicle.m_state.position = vehicle.position_m;
         vehicle.m_state.currentSpeed = 0.0;
         vehicle.m_state.motionState = Vehicle::MotionState::Stopped;
