@@ -28,18 +28,18 @@ echo Compiling Warehouse Scheduling Simulator...
 %COMPILER% -std=c++17 -Wall ^
     -DTimescale=1.0 ^
     -I"%SFML_INC%" ^
-    -I"src" ^
-    -I"src/Core" ^
-    -I"src/Physics" ^
-    "src/main.cpp" ^
-    "src/Physics/EventQueue.cpp" ^
-    "src/Physics/Logger.cpp" ^
-    "src/Physics/Scheduler.cpp" ^
-    "src/Physics/AssignTaskToVehicles.cpp" ^
-    "src/Physics/DeviceManager.cpp" ^
-    "src/Physics/TaskManager.cpp" ^
+    -I"Warehouse-Scheduling-Simulator" ^
+    -I"/Core" ^
+    -I"/Physics" ^
+    "log_test.cpp" ^
+    "Physics/EventQueue.cpp" ^
+    "Physics/Logger.cpp" ^
+    "Physics/Scheduler.cpp" ^
+    "Physics/AssignTaskToVehicles.cpp" ^
+    "Physics/DeviceManager.cpp" ^
+    "Physics/TaskManager.cpp" ^
     -L"%SFML_LIB%" ^
-    -lsfml-graphics -lsfml-window -lsfml-system ^
+    -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network ^
     -o "%OUTPUT%"
 
 :: Check result

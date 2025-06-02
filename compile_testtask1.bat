@@ -3,8 +3,8 @@ chcp 65001 > nul
 
 :: Configuration for testtask1.cpp compilation
 set "COMPILER=g++"
-set "SFML_INC=D:\SFML\include"
-set "SFML_LIB=D:\SFML\lib"
+set "SFML_INC=G:\SFML\SFML-2.6.2\include"
+set "SFML_LIB=G:\SFML\SFML-2.6.2\lib"
 set "OUTPUT=bin\testtask1.exe"
 
 :: Verify SFML paths
@@ -32,17 +32,18 @@ echo Compiling testtask1.cpp...
     -I"include/gui" ^
     -I"src/Core" ^
     -I".." ^
-    "test/testtask1.cpp" ^
-    "src/gui/MainWindow.cpp" ^
+    "test/testtask1.cpp" ^    "src/gui/MainWindow.cpp" ^
     "src/gui/SimulationView.cpp" ^
     "src/gui/Toolbar.cpp" ^
     "src/gui/StatusPanel.cpp" ^
     "src/gui/VehicleInfoPanel.cpp" ^
+    "src/gui/UIControls.cpp" ^
     "src/Physics/Logger.cpp" ^
     "src/Physics/Scheduler.cpp" ^
     "src/Physics/DeviceManager.cpp" ^
     "src/Physics/EventQueue.cpp" ^
     "src/Physics/TaskManager.cpp" ^
+    "src/Physics/AssignTaskToVehicles.cpp" ^
     "src/gui/TrackRenderer.cpp" ^
     "src/gui/VehicleRenderer.cpp" ^
     "src/gui/WarehouseRenderer.cpp" ^

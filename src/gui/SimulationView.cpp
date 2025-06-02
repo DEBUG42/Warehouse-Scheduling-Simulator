@@ -1,7 +1,7 @@
 #include "gui/SimulationView.hpp"
 #include <iostream>
 #include <cmath>
-#include "gui/DeviceState.hpp"
+// #include "gui/DeviceState.hpp"
 #include "gui/CoordinateUtils.hpp"
 
 /**

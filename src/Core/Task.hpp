@@ -3,7 +3,7 @@
 #include <map>
 #include <queue>
 #include <vector>
-
+#include <unordered_map>
 // 前向声明
 class DeviceManager;
 
@@ -21,7 +21,7 @@ struct Task {
     
     //调度状态
     int assigned_vehicle_id = -1;      // 分配的车辆ID
-    bool is_assigned;                // 是否已分配
+    bool is_assigned=false;                // 是否已分配
 
     //时间戳
     double ready_time = -1;
@@ -34,13 +34,22 @@ struct Task {
 
 class TaskManager {
 public:
-    void loadFromFile( std::string& filepath);     // 从文件中加载任务信息
+    void loadFromFile(const std::string& filepath);     // 从文件中加载任务信息
+
+    std::vector<Task>& getAllTasks();
+    Task& getTask(int task_id);
+
     std::vector<Task*> getReadyTasks(double current_time,  DeviceManager& device_manager);     // 获取当前时间点可调度的任务
     bool allTasksCompleted(); // 是否所有任务都已完成
     void markTaskAssigned(int task_id, int vehicle_id, double assign_time); // 标记任务已分配
 
+    std::string taskTypeToString(TaskType type); // 任务类型转换为字符串
+    std::vector<std::string> split(const std::string& s, char delimiter);
 
 private:
     std::vector<Task> tasks;
-    std::map<int, int> next_task_id; // 起始设备 → 当前待调度任务编号
+
+    std::unordered_map<int, int> next_task_id; // 起始设备 → 当前待调度任务编号
+    friend void testTasks(TaskManager& taskmanager);//用于调试的友元函数
 };
+

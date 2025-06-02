@@ -23,13 +23,13 @@
 #include "Core/Device.hpp"
 #include "Core/Logger.hpp"
 #include "Core/Scheduler.hpp"
-//task1用的文件
+// task1用的文件
 #include <chrono>
 #include <thread>
 #include <cstdlib>
 #include <ctime>
 // 前置声明updateVehicle1函数
-void updateVehicle1(float current_time, float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle);
+void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehicle *leadingVehicle);
 
 /**
  * @brief GUI优化第一阶段增强演示测试
@@ -46,16 +46,16 @@ class SimpleDemoApp
 {
 private:
     sf::RenderWindow window;
-    sf::Font font; // GUI组件
-    Scheduler scheduler;
+    sf::Font font;            // GUI组件
+    Scheduler *scheduler_ptr; // 改为指针，引用外部scheduler
     std::unique_ptr<Toolbar> toolbar;
     std::unique_ptr<StatusPanel> statusPanel;
     std::unique_ptr<VehicleInfoPanel> vehicleInfoPanel;
     std::unique_ptr<SimulationView> simulationView;
 
-    // 仿真数据 - 多个车辆实现
-    std::vector<std::unique_ptr<Vehicle>> vehicles;
-    std::vector<std::unique_ptr<DeviceBase>> devices;
+    // 删除重复的车辆存储，使用scheduler中的
+    // std::vector<std::unique_ptr<Vehicle>> vehicles;
+    // std::vector<std::unique_ptr<DeviceBase>> devices;
 
     // 仿真状态
     float simulationTime = 0.0f;
@@ -68,10 +68,11 @@ private:
     static constexpr float VEHICLE_INFO_PANEL_HEIGHT = 415.0f; // 车辆信息面板高度
 
 public:
-    SimpleDemoApp() : window(sf::VideoMode(1800, 630), "GUI Phase 1 - Enhanced Demo with Warehouse & Vehicles")
+    SimpleDemoApp(Scheduler *scheduler) : window(sf::VideoMode(1800, 630), "GUI Phase 1 - Enhanced Demo with Warehouse & Vehicles"),
+                                          scheduler_ptr(scheduler)
     {
         loadFont();
-        initializeSimulationData();
+        // initializeSimulationData(); // 删除，不再创建车辆
         initializeComponents();
     }
     bool loadFont()
@@ -98,36 +99,6 @@ public:
         return false;
     }
 
-    void initializeSimulationData()
-    {
-        // 按照VehiclePathPositionTest.cpp和SimulationView_Test.cpp的方式创建3辆车辆，展示完整的轨道和车辆渲染
-        const int vehicleCount = 3;
-        vehicles.clear();
-
-        for (int i = 0; i < vehicleCount; ++i)
-        {
-            auto vehicle = std::make_unique<Vehicle>();
-            vehicle->id = i + 1;                                                // ID从1开始
-            vehicle->position_m = (26.000 - 0.002 * i - vehicle->m_length * i); // 每辆车相距间距，按VehicleManager::initializeVehicles的方法
-            vehicle->velocity_mps = 0.0f;
-            vehicle->max_speed = 8.0f / 3.0f; // 使用VehicleManager的默认最大速度
-            vehicle->is_loaded = false;
-            vehicle->is_executing = false;
-            vehicle->towards_device = 0;
-            vehicle->next_available_time = 0.0f;
-
-            // 初始化状态
-            vehicle->m_state.position = vehicle->position_m;
-            vehicle->m_state.currentSpeed = 0.0f;
-            vehicle->m_state.motionState = Vehicle::MotionState::Stopped;
-            vehicle->m_state.currentTask = nullptr;
-            vehicle->m_state.operationTimer = 0.0f;
-
-            vehicles.push_back(std::move(vehicle));
-        }
-
-        std::cout << "Initialized " << vehicles.size() << " vehicles with track and multiple vehicle rendering" << std::endl;
-    }
     void initializeComponents()
     {
         // 创建工具栏 - 修正参数顺序：(font, width, height)
@@ -135,7 +106,9 @@ public:
 
         // 创建状态面板
         statusPanel = std::make_unique<StatusPanel>(font);
-        statusPanel->resize(window.getSize().y - 10.0f); // 创建车辆信息面板
+        statusPanel->resize(window.getSize().y - 10.0f);
+
+        // 创建车辆信息面板
         vehicleInfoPanel = std::make_unique<VehicleInfoPanel>(font, VEHICLE_INFO_PANEL_WIDTH, VEHICLE_INFO_PANEL_HEIGHT);
 
         // 创建仿真视图 - 使用正确的构造函数
@@ -147,15 +120,18 @@ public:
         sf::Vector2f simulationViewSize(simulationViewWidth, simulationViewHeight);
 
         // 使用与VehiclePathPositionTest.cpp相同的初始化方法
-        simulationView->initialize(font, nullptr, simulationViewSize); // 设置显示选项（与测试文件一致）
-        simulationView->setShowGrid(false);                            // 默认关闭网格
-        simulationView->setShowWarehouses(true);                       // 显示仓库
-        simulationView->setShowVehicles(true);                         // 显示车辆
-        simulationView->setShowDebugInfo(false);                       // 默认关闭调试信息        // 正确的做法：通过 SimulationView 的 updateVehicles 方法更新车辆数据
+        simulationView->initialize(font, nullptr, simulationViewSize);
+        simulationView->setShowGrid(false);      // 默认关闭网格
+        simulationView->setShowWarehouses(true); // 显示仓库
+        simulationView->setShowVehicles(true);   // 显示车辆
+        simulationView->setShowDebugInfo(false); // 默认关闭调试信息
+
+        // 使用scheduler中的车辆数据
+        auto &vehicles = scheduler_ptr->vehicle_manager->getVehicles();
         std::vector<Vehicle *> vehiclePtrs;
         for (auto &vehicle : vehicles)
         {
-            vehiclePtrs.push_back(vehicle.get());
+            vehiclePtrs.push_back(&vehicle);
         }
         simulationView->updateVehicles(vehiclePtrs);
 
@@ -170,7 +146,9 @@ public:
             std::cout << "Simulation State: " << (isRunning ? "Running" : "Paused") << std::endl; });
 
         toolbar->setOnTimeScaleChanged([this](float speed)
-                                       { std::cout << "Speed adjusted to: " << speed << "x" << std::endl; }); // 设置初始状态
+                                       { std::cout << "Speed adjusted to: " << speed << "x" << std::endl; });
+
+        // 设置初始状态
         statusPanel->setSimulationTime(0.0f);
         statusPanel->setVehicleCount(vehicles.size());
         statusPanel->setCompletedTaskCount(0);
@@ -243,14 +221,13 @@ public:
                         simulationView->setShowDebugInfo(!currentState);
                         std::cout << (currentState ? "Hide debug info\n" : "Show debug info\n");
                     }
-                    continue;
-
-                // 车辆控制键
+                    continue; // 车辆控制键
                 case sf::Keyboard::Num1:
                 case sf::Keyboard::Num2:
                 case sf::Keyboard::Num3:
                 {
                     int vehicleId = event.key.code - sf::Keyboard::Num0;
+                    auto &vehicles = scheduler_ptr->vehicle_manager->getVehicles();
                     if (vehicleId > 0 && vehicleId <= vehicles.size())
                     {
                         selectedVehicleId = vehicleId;
@@ -260,9 +237,13 @@ public:
                     continue;
                 case sf::Keyboard::Up:
                 case sf::Keyboard::Down:
-                    if (selectedVehicleId > 0 && selectedVehicleId <= vehicles.size())
+                    if (selectedVehicleId > 0)
                     {
-                        moveSelectedVehicle(event.key.code);
+                        auto &vehicles = scheduler_ptr->vehicle_manager->getVehicles();
+                        if (selectedVehicleId <= vehicles.size())
+                        {
+                            moveSelectedVehicle(event.key.code);
+                        }
                     }
                     continue;
                 }
@@ -322,11 +303,16 @@ public:
             float timeScale = toolbar->getCurrentSpeed();
             simulationTime += deltaTime * timeScale;
 
+            // 更新scheduler时间
+            scheduler_ptr->current_time = simulationTime;
+
             // 更新工具栏时间显示
             toolbar->updateTimeDisplay(simulationTime);
 
             // 更新状态面板
-            statusPanel->setSimulationTime(simulationTime); // 更新仿真视图
+            statusPanel->setSimulationTime(simulationTime);
+
+            // 更新仿真视图
             if (simulationView)
             {
                 simulationView->updateViewTransforms(deltaTime * timeScale);
@@ -362,6 +348,7 @@ public:
     }
     void moveSelectedVehicle(sf::Keyboard::Key key)
     {
+        auto &vehicles = scheduler_ptr->vehicle_manager->getVehicles();
         // 检查是否有有效的选中车辆
         if (selectedVehicleId <= 0 || selectedVehicleId > vehicles.size())
         {
@@ -369,10 +356,12 @@ public:
         }
 
         auto &vehicle = vehicles[selectedVehicleId - 1]; // ID从1开始，数组从0开始
-        float currentPos = vehicle->position_m;
+        float currentPos = vehicle.position_m;
         float newPos = currentPos;
 
-        const float moveSpeed = 2.0f; // 移动速度（米）- 轨道距离步长        // 只支持前后移动，基于轨道距离
+        const float moveSpeed = 2.0f; // 移动速度（米）- 轨道距离步长
+
+        // 只支持前后移动，基于轨道距离
         switch (key)
         {
         case sf::Keyboard::Up:
@@ -383,7 +372,9 @@ public:
             break;
         default:
             return;
-        } // 获取轨道总长度（使用 TrackRenderer 的实际数据）
+        }
+
+        // 获取轨道总长度（使用 TrackRenderer 的实际数据）
         float maxTrackLengthMm = simulationView->getTrackRenderer().getTotalCenterLineLengthMm();
         float maxTrackLength = maxTrackLengthMm / 1000.0f; // 转换为米
 
@@ -398,9 +389,9 @@ public:
         }
 
         // 更新车辆位置
-        vehicle->position_m = newPos;
-        vehicle->m_state.position = newPos;
-        vehicle->m_state.motionState = Vehicle::MotionState::Cruising;
+        vehicle.position_m = newPos;
+        vehicle.m_state.position = newPos;
+        vehicle.m_state.motionState = Vehicle::MotionState::Cruising;
 
         std::cout << "Vehicle " << selectedVehicleId << " moved along track to position: " << newPos << "m (Track length: " << maxTrackLength << "m)" << std::endl;
 
@@ -410,35 +401,36 @@ public:
             std::vector<Vehicle *> vehiclePtrs;
             for (auto &v : vehicles)
             {
-                vehiclePtrs.push_back(v.get());
+                vehiclePtrs.push_back(&v);
             }
             simulationView->updateVehicles(vehiclePtrs);
         }
     }
     void resetSimulation()
     {
+        auto &vehicles = scheduler_ptr->vehicle_manager->getVehicles();
         // 重置所有车辆位置和状态
         for (int i = 0; i < vehicles.size(); ++i)
         {
             auto &vehicle = vehicles[i];
-            vehicle->position_m = (32.000 - 0.002 * i - vehicle->m_length * i); // 使用VehicleManager的初始位置方法
-            vehicle->velocity_mps = 0.0f;
-            vehicle->is_loaded = false;
-            vehicle->m_state.position = vehicle->position_m;
-            vehicle->m_state.currentSpeed = 0.0f;
-            vehicle->m_state.motionState = Vehicle::MotionState::Stopped;
+            vehicle.position_m = (32.000 - 0.002 * i - vehicle.m_length * i); // 使用VehicleManager的初始位置方法
+            vehicle.velocity_mps = 0.0f;
+            vehicle.is_loaded = false;
+            vehicle.m_state.position = vehicle.position_m;
+            vehicle.m_state.currentSpeed = 0.0f;
+            vehicle.m_state.motionState = Vehicle::MotionState::Stopped;
         }
 
         // 重新设置不同状态
         if (vehicles.size() >= 2)
         {
-            vehicles[1]->is_loaded = false;                                    // 车辆2：空载状态
-            vehicles[1]->m_state.motionState = Vehicle::MotionState::Cruising; // 巡航状态
+            vehicles[1].is_loaded = false;                                    // 车辆2：空载状态
+            vehicles[1].m_state.motionState = Vehicle::MotionState::Cruising; // 巡航状态
         }
         if (vehicles.size() >= 3)
         {
-            vehicles[2]->is_loaded = true;                                         // 车辆3：载货状态
-            vehicles[2]->m_state.motionState = Vehicle::MotionState::Accelerating; // 加速状态
+            vehicles[2].is_loaded = true;                                         // 车辆3：载货状态
+            vehicles[2].m_state.motionState = Vehicle::MotionState::Accelerating; // 加速状态
         }
 
         // 清除选择
@@ -450,7 +442,7 @@ public:
             std::vector<Vehicle *> vehiclePtrs;
             for (auto &vehicle : vehicles)
             {
-                vehiclePtrs.push_back(vehicle.get());
+                vehiclePtrs.push_back(&vehicle);
             }
             simulationView->updateVehicles(vehiclePtrs);
 
@@ -536,10 +528,13 @@ public:
 
         window.draw(instructions);
     }
-
     void run()
     {
         sf::Clock clock;
+        sf::Clock clock_1;
+
+        auto &vehicles = scheduler_ptr->vehicle_manager->getVehicles();
+
         std::cout << "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles Started" << std::endl;
         std::cout << "Features:" << std::endl;
         std::cout << "1. Toolbar - Time format display (HH:MM:SS.mmm)" << std::endl;
@@ -560,174 +555,211 @@ public:
             handleEvents();
             update(deltaTime);
             render();
-		float updateInterval = 0.01;
-		if(clock.getElapsedTime().asSeconds() >= updateInterval){
-			updateVehicle1(scheduler.current_time,0.01, vehicles[0].get(), vehicles[2].get());
-			updateVehicle1(scheduler.current_time,0.01, vehicles[1].get(), vehicles[0].get());
-			updateVehicle1(scheduler.current_time,0.01, vehicles[2].get(), vehicles[1].get());
-			std::cout<<vehicles[0]->m_state.operationTimer<<std::endl;
-			clock.restart();
-			}
+
+            float updateInterval = 0.01;
+            if (clock_1.getElapsedTime().asSeconds() >= updateInterval)
+            {
+                updateVehicle1(scheduler_ptr->current_time, 0.01, &vehicles[0], &vehicles[2]);
+                updateVehicle1(scheduler_ptr->current_time, 0.01, &vehicles[1], &vehicles[0]);
+                updateVehicle1(scheduler_ptr->current_time, 0.01, &vehicles[2], &vehicles[1]);
+                std::cout << vehicles[0].m_state.operationTimer << std::endl;
+                clock_1.restart();
+            }
         }
     }
 };
 
 int main()
 {
-		Scheduler scheduler;
-		scheduler.vehicle_manager.initializeVehicles(3);
-		auto& vehicles = scheduler.vehicle_manager.getVehicles();
-		srand(0);
-		int random0 = 1 + rand() % 18;; 
-		int random1 = 1 + rand() % 18;;
-		int random2 = 1 + rand() % 18;;
-		while(random0 ==15){
-			random0 = 1 + rand() % 18;
-		} 
-		while(random1 ==15){
-			random1 = 1 + rand() % 18;
-		}
-		while(random2 ==15){
-			random2 = 1 + rand() % 18;
-		}
-		vehicles[0].towards_device=random0;
-		vehicles[1].towards_device=random1;
-		vehicles[2].towards_device=random2;
-		        
-		SimpleDemoApp app;
-        app.run();
+    Scheduler scheduler;
+    EventQueue event_queue;         // 事件队列
+    TaskManager task_manager;       // 任务管理器
+    VehicleManager vehicle_manager; // 车辆管理器
+    DeviceManager device_manager;   // 设备管理器
+    Logger logger;                  // 日志记录器
+
+    scheduler.bind(&task_manager, &vehicle_manager, &device_manager, &event_queue, &logger);
+
+    scheduler.vehicle_manager->initializeVehicles(3);
+    auto &vehicles = scheduler.vehicle_manager->getVehicles(); // FIXME:
+    srand(0);
+    int random0 = 1 + rand() % 18;
+    ;
+    int random1 = 1 + rand() % 18;
+    ;
+    int random2 = 1 + rand() % 18;
+    ;
+    while (random0 == 15)
+    {
+        random0 = 1 + rand() % 18;
+    }
+    while (random1 == 15)
+    {
+        random1 = 1 + rand() % 18;
+    }
+    while (random2 == 15)
+    {
+        random2 = 1 + rand() % 18;
+    }
+    vehicles[0].towards_device = random0;
+    vehicles[1].towards_device = random1;
+    vehicles[2].towards_device = random2;
+    SimpleDemoApp app(&scheduler); // 传递scheduler指针
+    app.run();
 
     return 0;
 }
-void updateVehicle1(float current_time, float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle){
+void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehicle *leadingVehicle)
+{
 
-	//前车与后车相对距离
-	float distance;
-	float epsilon = 0.05f; // 防止浮点数误差
-	float device_position[19]={
-		-1000.0f,
-		85.9209372261538,
-		83.5209372261538,
-		79.9209372261538,
-		77.5209372261538,
-		73.9209372261538,
-		71.5209372261538,
-		67.9209372261538,
-		65.5209372261538,
-		61.9209372261538,
-		59.5209372261538,
-		55.9209372261538,
-		53.5209372261538,
-		32.000,
-		29.000,
-		26.000,
-		14.0,
-		11.000,
-		8.000,
-	};	
+    // 前车与后车相对距离
+    float distance;
+    float epsilon = 0.05f; // 防止浮点数误差
+    float device_position[19] = {
+        -1000.0f,
+        85.9209372261538,
+        83.5209372261538,
+        79.9209372261538,
+        77.5209372261538,
+        73.9209372261538,
+        71.5209372261538,
+        67.9209372261538,
+        65.5209372261538,
+        61.9209372261538,
+        59.5209372261538,
+        55.9209372261538,
+        53.5209372261538,
+        32.000,
+        29.000,
+        26.000,
+        14.0,
+        11.000,
+        8.000,
+    };
     float VehiclePosition = std::fmod(vehicle->m_state.position, 99.47787445225672);
     float LeadingVehiclePosition = std::fmod(leadingVehicle->m_state.position, 99.47787445225672);
-	float distancetodevice = VehiclePosition-device_position[vehicle->towards_device];
-	if(distancetodevice<0.f){
-		distancetodevice += 99.47787445225672;
-	}
-	//对接任务的接口
+    float distancetodevice = device_position[vehicle->towards_device] - VehiclePosition;
+    if (fabs(distancetodevice) > epsilon && distancetodevice < 0.f)
+    {
+        distancetodevice += 99.47787445225672;
+    }
+    // 对接任务的接口
     vehicle->position_m = VehiclePosition;
     vehicle->velocity_mps = vehicle->m_state.currentSpeed;
-	
 
-	//前车与后车相对距离
-	distance = LeadingVehiclePosition - VehiclePosition;
-	if(distance<0.f){
-		distance += 99.47787445225672;
-	}
-	//防止浮点数误差
-	epsilon = 0.05f;
-
-	
-//到车库停车的判断和处理
-	// 添加调试输出
-	std::cout << "Vehicle " << vehicle->id << " position: " << VehiclePosition 
-	          << ", target: " << device_position[vehicle->towards_device] 
-	          << ", distance: " << fabs(VehiclePosition - device_position[vehicle->towards_device]) << std::endl;
-
-
-	if(vehicle->m_state.motionState == Vehicle::MotionState::Stopped && fabs(VehiclePosition - device_position[vehicle->towards_device]) < epsilon) {
-
-		if (vehicle->m_state.operationTimer >= vehicle->m_loadTime) {
-			vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
-			vehicle->m_state.operationTimer = 0.0f;
-			vehicle->towards_device = 15;
-		}
-		else {
-			vehicle->m_state.operationTimer += deltaTime;
-		}
-
-	}
-//防碰撞减速
-    else if (((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed)/(2*vehicle->m_acceleration))>=(distance+vehicle->m_length+0.002)){
-    
-		vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+    // 前车与后车相对距离
+    distance = LeadingVehiclePosition - VehiclePosition;
+    if (distance < 0.f)
+    {
+        distance += 99.47787445225672;
+    }
+    // 防止浮点数误差
+    epsilon = 0.55f;
+    // std::cout << "Vehicle " << vehicle->id << "distance:"<<fabs(distancetodevice)<<std::endl;
+    // if(fabs(distancetodevice) < epsilon)
+    // std::cout << "Vehicle " << vehicle->id << "loading "<<vehicle->m_state.operationTimer<<std::endl;
+    // 到车库停车的判断和处理
+    //  添加调试输出
+    //  std::cout << "Vehicle " << vehicle->id << " position: " << VehiclePosition
+    //            << ", target: " << device_position[vehicle->towards_device]
+    //            << ", distance: " << fabs(VehiclePosition - device_position[vehicle->towards_device]) << std::endl;
+    //  std::cout << "Vehicle " << vehicle->id << "speed"<<vehicle->m_state.currentSpeed<<std::endl;
+    //  std::cout << "Vehicle " << vehicle->id << " distance: " << distance << std::endl;
+    //  if(vehicle->id==0){
+    //  std::cout << "Vehicle " << vehicle->id << "speed"<<vehicle->m_state.currentSpeed<<std::endl;
+    //  std::cout << "Vehicle " << vehicle->id << " distance: " << distancetodevice << std::endl;
+    //  }
+    if ((vehicle->m_state.motionState == Vehicle::MotionState::Stopped) && fabs(distancetodevice) < epsilon)
+    {
+        // std::cout << "Vehicle " << vehicle->id << "loading "<<vehicle->m_state.operationTimer<<std::endl;
+        // std::cout << std::endl;
+        if (vehicle->m_state.operationTimer >= vehicle->m_loadTime)
+        {
+            vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
+            vehicle->m_state.operationTimer = 0.0f;
+            vehicle->towards_device = 15;
         }
-//到车库提前减速	
-	else if((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed)/(2*vehicle->m_acceleration)>= (distancetodevice)){
-
-		vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-										
-		}
-//弯道减速	
-	//处理下面那个弯道的减速
-	else if((VehiclePosition>=0.f) && (VehiclePosition<=40.0f)&&((40.0f-VehiclePosition)<=(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration))){
-				vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-	}
-	//处理上面那个弯道的减速
-	else if((VehiclePosition>=49.5209372261538)&&(VehiclePosition<=89.5209372261538)&&((87.835981634f-VehiclePosition)<=(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration))){
-				vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-	}
-//不减速即设定为加速，更快运动
-	else{
-		vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
-	}
-//根据状态确定下一步的操作
-	switch (vehicle->m_state.motionState) {
-            case Vehicle::MotionState::Accelerating:
-		//判断上一辆车的距离
-		vehicle->m_state.currentSpeed += vehicle->m_acceleration  * deltaTime;
-		//直线上且超过最大速度
-				if((VehiclePosition>=0.f)&&(VehiclePosition<=40.0f)&&(vehicle->m_state.currentSpeed > vehicle->m_maxStraightSpeed)){
-					vehicle->m_state.currentSpeed = vehicle->m_maxStraightSpeed;
-				}
-				else if((VehiclePosition>=49.5209372261538)&&(VehiclePosition<=89.5209372261538)&&(vehicle->m_state.currentSpeed > vehicle->m_maxStraightSpeed)){
-					vehicle->m_state.currentSpeed = vehicle->m_maxStraightSpeed;
-				}
-		//弯道上且超过最大速度		
-				else if((VehiclePosition>40.0f)&&(VehiclePosition<49.5209372261538)&&(vehicle->m_state.currentSpeed > vehicle->m_maxCurveSpeed)){
-					vehicle->m_state.currentSpeed = vehicle->m_maxCurveSpeed;
-				}
-				else if((VehiclePosition>89.5209372261538)&&(VehiclePosition<99.47787445225672)&&(vehicle->m_state.currentSpeed > vehicle->m_maxCurveSpeed)){
-					vehicle->m_state.currentSpeed = vehicle->m_maxCurveSpeed;
-				}
-			break;
-            case Vehicle::MotionState::Decelerating:
-                vehicle->m_state.currentSpeed -= vehicle->m_acceleration   * deltaTime;
-				if (vehicle->m_state.currentSpeed < 0.0f) {
-					vehicle->m_state.currentSpeed= 0.0f;
-					}
-                if (vehicle->m_state.currentSpeed <= 0.0f) {
-                    vehicle->m_state.currentSpeed = 0.0f;
-                    vehicle->m_state.motionState= Vehicle::MotionState::Stopped;
-                }
-            break;
-            case Vehicle::MotionState::Cruising:
-                break;
-            case Vehicle::MotionState::Stopped:
-				std::cout<<vehicle->id<<" stopped"<<std::endl;
-                break;
-            default:
-                // 处理未知状态
-                break;
+        else
+        {
+            vehicle->m_state.operationTimer += deltaTime;
         }
-//位置的更新
-	vehicle->m_state.position += vehicle->m_state.currentSpeed * deltaTime;
-
+    }
+    // 防碰撞减速
+    else if (((vehicle->m_state.currentSpeed) * (vehicle->m_state.currentSpeed) / (2 * vehicle->m_acceleration)) >= (distance - 0.2 - vehicle->m_length))
+    {
+        // std::cout << "OK"<<std::endl;
+        vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+    }
+    // 到车库提前减速
+    else if ((vehicle->m_state.currentSpeed) * (vehicle->m_state.currentSpeed) / (2 * vehicle->m_acceleration) >= (distancetodevice))
+    {
+        // std::cout<<"stop"<<std::endl;
+        // std::cout << "Vehicle " << vehicle->id << "target"<<vehicle->towards_device<<std::endl;
+        vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+    }
+    // 弯道减速
+    // 处理下面那个弯道的减速
+    else if ((VehiclePosition >= 0.f) && (VehiclePosition <= 40.0f) && ((40.0f - VehiclePosition) <= (((vehicle->m_state.currentSpeed) * (vehicle->m_state.currentSpeed)) - (vehicle->m_maxCurveSpeed) * (vehicle->m_maxCurveSpeed)) / (2 * vehicle->m_acceleration)))
+    {
+        // std::cout<<"stop"<<std::endl;
+        vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+        // std::cout<<vehicle->m_state.currentSpeed<<std::endl;
+        // std::cout<<vehicle->m_maxCurveSpeed<<std::endl;
+        // std::cout<<(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration)<<std::endl;
+    }
+    // 处理上面那个弯道的减速
+    else if ((VehiclePosition >= 49.5209372261538) && (VehiclePosition <= 89.5209372261538) && ((89.5209372261538 - VehiclePosition) <= (((vehicle->m_state.currentSpeed) * (vehicle->m_state.currentSpeed)) - (vehicle->m_maxCurveSpeed) * (vehicle->m_maxCurveSpeed)) / (2 * vehicle->m_acceleration)))
+    {
+        // std::cout<<"stop"<<std::endl;
+        vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+    }
+    // 不减速即设定为加速，更快运动
+    else
+    {
+        vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
+        // std::cout<<vehicle->m_maxStraightSpeed<<std::endl;
+    }
+    // 根据状态确定下一步的操作
+    switch (vehicle->m_state.motionState)
+    {
+    case Vehicle::MotionState::Accelerating:
+        // 判断上一辆车的距离
+        vehicle->m_state.currentSpeed += vehicle->m_acceleration * deltaTime;
+        // 直线上且超过最大速度
+        if ((VehiclePosition >= 0.f) && (VehiclePosition <= 40.0f) && (vehicle->m_state.currentSpeed > vehicle->m_maxStraightSpeed))
+        {
+            vehicle->m_state.currentSpeed = vehicle->m_maxStraightSpeed;
+        }
+        else if ((VehiclePosition >= 49.5209372261538) && (VehiclePosition <= 89.5209372261538) && (vehicle->m_state.currentSpeed > vehicle->m_maxStraightSpeed))
+        {
+            vehicle->m_state.currentSpeed = vehicle->m_maxStraightSpeed;
+        }
+        // 弯道上且超过最大速度
+        else if ((VehiclePosition > 40.0f) && (VehiclePosition < 49.5209372261538) && (vehicle->m_state.currentSpeed > vehicle->m_maxCurveSpeed))
+        {
+            vehicle->m_state.currentSpeed = vehicle->m_maxCurveSpeed;
+        }
+        else if ((VehiclePosition > 89.5209372261538) && (VehiclePosition < 99.47787445225672) && (vehicle->m_state.currentSpeed > vehicle->m_maxCurveSpeed))
+        {
+            vehicle->m_state.currentSpeed = vehicle->m_maxCurveSpeed;
+        }
+        break;
+    case Vehicle::MotionState::Decelerating:
+        vehicle->m_state.currentSpeed -= vehicle->m_acceleration * deltaTime;
+        if (vehicle->m_state.currentSpeed <= 0.0f)
+        {
+            vehicle->m_state.currentSpeed = 0.0f;
+            vehicle->m_state.motionState = Vehicle::MotionState::Stopped;
+        }
+        break;
+    case Vehicle::MotionState::Cruising:
+        break;
+    case Vehicle::MotionState::Stopped:
+        break;
+    default:
+        // 处理未知状态
+        break;
+    }
+    // 位置的更新
+    vehicle->m_state.position += vehicle->m_state.currentSpeed * deltaTime;
 }
