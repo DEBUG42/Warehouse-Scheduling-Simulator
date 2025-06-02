@@ -18,11 +18,11 @@ public:
     float current_time = 0.0;       // 当前时间
     float dt = 1.0 / 100.0;         // 时间步长
 
-    EventQueue* event_queue;        // 事件队列
-    TaskManager* task_manager;      // 任务管理器
-    VehicleManager* vehicle_manager;      // 车辆管理器
-    DeviceManager* device_manager;    // 设备管理器
-    Logger* logger;                 // 日志记录器
+    EventQueue* event_queue_ptr;        // 事件队列
+    TaskManager* task_manager_ptr;      // 任务管理器
+    VehicleManager* vehicle_manager_ptr;      // 车辆管理器
+    DeviceManager* device_manager_ptr;    // 设备管理器
+    Logger* logger_ptr;                 // 日志记录器
     void bind(TaskManager* tm, VehicleManager* vm, DeviceManager* dm, EventQueue* eq, Logger* lg);
 
     // 主循环阶段

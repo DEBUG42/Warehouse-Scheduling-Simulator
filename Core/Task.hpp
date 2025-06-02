@@ -38,7 +38,7 @@ public:
 
     std::vector<Task>& getAllTasks();
     Task& getTask(int task_id);
-
+    void initializeNextTaskID();
     std::vector<Task*> getReadyTasks(double current_time,  DeviceManager& device_manager);     // 获取当前时间点可调度的任务
     bool allTasksCompleted(); // 是否所有任务都已完成
     void markTaskAssigned(int task_id, int vehicle_id, double assign_time); // 标记任务已分配

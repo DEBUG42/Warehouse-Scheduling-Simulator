@@ -4,7 +4,7 @@
 
 
 // DeviceManager.cpp
-const DeviceState& DeviceManager::getDeviceState(int id) const {
+DeviceState& DeviceManager::getDeviceState(int id) {
     auto it = deviceStates.find(id);
     if (it != deviceStates.end()) {
         return it->second;
