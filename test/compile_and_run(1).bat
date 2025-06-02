@@ -3,8 +3,8 @@ chcp 65001 > nul
 
 :: Basic configuration
 set "COMPILER=g++"
-set "SFML_INC=C:\Users\Sterben\Downloads\SFML-2.6.2-windows-gcc-13.1.0-mingw-64-bit\SFML-2.6.2\include"
-set "SFML_LIB=C:\Users\Sterben\Downloads\SFML-2.6.2-windows-gcc-13.1.0-mingw-64-bit\SFML-2.6.2\lib"
+set "SFML_INC=D:\SFML\include"
+set "SFML_LIB=D:\SFML\lib"
 set "OUTPUT=bin\WarehouseSchedulingSimulator.exe"
 
 :: Verify SFML paths
@@ -25,22 +25,21 @@ if not exist "bin" mkdir "bin"
 
 :: Compile command
 echo Compiling Warehouse Scheduling Simulator...
-
 %COMPILER% -std=c++17 -Wall ^
     -DTimescale=1.0 ^
     -I"%SFML_INC%" ^
     -I"Warehouse-Scheduling-Simulator" ^
-    -I"/Core" ^
-    -I"/Physics" ^
-    "test_main.cpp"^
-    "Physics/EventQueue.cpp" ^
-    "Physics/Logger.cpp" ^
-    "Physics/Scheduler.cpp" ^
-    "Physics/AssignTaskToVehicles.cpp" ^
-    "Physics/DeviceManager.cpp" ^
-    "Physics/TaskManager.cpp" ^
+    -I"Warehouse-Scheduling-Simulator/Core" ^
+    -I"Warehouse-Scheduling-Simulator/Physics" ^
+    "Warehouse-Scheduling-Simulator/main.cpp" ^
+    "Warehouse-Scheduling-Simulator/Physics/EventQueue.cpp" ^
+    "Warehouse-Scheduling-Simulator/Physics/Logger.cpp" ^
+    "Warehouse-Scheduling-Simulator/Physics/Scheduler.cpp" ^
+    "Warehouse-Scheduling-Simulator/Physics/AssignTaskToVehicles.cpp" ^
+    "Warehouse-Scheduling-Simulator/Physics/DeviceManager.cpp" ^
+    "Warehouse-Scheduling-Simulator/Physics/TaskManager.cpp" ^
     -L"%SFML_LIB%" ^
-    -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network ^
+    -lsfml-graphics -lsfml-window -lsfml-system ^
     -o "%OUTPUT%"
 
 :: Check result
