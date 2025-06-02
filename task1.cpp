@@ -14,9 +14,18 @@
 #include <ctime>
 float getDistance(float from, float to);
 int main(){
+EventQueue event_queue;        // 事件队列
+TaskManager task_manager;      // 任务管理器
+VehicleManager vehicle_manager;      // 车辆管理器
+DeviceManager device_manager;    // 设备管理器
+Logger logger;                 // 日志记录器
 Scheduler scheduler;
+scheduler.bind(&task_manager, &vehicle_manager, &device_manager, &event_queue, &logger);
+
 scheduler.vehicle_manager->initializeVehicles(3);
-auto& vehicles = scheduler.vehicle_manager->getAllVehicles();
+auto& vehicles = scheduler.vehicle_manager->getVehicles();
+
+
 srand(time(NULL));
 int random0 = 1 + rand() % 18; 
 int random1 = 1 + rand() % 18;
@@ -43,7 +52,6 @@ std::cout << "start" << std::endl;
 std::cout<<"vehicle0 "<<vehicles[0].towards_device<<std::endl;
 std::cout<<"vehicle1 "<<vehicles[1].towards_device<<std::endl;
 std::cout<<"vehicle2 "<<vehicles[2].towards_device<<std::endl;
-vehicles[0].towards_device=13;
 while(1){
 if(updateClock.getElapsedTime().asSeconds() >= updateInterval){
 	updateVehicle1(scheduler.current_time,0.01, &vehicles[0], &vehicles[2]);
@@ -89,7 +97,7 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle* vehicle, Vehic
     float VehiclePosition = std::fmod(vehicle->m_state.position, 99.47787445225672);
     float LeadingVehiclePosition = std::fmod(leadingVehicle->m_state.position, 99.47787445225672);
 	float distancetodevice =device_position[vehicle->towards_device]-VehiclePosition; 
-	if(distancetodevice<0){
+	if(fabs(distancetodevice)>epsilon&&distancetodevice<0.f){
 		distancetodevice += 99.47787445225672;
 	}
 	//对接任务的接口
@@ -99,13 +107,14 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle* vehicle, Vehic
 
 	//前车与后车相对距离
 	distance = LeadingVehiclePosition - VehiclePosition;
-	// if(distance<0.f){
-	// 	distance += 99.47787445225672;
-	// }
+	if(distance<0.f){
+	 	distance += 99.47787445225672;
+	}
 	//防止浮点数误差
-	epsilon = 0.1f;
-
-	
+	epsilon = 0.55f;
+	// std::cout << "Vehicle " << vehicle->id << "distance:"<<fabs(distancetodevice)<<std::endl;
+	// if(fabs(distancetodevice) < epsilon)
+	// std::cout << "Vehicle " << vehicle->id << "loading "<<vehicle->m_state.operationTimer<<std::endl;
 //到车库停车的判断和处理
 	// 添加调试输出
 	// std::cout << "Vehicle " << vehicle->id << " position: " << VehiclePosition 
@@ -113,11 +122,13 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle* vehicle, Vehic
 	//           << ", distance: " << fabs(VehiclePosition - device_position[vehicle->towards_device]) << std::endl;
 	// std::cout << "Vehicle " << vehicle->id << "speed"<<vehicle->m_state.currentSpeed<<std::endl;
 	// std::cout << "Vehicle " << vehicle->id << " distance: " << distance << std::endl;
-	std::cout << "Vehicle " << vehicle->id << "speed"<<vehicle->m_state.currentSpeed<<std::endl;
-	std::cout << "Vehicle " << vehicle->id << " distance: " << distancetodevice << std::endl;
-	std::cout <<std::endl;
-	if(vehicle->m_state.motionState == Vehicle::MotionState::Stopped && fabs(distancetodevice) < epsilon) {
-		
+	// if(vehicle->id==0){
+	// std::cout << "Vehicle " << vehicle->id << "speed"<<vehicle->m_state.currentSpeed<<std::endl;
+	// std::cout << "Vehicle " << vehicle->id << " distance: " << distancetodevice << std::endl;
+	// }
+	if((vehicle->m_state.motionState == Vehicle::MotionState::Stopped)&& fabs(distancetodevice) < epsilon) {
+		// std::cout << "Vehicle " << vehicle->id << "loading "<<vehicle->m_state.operationTimer<<std::endl;
+		// std::cout << std::endl;
 		if (vehicle->m_state.operationTimer >= vehicle->m_loadTime) {
 			vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
 			vehicle->m_state.operationTimer = 0.0f;
@@ -126,29 +137,32 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle* vehicle, Vehic
 		else {
 			vehicle->m_state.operationTimer += deltaTime;
 		}
-
 	}
 //防碰撞减速
-    else if (((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed)/(2*vehicle->m_acceleration))>=(distance+0.2-vehicle->m_length)){
+    else if (((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed)/(2*vehicle->m_acceleration))>=(distance-0.2-vehicle->m_length)){
+		// std::cout << "OK"<<std::endl;
 		vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
         }
 //到车库提前减速	
-	else if((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed)/(2*vehicle->m_acceleration)>= fabs(distancetodevice)){
-
+	else if((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed)/(2*vehicle->m_acceleration)>= (distancetodevice)){
+		// std::cout<<"stop"<<std::endl;
+		// std::cout << "Vehicle " << vehicle->id << "target"<<vehicle->towards_device<<std::endl;
 		vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
 										
 		}
 //弯道减速	
 	//处理下面那个弯道的减速
 	else if((VehiclePosition>=0.f) && (VehiclePosition<=40.0f)&&((40.0f-VehiclePosition)<=(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration))){
-				vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+		// std::cout<<"stop"<<std::endl;		
+		vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
 				// std::cout<<vehicle->m_state.currentSpeed<<std::endl;
 				// std::cout<<vehicle->m_maxCurveSpeed<<std::endl;				
 				// std::cout<<(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration)<<std::endl;
 	}
 	//处理上面那个弯道的减速
 	else if((VehiclePosition>=49.5209372261538)&&(VehiclePosition<=89.5209372261538)&&((89.5209372261538-VehiclePosition)<=(((vehicle->m_state.currentSpeed)*(vehicle->m_state.currentSpeed))-(vehicle->m_maxCurveSpeed)*(vehicle->m_maxCurveSpeed))/(2*vehicle->m_acceleration))){
-				vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+		// std::cout<<"stop"<<std::endl;		
+		vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
 	}
 //不减速即设定为加速，更快运动
 	else{
@@ -177,9 +191,6 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle* vehicle, Vehic
 			break;
             case Vehicle::MotionState::Decelerating:
                 vehicle->m_state.currentSpeed -= vehicle->m_acceleration   * deltaTime;
-				if (vehicle->m_state.currentSpeed < 0.0f) {
-					vehicle->m_state.currentSpeed= 0.0f;
-					}
                 if (vehicle->m_state.currentSpeed <= 0.0f) {
                     vehicle->m_state.currentSpeed = 0.0f;
                     vehicle->m_state.motionState= Vehicle::MotionState::Stopped;

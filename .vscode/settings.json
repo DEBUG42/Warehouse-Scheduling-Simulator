@@ -51,6 +51,15 @@
         "streambuf": "cpp",
         "typeinfo": "cpp",
         "queue": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "charconv": "cpp",
+        "chrono": "cpp",
+        "ratio": "cpp",
+        "format": "cpp",
+        "semaphore": "cpp",
+        "span": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp",
+        "variant": "cpp"
     }
 }
