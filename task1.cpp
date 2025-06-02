@@ -15,8 +15,8 @@
 float getDistance(float from, float to);
 int main(){
 Scheduler scheduler;
-scheduler.vehicle_manager.initializeVehicles(3);
-auto& vehicles = scheduler.vehicle_manager.getVehicles();
+scheduler.vehicle_manager->initializeVehicles(3);
+auto& vehicles = scheduler.vehicle_manager->getAllVehicles();
 srand(time(NULL));
 int random0 = 1 + rand() % 18; 
 int random1 = 1 + rand() % 18;
