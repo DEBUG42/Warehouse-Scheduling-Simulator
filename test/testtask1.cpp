@@ -29,7 +29,7 @@
 #include <cstdlib>
 #include <ctime>
 // 前置声明updateVehicle1函数
-void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehicle *leadingVehicle);
+void updateVehicle1(float current_time, float deltaTime,int timescale, Vehicle *vehicle, Vehicle *leadingVehicle);
 
 /**
  * @brief GUI优化第一阶段增强演示测试
@@ -531,7 +531,6 @@ public:
     void run()
     {
         sf::Clock clock;
-        sf::Clock clock_1;
 
         auto &vehicles = scheduler_ptr->vehicle_manager->getVehicles();
 
@@ -547,23 +546,23 @@ public:
         std::cout << "• Vehicle 2: Empty, Cruising (Blue, moving)" << std::endl;
         std::cout << "• Vehicle 3: Loaded, Accelerating (Orange, moving)" << std::endl;
         std::cout << "\nInstructions: Press Space to start simulation, 1/2/3 to select vehicles, WASD to move" << std::endl;
+		
 
         while (window.isOpen())
         {
             float deltaTime = clock.restart().asSeconds();
-            printf("Delta Time: %.3f seconds\n", deltaTime); // 输出每帧的时间间隔
+            // printf("Delta Time: %.3f seconds\n", deltaTime); // 输出每帧的时间间隔
             handleEvents();
             update(deltaTime);
             render();
-
+			float timeScale = toolbar->getCurrentSpeed();
             float updateInterval = 0.01;
-            if (clock_1.getElapsedTime().asSeconds() >= updateInterval)
+			// printf("Update Interval: %.5f seconds\n", deltaTime); // 输出每帧的时间间隔
+            if (isRunning)
             {
-                updateVehicle1(scheduler_ptr->current_time, 0.01, &vehicles[0], &vehicles[2]);
-                updateVehicle1(scheduler_ptr->current_time, 0.01, &vehicles[1], &vehicles[0]);
-                updateVehicle1(scheduler_ptr->current_time, 0.01, &vehicles[2], &vehicles[1]);
-                std::cout << vehicles[0].m_state.operationTimer << std::endl;
-                clock_1.restart();
+				updateVehicle1(scheduler_ptr->current_time, deltaTime,int(timeScale), &vehicles[0], &vehicles[2]);
+                updateVehicle1(scheduler_ptr->current_time, deltaTime,int(timeScale), &vehicles[1], &vehicles[0]);
+                updateVehicle1(scheduler_ptr->current_time, deltaTime,int(timeScale), &vehicles[2], &vehicles[1]);
             }
         }
     }
@@ -582,7 +581,7 @@ int main()
 
     scheduler.vehicle_manager->initializeVehicles(3);
     auto &vehicles = scheduler.vehicle_manager->getVehicles(); // FIXME:
-    srand(0);
+    srand(time(NULL));
     int random0 = 1 + rand() % 18;
     ;
     int random1 = 1 + rand() % 18;
@@ -609,10 +608,10 @@ int main()
 
     return 0;
 }
-void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehicle *leadingVehicle)
+void updateVehicle1(float current_time, float deltaTime,int timescale, Vehicle *vehicle, Vehicle *leadingVehicle)
 {
-
-    // 前车与后车相对距离
+for(int i=0;i<timescale;i++)
+{    // 前车与后车相对距离
     float distance;
     float epsilon = 0.05f; // 防止浮点数误差
     float device_position[19] = {
@@ -762,4 +761,5 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehic
     }
     // 位置的更新
     vehicle->m_state.position += vehicle->m_state.currentSpeed * deltaTime;
+}
 }
