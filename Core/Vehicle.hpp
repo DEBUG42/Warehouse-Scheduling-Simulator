@@ -110,7 +110,7 @@ public:
     // 输出: 距离 (double)
     double getDistance(double from, double to);
 };
- // 新增：将 MotionState 转换为字符串的辅助函数
+ //新增：将 MotionState 转换为字符串的辅助函数
 // static std::string motionStateToString(Vehicle::MotionState state) {
 //     switch (state) {
 //         case Vehicle::MotionState::Accelerating: return "Accelerating";

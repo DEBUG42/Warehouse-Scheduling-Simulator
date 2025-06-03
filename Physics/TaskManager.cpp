@@ -7,6 +7,11 @@
 #include <sstream>
 #include <iostream>
 #include <string>
+
+std::ostream& operator<<(std::ostream& os, Task& task) {
+    os << "任务[ID: " << task.id << ", 名称: " << task.material_id << ", 起始设备: " << task.start_device_id << ", 终止设备: " << task.end_device_id << ", 已分配车辆: " << task.assigned_vehicle_id << ", 已分配: " << task.is_assigned << ", 就绪时间: " << task.ready_time << ", 分配时间: " << task.assign_time << ", 拾取时间: " << task.pick_time << ", 放下时间: " << task.drop_time << ", 完成时间: " << task.complete_time << "]";
+    return os;
+}
 //辅助函数：从被保护的task容器中获取task对象
 std::vector<Task>& TaskManager::getAllTasks() {
     return tasks;
@@ -162,7 +167,7 @@ std::vector<Task*> TaskManager::getReadyTasks(double current_time, DeviceManager
     for (Task& task : tasks) {
     // std::cout << "\n[Check] Task #" << task.id << " (StartDev: " << task.start_device_id << ", ReadyTime: " << task.ready_time << ")\n";
     if (task.is_assigned) {
-        std::cout << "  ⛔ Already assigned.\n";
+        // std::cout << "  ⛔ Already assigned.\n";
         continue;
     }
 

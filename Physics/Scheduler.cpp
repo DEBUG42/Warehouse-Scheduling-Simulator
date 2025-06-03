@@ -105,7 +105,7 @@ void Scheduler::tryDispatchTasks() {
     
     // ✅ 1. 获取所有就绪任务
     std::vector<Task*> ready_tasks = task_manager_ptr->getReadyTasks(current_time, *device_manager_ptr);
-    std::cout << "[Dispatch] " << ready_tasks.size() << " ready tasks at time " << current_time << "\n";
+    // std::cout << "[Dispatch] " << ready_tasks.size() << " ready tasks at time " << current_time << "\n";
     for (auto* task : ready_tasks) {
         if (task->is_assigned) continue;
 
@@ -175,11 +175,26 @@ void Scheduler::run(double frequency, float timescale) {
             // 假设你希望每模拟 1 秒 (即 1.0 / dt 步) 打印一次
             if (step_count % int(1.0 / dt) == 0) { 
                 std::cout << "[SimTime] " << std::fixed << std::setprecision(2) << current_time << "s" << std::endl;
-                std::cout <<"这里是第一辆车的位置"<<vehicle_manager_ptr->getAllVehicles()[0].position_m << std::endl;
-                std::cout <<"这里是第二辆车的位置"<< vehicle_manager_ptr->getAllVehicles()[1].position_m <<std::endl;
-                std::cout <<"这里是第三辆车的位置"<< vehicle_manager_ptr->getAllVehicles()[2].position_m <<std::endl;
+                std::cout <<"这里是第一辆车的相关信息"<<vehicle_manager_ptr->getAllVehicles()[0].position_m << std::endl;
+                std::cout <<"加速度状态"<< vehicle_manager_ptr->motionStateToString(vehicle_manager_ptr->getAllVehicles()[0].m_state.motionState) <<std::endl;
+                std::cout <<"速度状态"<< vehicle_manager_ptr->getAllVehicles()[0].m_state.currentSpeed <<std::endl;
+                std::cout <<"当前任务"<< vehicle_manager_ptr->getAllVehicles()[0].m_state.currentTask->id<<std::endl;
 
+
+                std::cout <<"这里是第二辆车的相关信息"<< vehicle_manager_ptr->getAllVehicles()[1].position_m <<std::endl;
+                std::cout <<"加速度状态"<< vehicle_manager_ptr->motionStateToString(vehicle_manager_ptr->getAllVehicles()[1].m_state.motionState) <<std::endl;
+                std::cout <<"速度状态"<< vehicle_manager_ptr->getAllVehicles()[1].m_state.currentSpeed <<std::endl;
+                std::cout <<"当前任务"<< vehicle_manager_ptr->getAllVehicles()[1].m_state.currentTask->id <<std::endl;
+                
+                std::cout <<"这里是第三辆车的相关信息"<< vehicle_manager_ptr->getAllVehicles()[2].position_m <<std::endl;
+                std::cout <<"加速度状态"<< vehicle_manager_ptr->motionStateToString(vehicle_manager_ptr->getAllVehicles()[2].m_state.motionState) <<std::endl; 
+                std::cout <<"速度状态"<< vehicle_manager_ptr->getAllVehicles()[2].m_state.currentSpeed <<std::endl;
+                std::cout <<"当前任务"<< vehicle_manager_ptr->getAllVehicles()[2].m_state.currentTask->id <<std::endl;
+                
+                // std::cout <<"这里是任务的执行情况"
             }
+
+            //
 
             // 更新模拟时间并增加步数
             current_time += dt;
