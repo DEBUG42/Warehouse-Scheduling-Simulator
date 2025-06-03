@@ -29,14 +29,14 @@
 #include <cstdlib>
 #include <ctime>
 // 前置声明updateVehicle1函数
-void updateVehicle1(float current_time, float deltaTime,int timescale, Vehicle *vehicle, Vehicle *leadingVehicle);
+void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehicle *leadingVehicle);
 
 /**
  * @brief GUI优化第一阶段增强演示测试
  *
  * 展示内容：
  * 1. Toolbar时间显示优化 - HH:MM:SS.mmm格式
- * 2. StatusPanel比例调整 - 25:35:40布局
+ * 2. StatusPanel比例调整 - 25:35:40布局s
  * 3. VehicleInfoPanel新组件 - 车辆加减速信息显示
  * 4. UIControls工具函数 - 时间格式化和颜色映射
  * 5. SimulationView - 仓库渲染和可控制车辆系统
@@ -556,14 +556,17 @@ public:
             update(deltaTime);
             render();
 			float timeScale = toolbar->getCurrentSpeed();
-            float updateInterval = 0.01;
+
 			// printf("Update Interval: %.5f seconds\n", deltaTime); // 输出每帧的时间间隔
             if (isRunning)
-            {
-				updateVehicle1(scheduler_ptr->current_time, deltaTime,int(timeScale), &vehicles[0], &vehicles[2]);
-                updateVehicle1(scheduler_ptr->current_time, deltaTime,int(timeScale), &vehicles[1], &vehicles[0]);
-                updateVehicle1(scheduler_ptr->current_time, deltaTime,int(timeScale), &vehicles[2], &vehicles[1]);
+			{
+				for(int i=0;i<64;i++){
+				updateVehicle1(scheduler_ptr->current_time, deltaTime,1, &vehicles[0], &vehicles[2]);
+                updateVehicle1(scheduler_ptr->current_time, deltaTime,1, &vehicles[1], &vehicles[0]);
+                updateVehicle1(scheduler_ptr->current_time, deltaTime,1, &vehicles[2], &vehicles[1]);
+				}
             }
+			
         }
     }
 };
@@ -608,7 +611,7 @@ int main()
 
     return 0;
 }
-void updateVehicle1(float current_time, float deltaTime,int timescale, Vehicle *vehicle, Vehicle *leadingVehicle)
+void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehicle *leadingVehicle)
 {
 for(int i=0;i<timescale;i++)
 {    // 前车与后车相对距离
@@ -676,7 +679,7 @@ for(int i=0;i<timescale;i++)
         {
             vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
             vehicle->m_state.operationTimer = 0.0f;
-            vehicle->towards_device = 15;
+            vehicle->towards_device=rand()%18+1;
         }
         else
         {
