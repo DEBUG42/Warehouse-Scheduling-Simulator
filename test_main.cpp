@@ -19,9 +19,9 @@ int main() {
     auto& vehicles = scheduler.vehicle_manager_ptr->getAllVehicles(); 
     vehicle_manager.initializeVehicles(3);
     scheduler.device_manager_ptr->initializeDevices();
-    device_manager.getDeviceState(16).has_goods = true;
-    device_manager.getDeviceState(17).has_goods = true;
-    device_manager.getDeviceState(18).has_goods = true;
+    // device_manager.getDeviceState(16).has_goods = true;
+    // device_manager.getDeviceState(17).has_goods = true;
+    // device_manager.getDeviceState(18).has_goods = true;
 
     // 正确获取三辆车的信息
     if (vehicles.size() >= 3) {
