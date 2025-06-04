@@ -191,7 +191,7 @@ std::vector<Task*> TaskManager::getReadyTasks(double current_time, DeviceManager
     if (dev_start.is_reserved || dev_end.is_reserved || !dev_start.has_goods)
         continue;
 
-    std::cout << "  ✅ Task is ready!\n";
+    // std::cout << "  ✅ Task is ready!\n";
     ready.push_back(&task);
 }
 

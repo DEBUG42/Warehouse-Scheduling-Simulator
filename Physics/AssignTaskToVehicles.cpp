@@ -301,6 +301,7 @@ Vehicle* VehicleManager::selectBestVehicle(Task& task, std::vector<Vehicle*>& ca
 // 将任务分配给指定的车辆
 // 输入: Vehicle& vehicle - 车辆, Task& task - 任务, double current_time - 当前时间
 // 输出: 无
+//测试后可用
 void VehicleManager::applyTaskToVehicle(Vehicle& vehicle, Task& task, double current_time) {
 		float device_position[19]={
 		-1000.0f,
@@ -323,7 +324,7 @@ void VehicleManager::applyTaskToVehicle(Vehicle& vehicle, Task& task, double cur
 		11.000,
 		8.000,
 	};
-    vehicle.m_state.currentTask = &task;
+    vehicle.m_state.currentTask = &task;//把task对象传入currentTask
     vehicle.towards_device = task.start_device_id;
     vehicle.target_position = device_position[task.start_device_id];
     vehicle.velocity_mps = 0.0;

@@ -86,32 +86,3 @@ void DeviceManager::update(double current_time) {
     }
 }
 
-// 处理传入的事件
-// 输入: 事件对象 (const Event& e)
-// 输出: 无
-void DeviceManager::handleEvent(const Event& e) {
-    switch (e.type) {
-        case EventType::HUMAN_UNLOAD_AT_OUT_PORT:
-            // 出库口货物被人工搬空 → 标记为空
-            deviceStates[e.device_id].has_goods = false;
-            break;
-
-        case EventType::STACKER_PUT_TO_OUT_INTERFACE:
-            // 堆垛机已把货物放到接口设备上
-            deviceStates[e.device_id].has_goods = true;
-            break;
-
-        case EventType::FORKLIFT_PUT_TO_IN_PORT:
-            // 入库口叉车放货完成
-            deviceStates[e.device_id].has_goods = true;
-            break;
-
-        case EventType::STACKER_PICK_FROM_IN_INTERFACE:
-            // 堆垛机取走入库接口设备货物
-            deviceStates[e.device_id].has_goods = false;
-            break;
-
-        default:
-            break;
-    }
-}

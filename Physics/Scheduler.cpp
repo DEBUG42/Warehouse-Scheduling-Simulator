@@ -36,10 +36,41 @@ void Scheduler::processEvents() {
             std::string material_id = (event.task_id >= 0)
                 ? task_manager_ptr->getTask(event.task_id).material_id
                  : "SYS";
-
+            std::cout << event.device_id << "号设备是否有货" << device_manager_ptr->getDeviceState(event.device_id).has_goods << std::endl;            
             logger_ptr->logDeviceChange(current_time, event.device_id, material_id, before, after);
             logger_ptr->updateDeviceStates(event.device_id, after, current_time);
         }
+    }
+}
+// 处理传入的事件
+// 输入: 事件对象 (const Event& e)
+// 输出: 无
+void Scheduler::handleEvent(const Event& e) {
+    switch (e.type) {
+        case EventType::HUMAN_UNLOAD_AT_OUT_PORT:
+            // 出库口货物被人工搬空 → 标记为空
+            this->device_manager_ptr->getDeviceState(e.device_id).has_goods = false;
+            break;
+
+        case EventType::STACKER_PUT_TO_OUT_INTERFACE:
+            // 堆垛机已把货物放到接口设备上
+            this->device_manager_ptr->getDeviceState(e.device_id).has_goods = true;
+            break;
+
+        case EventType::FORKLIFT_PUT_TO_IN_PORT:
+            // 入库口叉车放货完成
+            this->device_manager_ptr->getDeviceState(e.device_id).has_goods = true;
+            break;
+
+        case EventType::STACKER_PICK_FROM_IN_INTERFACE:
+            // 堆垛机取走入库接口设备货物
+            this->device_manager_ptr->getDeviceState(e.device_id).has_goods = false;
+            break;
+
+
+
+        default:
+            break;
     }
 }
 
@@ -109,10 +140,10 @@ void Scheduler::tryDispatchTasks() {
     for (auto* task : ready_tasks) {
         if (task->is_assigned) continue;
 
-        // ✅ 2. 找出当前可用的车辆
+        // ✅ 2. 找出当前可用的车辆(测试后可用)
         std::vector<Vehicle*> candidates = vehicle_manager_ptr->getAvailableVehicles(*task, current_time);
         if (candidates.empty()) {
-            std::cout << "[Dispatch] No vehicle available for Task #" << task->id << " at time " << current_time << "\n";
+            // std::cout << "[Dispatch] No vehicle available for Task #" << task->id << " at time " << current_time << "\n";
             continue;
         }
         else {
