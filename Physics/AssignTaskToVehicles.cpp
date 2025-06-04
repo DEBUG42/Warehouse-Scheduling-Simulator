@@ -132,7 +132,7 @@ std::string VehicleManager::motionStateToString(Vehicle::MotionState state) {
 
 void VehicleManager::updateVehicle(float current_time, float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle) {
     const float LOOP_LENGTH = 99.47787445225672f;
-    const float epsilon = 0.1f;  // 防止浮点误差
+    const float epsilon = 0.55f;  // 防止浮点误差
     const float safe_margin = 0.2f;  // 追尾安全间距
 
     // 📍 设备位置映射（注意：索引 = device_id）
@@ -185,6 +185,19 @@ void VehicleManager::updateVehicle(float current_time, float deltaTime, Vehicle*
              >= dist_to_target) {
         vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
     }
+	// 🚧 动态状态切换：再判断是否要进入弯道,进入则减速
+	else if ((pos >= 0.0f && pos <= 40.0f) && 
+                 ((40.0f - pos) <= (((vehicle->m_state.currentSpeed) * (vehicle->m_state.currentSpeed)) - 
+                                  (vehicle->m_maxCurveSpeed) * (vehicle->m_maxCurveSpeed)) / 
+                                  (2 * vehicle->m_acceleration))){
+            vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+        }
+    else if ((pos >= 49.5209372261538f && pos <= 89.5209372261538f) &&
+                 ((89.5209372261538f - pos) <= (((vehicle->m_state.currentSpeed) * (vehicle->m_state.currentSpeed)) - 
+                                                 (vehicle->m_maxCurveSpeed) * (vehicle->m_maxCurveSpeed)) / 
+                                                (2 * vehicle->m_acceleration))) {
+            vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+        }
     else {
         // 弯道处理（下方弯道 + 上方弯道）
         bool in_curve1 = (pos > 40.0f && pos < 49.5209f);
@@ -198,6 +211,7 @@ void VehicleManager::updateVehicle(float current_time, float deltaTime, Vehicle*
             vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
         }
     }
+
 
     // 🚦 按状态推进速度
     switch (vehicle->m_state.motionState) {
