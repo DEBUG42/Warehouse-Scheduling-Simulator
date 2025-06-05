@@ -81,7 +81,7 @@ public:
     // 获取设备状态
     // 输入: int device_id - 设备唯一标识
     // 输出: DeviceState& - 设备状态的引用
-    const DeviceState& getDeviceState(int id) const;
+    DeviceState& getDeviceState(int id);
 
     // 预约设备
     // 输入: int device_id - 设备唯一标识, int task_id - 任务唯一标识, double until_time - 设备预计释放时间

@@ -7,6 +7,11 @@
 #include <sstream>
 #include <iostream>
 #include <string>
+
+std::ostream& operator<<(std::ostream& os, Task& task) {
+    os << "任务[ID: " << task.id << ", 名称: " << task.material_id << ", 起始设备: " << task.start_device_id << ", 终止设备: " << task.end_device_id << ", 已分配车辆: " << task.assigned_vehicle_id << ", 已分配: " << task.is_assigned << ", 就绪时间: " << task.ready_time << ", 分配时间: " << task.assign_time << ", 拾取时间: " << task.pick_time << ", 放下时间: " << task.drop_time << ", 完成时间: " << task.complete_time << "]";
+    return os;
+}
 //辅助函数：从被保护的task容器中获取task对象
 std::vector<Task>& TaskManager::getAllTasks() {
     return tasks;
@@ -27,6 +32,7 @@ Task& TaskManager::getTask(int task_id) {
     dummy_task.id = -1; // 设置一个无效的任务ID，以便调用方可以检查
     return dummy_task;
 }
+
 //辅助函数：将枚举型 TaskType 转换为字符串
 std::string TaskManager::taskTypeToString(TaskType type) {
     switch (type) {
@@ -107,6 +113,18 @@ void TaskManager::loadFromFile(const std::string& filepath) {
             next_task_id[task.start_device_id] = task.id;
         }
     }
+    for (const Task& task : tasks) {
+    int dev = task.start_device_id;
+    if (next_task_id.count(dev) == 0 || task.id < next_task_id[dev]) {
+        next_task_id[dev] = task.id;
+    }
+}
+    for (auto& task : tasks) {
+        if (task.ready_time < 0.0) {
+            task.ready_time = 0.0; // 所有任务默认立即就绪
+        }
+    }
+
 
     // 输出加载的任务数量信息    
     std::cout << "[INFO] Loaded " << tasks.size() << " tasks from " << filepath << std::endl;
@@ -145,7 +163,49 @@ std::vector<Task*> TaskManager::getReadyTasks(double current_time, DeviceManager
 
         ready.push_back(&task);
     }
+    //
+    for (Task& task : tasks) {
+    // std::cout << "\n[Check] Task #" << task.id << " (StartDev: " << task.start_device_id << ", ReadyTime: " << task.ready_time << ")\n";
+    if (task.is_assigned) {
+        // std::cout << "  ⛔ Already assigned.\n";
+        continue;
+    }
+
+    if (task.id != next_task_id[task.start_device_id]) {
+        // std::cout << "  ⛔ Not next task on this device (Expected: " << next_task_id[task.start_device_id] << ").\n";
+        continue;
+    }
+
+    if (task.ready_time > current_time) {
+        std::cout << "  ⛔ Not ready yet (Current Time: " << current_time << ").\n";
+        continue;
+    }
+
+    const auto& dev_start = device_manager.getDeviceState(task.start_device_id);
+    const auto& dev_end = device_manager.getDeviceState(task.end_device_id);
+
+    if (dev_start.is_reserved) std::cout << "  ⛔ Start device is reserved.\n";
+    if (dev_end.is_reserved) std::cout << "  ⛔ End device is reserved.\n";
+    // if (!dev_start.has_goods) std::cout << "  ⛔ Start device has no goods.\n";
+
+    if (dev_start.is_reserved || dev_end.is_reserved || !dev_start.has_goods)
+        continue;
+
+    // std::cout << "  ✅ Task is ready!\n";
+    ready.push_back(&task);
+}
+
     return ready;
+}
+void TaskManager::initializeNextTaskID() {
+    next_task_id.clear();
+
+    for (const auto& task : tasks) {
+        int dev = task.start_device_id;
+        if (next_task_id.find(dev) == next_task_id.end() || task.id < next_task_id[dev]) {
+            next_task_id[dev] = task.id;
+        }
+    }
 }
 
 // 检查所有任务是否已经完成

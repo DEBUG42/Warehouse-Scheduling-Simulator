@@ -12,7 +12,11 @@ enum class EventType {
     // 任务调度相关
     DEVICE_BECOMES_EMPTY,            // 某设备变为空（通用触发）
     DEVICE_HAS_GOODS,                // 某设备变为有货
-    TASK_TIMEOUT                     // 任务过期未完成
+    TASK_TIMEOUT,                     // 任务过期未完成
+
+    //车辆与设备交互事件
+    VEHICLE_PICK_UP_GOODS,           // 车辆取货
+    VEHICLE_PUT_DOWN_GOODS          // 车辆放下货
 };
 
 // 事件对象：由调度器推动处理

@@ -9,32 +9,27 @@
 // 定义调度器类
 class Scheduler {
 public:
-    // 主入口函数，运行调度器循环
-    // 输入: 运行频率 (double frequency)，默认为 100.0
-    // 输出: 无
-    void run(double frequency = 100.0,float timescale=1.0);
 
-public:
     float current_time = 0.0;       // 当前时间
-    float dt = 1.0 / 100.0;         // 时间步长
+        // 时间步长
 
-    EventQueue* event_queue;        // 事件队列
-    TaskManager* task_manager;      // 任务管理器
-    VehicleManager* vehicle_manager;      // 车辆管理器
-    DeviceManager* device_manager;    // 设备管理器
-    Logger* logger;                 // 日志记录器
+    EventQueue* event_queue_ptr;        // 事件队列
+    TaskManager* task_manager_ptr;      // 任务管理器
+    VehicleManager* vehicle_manager_ptr;      // 车辆管理器
+    DeviceManager* device_manager_ptr;    // 设备管理器
+    Logger* logger_ptr;                 // 日志记录器
+   
     void bind(TaskManager* tm, VehicleManager* vm, DeviceManager* dm, EventQueue* eq, Logger* lg);
 
-    // 主循环阶段
-    // 处理事件队列中的事件
-    // 输入: 无
-    // 输出: 无
+    
+    void run(double frequency = 100.0,float timescale=1.0);
+	void testrun(float dt);
+
     void processEvents();
 
-    // 推进车辆与设备状态
-    // 输入: 无
-    // 输出: 无
-    void updateSystemStates();
+    void handleEvent(const Event& e);
+
+    void updateSystemStates(float dt);
 
     // 尝试分派任务给可用的车辆
     // 输入: 无（依赖于类的成员变量）
@@ -49,6 +44,9 @@ public:
 
     void addEventForStackerPick(int device_id, int task_id, double current_time);
 
+    void vehiclePickUpgoods(int vehicle_id,int device_id,int task_id,double current_time);
+
+    void vehicleUnloadgoods(int vehicle_id,int device_id,int task_id,double current_time);
 
 };
 

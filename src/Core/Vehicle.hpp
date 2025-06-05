@@ -78,7 +78,7 @@ public:
 	//更新单个车辆的状态
 	//输入：当前时间（double current_time），时间步长（double dt）时间倍率（Timescal）
 	//		当前车辆，前一辆车
-        void updateVehicle(float current_time,float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle);
+    void updateVehicle(float current_time,float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle);
 
 
     // 获取可用于执行指定任务的车辆列表
@@ -99,7 +99,7 @@ public:
     // 返回所有车辆的常量引用
     // 输入: 无
     // 输出: 所有车辆的列表 (const std::vector<Vehicle>&)
-    std::vector<Vehicle>& getVehicles();
+    std::vector<Vehicle>& getAllVehicles();
 
 public:
     std::vector<Vehicle> vehicles; // 定义 vehicles 容器
@@ -110,7 +110,7 @@ public:
     // 输出: 距离 (double)
     double getDistance(double from, double to);
 };
- // 新增：将 MotionState 转换为字符串的辅助函数
+ //新增：将 MotionState 转换为字符串的辅助函数
 // static std::string motionStateToString(Vehicle::MotionState state) {
 //     switch (state) {
 //         case Vehicle::MotionState::Accelerating: return "Accelerating";
