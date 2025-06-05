@@ -72,8 +72,9 @@ public:
 	SimulationMode m_mode = SimulationMode::TASK1;
 	std::unique_ptr<Toolbar> toolbar;
 	Scheduler *scheduler_ptr; // 改为指针，引用外部scheduler
-    SimpleDemoApp(Scheduler *scheduler) : window(sf::VideoMode(1800, 630), "GUI Phase 1 - Enhanced Demo with Warehouse & Vehicles"),
-                                          scheduler_ptr(scheduler)
+    SimpleDemoApp(Scheduler *scheduler) : window(sf::VideoMode(1800, 630), "GUI Phase 1 - Enhanced Demo with Warehouse & Vehicles"),scheduler_ptr(scheduler)
+
+                                          
     {
         loadFont();
         // initializeSimulationData(); // 删除，不再创建车辆
@@ -615,8 +616,9 @@ int main()
         }
 
 	});	
-    scheduler.vehicle_manager_ptr->initializeVehicles(3);
-    auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles(); // FIXME:
+    app.scheduler_ptr->vehicle_manager_ptr->initializeVehicles(3);
+    auto &vehicles = app.scheduler_ptr->vehicle_manager_ptr->getAllVehicles(); // FIXME:
+	app.initializeComponents();
     srand(time(NULL));
     int random0 = 1 + rand() % 18;
     ;
