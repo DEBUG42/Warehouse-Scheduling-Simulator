@@ -4,7 +4,7 @@
 #include <vector>
 #include "gui/TaskListView.hpp"
 #include "gui/ObjectInspector.hpp"
-#include "../src/Core/Task.hpp"  // For Task class definition
+#include "../src/Core/Task.hpp" // For Task class definition
 #include "../src/Core/Task.hpp" // For Task class definition
 
 // Forward declaration for Task

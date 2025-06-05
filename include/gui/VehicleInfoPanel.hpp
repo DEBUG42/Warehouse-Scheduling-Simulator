@@ -149,11 +149,11 @@ private:
      * @param seconds 秒数
      * @return 格式化的时间字符串
      */
-    std::string formatTime(float seconds) const;    /**
-     * @brief 格式化速度显示
-     * @param speed 速度（米/秒）
-     * @return 格式化的速度字符串
-     */
+    std::string formatTime(float seconds) const; /**
+                                                  * @brief 格式化速度显示
+                                                  * @param speed 速度（米/秒）
+                                                  * @return 格式化的速度字符串
+                                                  */
     std::string formatSpeed(float speed) const;
 
     /**

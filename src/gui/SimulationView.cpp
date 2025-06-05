@@ -141,7 +141,7 @@ void SimulationView::renderWorld(sf::RenderTarget &target)
     if (m_showWarehouses)
     {
         target.draw(m_warehouseRenderer);
-    }    // 4. 渲染车辆（使用测试文件验证的VehicleRenderer方法）
+    } // 4. 渲染车辆（使用测试文件验证的VehicleRenderer方法）
     if (m_showVehicles && !m_vehicles.empty())
     {
         std::cout << "SimulationView::renderWorld() - Rendering vehicles (count: " << m_vehicles.size() << ")" << std::endl;
@@ -357,7 +357,8 @@ void SimulationView::selectVehicleAt(const sf::Vector2f &worldPos)
             vehicleRotation);
 
         // 计算点击位置与车辆位置的距离
-        float distance = std::hypot(worldPos.x - vehiclePosition.x, worldPos.y - vehiclePosition.y);        if (distance < clickRadius)
+        float distance = std::hypot(worldPos.x - vehiclePosition.x, worldPos.y - vehiclePosition.y);
+        if (distance < clickRadius)
         {
             std::cout << "Selected Vehicle ID: " << vehicle->id << std::endl;
 

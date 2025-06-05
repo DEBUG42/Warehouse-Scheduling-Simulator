@@ -13,7 +13,7 @@ ObjectInspector::ObjectInspector(sf::Font &font, float width)
 {
     m_titleText.setFont(m_font);
     m_titleText.setCharacterSize(m_characterSize + 2); // 标题稍大
-    m_titleText.setFillColor(sf::Color(50, 50, 50));   // 深灰色标题
+    m_titleText.setFillColor(sf::Color::White);        // 白色标题，确保在深色背景上清晰可见
     m_titleText.setStyle(sf::Text::Bold);
     rebuildDisplay(); // 初始显示 "未选中对象"
 }
@@ -50,17 +50,18 @@ void ObjectInspector::rebuildDisplay()
 
     if (m_objectType == "Vehicle")
     {
-        const Vehicle* vehicle = static_cast<const Vehicle*>(m_currentObject); // Changed core::Vehicle to Vehicle
-        if (vehicle) {
+        const Vehicle *vehicle = static_cast<const Vehicle *>(m_currentObject); // Changed core::Vehicle to Vehicle
+        if (vehicle)
+        {
             addDetailLine("Type: ", "Vehicle", currentY);
             addDetailLine("ID: ", std::to_string(vehicle->id), currentY);
-            
+
             std::ostringstream speedStream;
             speedStream << std::fixed << std::setprecision(2) << vehicle->m_state.currentSpeed << " m/s";
             addDetailLine("Speed: ", speedStream.str(), currentY);
 
             addDetailLine("State: ", vehicleStatusToString(static_cast<int>(vehicle->m_state.motionState)), currentY);
-            
+
             std::ostringstream posStream;
             posStream << std::fixed << std::setprecision(2) << vehicle->m_state.position << " m";
             addDetailLine("Position: ", posStream.str(), currentY);
@@ -73,11 +74,12 @@ void ObjectInspector::rebuildDisplay()
         // const core::Device* device = static_cast<const core::Device*>(m_currentObject);
         // if (device) { ... }
         addDetailLine("Type: ", "Device", currentY);
-        addDetailLine("Status: ", "Active", currentY); // Placeholder
+        addDetailLine("Status: ", "Active", currentY);       // Placeholder
         addDetailLine("Device Type: ", "Storage", currentY); // Placeholder
-        addDetailLine("Capacity: ", "100 units", currentY); // Placeholder
+        addDetailLine("Capacity: ", "100 units", currentY);  // Placeholder
     }
-    else {
+    else
+    {
         addDetailLine("Type: ", m_objectType, currentY);
         addDetailLine("Status: ", "Unknown", currentY);
     }
@@ -115,18 +117,18 @@ std::string ObjectInspector::vehicleStatusToString(int status) const
     // Assuming Vehicle::MotionState is the enum used
     switch (static_cast<Vehicle::MotionState>(status)) // Changed core::Vehicle to Vehicle
     {
-        case Vehicle::MotionState::Stopped:
-            return "Stopped";
-        case Vehicle::MotionState::Accelerating:
-            return "Accelerating";
-        case Vehicle::MotionState::Decelerating:
-            return "Decelerating";
-        case Vehicle::MotionState::Cruising:
-            return "Cruising";
-        // case Vehicle::MotionState::EmergencyStop: // EmergencyStop is not in the provided Vehicle.hpp
-        //     return "EmergencyStop";
-        default:
-            return "Unknown";
+    case Vehicle::MotionState::Stopped:
+        return "Stopped";
+    case Vehicle::MotionState::Accelerating:
+        return "Accelerating";
+    case Vehicle::MotionState::Decelerating:
+        return "Decelerating";
+    case Vehicle::MotionState::Cruising:
+        return "Cruising";
+    // case Vehicle::MotionState::EmergencyStop: // EmergencyStop is not in the provided Vehicle.hpp
+    //     return "EmergencyStop";
+    default:
+        return "Unknown";
     }
 }
 
@@ -145,7 +147,7 @@ void ObjectInspector::addDetailLine(const std::string &label, const std::string 
     sf::Text lineText;
     lineText.setFont(m_font);
     lineText.setCharacterSize(m_characterSize);
-    lineText.setFillColor(sf::Color(70, 70, 70)); // 深灰色细节文本 (原为200,200,200)
+    lineText.setFillColor(sf::Color::White); // 白色细节文本，确保在深色背景上清晰可见
     lineText.setString(label + value);
     lineText.setPosition(m_padding, currentY);
     m_detailLines.push_back(lineText);
@@ -183,7 +185,8 @@ bool ObjectInspector::handleEvent(const sf::Event &event, const sf::Vector2f &lo
     return false; // 默认不消耗事件
 }
 
-void ObjectInspector::setSize(float width, float height) {
+void ObjectInspector::setSize(float width, float height)
+{
     m_width = width;
     // m_height = height; // ObjectInspector's height is managed by its content or StatusPanel layout
     // If you need to explicitly set height for background or clipping, uncomment and use m_height

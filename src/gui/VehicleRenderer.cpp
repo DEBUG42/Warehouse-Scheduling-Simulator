@@ -203,17 +203,17 @@ void VehicleRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) co
 {
     if (!m_trackRendererRef)
     {
-        std::cerr << "VehicleRenderer::draw() - TrackRenderer reference is null!" << std::endl;
+        // std::cerr << "VehicleRenderer::draw() - TrackRenderer reference is null!" << std::endl;
         return;
     }
 
     if (m_vehicles.empty())
     {
-        std::cerr << "VehicleRenderer::draw() - No vehicles to render!" << std::endl;
+        // std::cerr << "VehicleRenderer::draw() - No vehicles to render!" << std::endl;
         return;
     }
 
-    std::cout << "VehicleRenderer::draw() - Rendering " << m_vehicles.size() << " vehicles" << std::endl;
+    // std::cout << "VehicleRenderer::draw() - Rendering " << m_vehicles.size() << " vehicles" << std::endl;
 
     states.transform *= getTransform();
 
@@ -233,7 +233,7 @@ void VehicleRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) co
         // No const_cast needed as calculateScreenPositionAndRotation is now const
         calculateScreenPositionAndRotation(vehicle, *m_trackRendererRef, worldOriginOffsetPx, screenPos, screenRotation);
 
-        std::cout << "  Vehicle " << vehicle.id << " screen pos: (" << screenPos.x << ", " << screenPos.y << ")" << std::endl;
+        // std::cout << "  Vehicle " << vehicle.id << " screen pos: (" << screenPos.x << ", " << screenPos.y << ")" << std::endl;
 
         renderShadow(target, screenPos, screenRotation);
         renderSingleVehicle(target, vehicle, screenPos, screenRotation);
@@ -245,10 +245,10 @@ void VehicleRenderer::setVehicleVisualScale(float scale)
     m_vehicleVisualScale = std::max(0.1f, scale);
 }
 
-void VehicleRenderer::setSelectedVehicle(const Vehicle* selectedVehicle)
+void VehicleRenderer::setSelectedVehicle(const Vehicle *selectedVehicle)
 {
     m_selectedVehicle = selectedVehicle;
-    std::cout << "VehicleRenderer: Selected vehicle set to " 
+    std::cout << "VehicleRenderer: Selected vehicle set to "
               << (selectedVehicle ? std::to_string(selectedVehicle->id) : "nullptr") << std::endl;
 }
 

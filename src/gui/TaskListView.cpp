@@ -12,11 +12,8 @@ TaskListView::TaskListView(sf::Font &font, float width)
     : m_font(font), m_width(width)
 {
     m_titleText.setFont(m_font);
-    m_titleText.setCharacterSize(16); // Title font size
-
-    // m_titleText.setFillColor(sf::Color::White);
-    m_titleText.setFillColor(sf::Color(50, 50, 50)); // 确保其背景透明或与 StatusPanel 的背景色协调。
-
+    m_titleText.setCharacterSize(16);           // Title font size
+    m_titleText.setFillColor(sf::Color::White); // 白色标题文本，确保在深色背景上清晰可见
     m_titleText.setString("Task Queue");
     // m_height 将由 StatusPanel 通过 setViewHeight 设置，或者使用默认值
 }
@@ -29,15 +26,16 @@ void TaskListView::updateTasks(const std::vector<std::string> &tasks)
 {
     // This version can be kept for compatibility or removed if only std::vector<Task> is used.
     // For now, let's clear m_tasksData if this is called, to avoid confusion.
-    m_tasksData.clear(); 
+    m_tasksData.clear();
     // If you want to convert string tasks to Task objects, implement that logic here.
     // For this example, we assume this string version is less detailed.
     // m_tasks = tasks; // If you still need m_tasks for some reason.
 
     // To make it functional with strings, we can create placeholder Task objects
-    for(const auto& s_task : tasks) {
-        Task t; // Default task
-        t.id = -1; // Indicate it's a string-based placeholder
+    for (const auto &s_task : tasks)
+    {
+        Task t;                 // Default task
+        t.id = -1;              // Indicate it's a string-based placeholder
         t.material_id = s_task; // Store the string here for display
         m_tasksData.push_back(t);
     }
@@ -124,7 +122,7 @@ void TaskListView::draw(sf::RenderTarget &target, sf::RenderStates states) const
 
     for (size_t i = 0; i < m_tasksData.size(); ++i)
     {
-        const auto& task = m_tasksData[i];
+        const auto &task = m_tasksData[i];
         float itemTopY_local = yPos - m_scrollOffset;            // 任务项顶部在TaskListView滚动视图内的Y坐标
         float itemBottomY_local = itemTopY_local + m_itemHeight; // 任务项底部
 
@@ -133,23 +131,28 @@ void TaskListView::draw(sf::RenderTarget &target, sf::RenderStates states) const
         if (itemBottomY_local > titleHeight && itemTopY_local < m_height)
         {
             std::string taskLine;
-            if (task.id != -1) { // Full Task object
-                 taskLine = "ID:" + std::to_string(task.id) + 
-                                   (task.type == TaskType::INBOUND ? " IN " : " OUT ") + 
-                                   "M:" + task.material_id + 
-                                   " S:" + std::to_string(task.start_device_id) + 
-                                   " E:" + std::to_string(task.end_device_id);
-                if (task.is_assigned && task.assigned_vehicle_id != -1) {
+            if (task.id != -1)
+            { // Full Task object
+                taskLine = "ID:" + std::to_string(task.id) +
+                           (task.type == TaskType::INBOUND ? " IN " : " OUT ") +
+                           "M:" + task.material_id +
+                           " S:" + std::to_string(task.start_device_id) +
+                           " E:" + std::to_string(task.end_device_id);
+                if (task.is_assigned && task.assigned_vehicle_id != -1)
+                {
                     taskLine += " (V:" + std::to_string(task.assigned_vehicle_id) + ")";
-                } else {
+                }
+                else
+                {
                     taskLine += " (Unassigned)";
                 }
-            } else { // Placeholder string task
+            }
+            else
+            {                                // Placeholder string task
                 taskLine = task.material_id; // The string was stored in material_id
             }
-
-            sf::Text taskText(taskLine, m_font, 12);      // 任务文本字号
-            taskText.setFillColor(sf::Color(70, 70, 70)); // 深灰色任务文本
+            sf::Text taskText(taskLine, m_font, 12); // 任务文本字号
+            taskText.setFillColor(sf::Color::White); // 白色任务文本，确保在深色背景上清晰可见
             taskText.setPosition(5.0f, itemTopY_local);
 
             target.draw(taskText, states);
@@ -181,7 +184,7 @@ bool TaskListView::handleClick(const sf::Vector2f &localMousePos)
     float currentItemY = titleHeight; // 第一个任务项的顶部Y坐标（无滚动时）
     for (size_t i = 0; i < m_tasksData.size(); ++i)
     {
-        const auto& task = m_tasksData[i]; // Use m_tasksData
+        const auto &task = m_tasksData[i]; // Use m_tasksData
         // 计算当前任务项在视图中的实际显示边界 (考虑滚动)
         float itemTopInView = currentItemY - m_scrollOffset;
         float itemBottomInView = itemTopInView + m_itemHeight;
