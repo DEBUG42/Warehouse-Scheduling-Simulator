@@ -141,14 +141,20 @@ void SimulationView::renderWorld(sf::RenderTarget &target)
     if (m_showWarehouses)
     {
         target.draw(m_warehouseRenderer);
-    }
-
-    // 4. 渲染车辆（使用测试文件验证的VehicleRenderer方法）
+    }    // 4. 渲染车辆（使用测试文件验证的VehicleRenderer方法）
     if (m_showVehicles && !m_vehicles.empty())
     {
+        std::cout << "SimulationView::renderWorld() - Rendering vehicles (count: " << m_vehicles.size() << ")" << std::endl;
         // 更新车辆渲染器状态
         m_vehicleRenderer.setVehiclesToRender(m_vehicles);
         target.draw(m_vehicleRenderer);
+    }
+    else
+    {
+        if (!m_showVehicles)
+            std::cout << "SimulationView::renderWorld() - Vehicle rendering disabled" << std::endl;
+        if (m_vehicles.empty())
+            std::cout << "SimulationView::renderWorld() - No vehicles available" << std::endl;
     }
 
     // 5. 渲染路径原点标记（与测试文件一致）
@@ -309,6 +315,8 @@ sf::Vector2f SimulationView::screenToWorld(const sf::Vector2f &screenPos) const
 void SimulationView::selectObjectAt(const sf::Vector2f &worldPos)
 {
     m_selectedObject = nullptr;
+    // 清除 VehicleRenderer 的选中状态
+    m_vehicleRenderer.setSelectedVehicle(nullptr);
 
     // 1. 优先检查设备/接口的选择
     const auto *selectedInterface = m_warehouseRenderer.getInterfaceAt(worldPos);
@@ -349,9 +357,7 @@ void SimulationView::selectVehicleAt(const sf::Vector2f &worldPos)
             vehicleRotation);
 
         // 计算点击位置与车辆位置的距离
-        float distance = std::hypot(worldPos.x - vehiclePosition.x, worldPos.y - vehiclePosition.y);
-
-        if (distance < clickRadius)
+        float distance = std::hypot(worldPos.x - vehiclePosition.x, worldPos.y - vehiclePosition.y);        if (distance < clickRadius)
         {
             std::cout << "Selected Vehicle ID: " << vehicle->id << std::endl;
 
@@ -360,6 +366,9 @@ void SimulationView::selectVehicleAt(const sf::Vector2f &worldPos)
                 const_cast<Vehicle *>(vehicle),
                 [](Vehicle *) {} // 空删除器，因为我们不拥有这个指针
             );
+
+            // 设置 VehicleRenderer 的选中车辆，用于高亮显示
+            m_vehicleRenderer.setSelectedVehicle(vehicle);
 
             // 触发车辆选择回调
             if (m_onVehicleSelected)

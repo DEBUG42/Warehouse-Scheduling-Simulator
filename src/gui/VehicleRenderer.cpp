@@ -129,11 +129,27 @@ void VehicleRenderer::renderSingleVehicle(sf::RenderTarget &target,
     {
         fillColor = vehicleStateColor;
     }
-
     m_body.setFillColor(fillColor);
     m_body.setOutlineColor(m_borderColor);
     float outlineThickness = 1.0f * currentMmToPx * currentScaleFactor; // Scale outline
-    m_body.setOutlineThickness(std::max(0.5f, outlineThickness));       // Ensure minimum thickness
+
+    // Check if this vehicle is selected and add highlight effect
+    bool isSelected = (m_selectedVehicle != nullptr && m_selectedVehicle->id == vehicle.id);
+    if (isSelected)
+    {
+        // Make selected vehicle more prominent with thicker outline and brighter color
+        m_body.setOutlineColor(m_colorSelected); // Yellow outline for selected vehicle
+        outlineThickness *= 3.0f;                // Thicker outline
+
+        // Optionally brighten the fill color for selected vehicle
+        sf::Color highlightedFill = fillColor;
+        highlightedFill.r = std::min(255, static_cast<int>(highlightedFill.r * 1.3f));
+        highlightedFill.g = std::min(255, static_cast<int>(highlightedFill.g * 1.3f));
+        highlightedFill.b = std::min(255, static_cast<int>(highlightedFill.b * 1.3f));
+        m_body.setFillColor(highlightedFill);
+    }
+
+    m_body.setOutlineThickness(std::max(0.5f, outlineThickness)); // Ensure minimum thickness
 
     target.draw(m_body);
 
@@ -178,23 +194,27 @@ void VehicleRenderer::renderShadow(sf::RenderTarget &target,
     target.draw(shadow);
 }
 
-void VehicleRenderer::setVehiclesToRender(const std::vector<Vehicle *> &vehicles)
+void VehicleRenderer::setVehiclesToRender(const std::vector<Vehicle *> &vehicles) // Use Vehicle*
 {
-    m_vehicles.clear();
-    for (const auto *vehicle_ptr : vehicles)
-    {
-        if (vehicle_ptr)
-        { // Ensure the pointer is not null
-            // No const_cast needed if m_vehicles stores const Vehicle* or if draw() handles const Vehicle*
-            m_vehicles.push_back(const_cast<Vehicle *>(vehicle_ptr));
-        }
-    }
+    m_vehicles = vehicles; // Store vehicle pointers
 }
 
 void VehicleRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) const
 {
     if (!m_trackRendererRef)
+    {
+        std::cerr << "VehicleRenderer::draw() - TrackRenderer reference is null!" << std::endl;
         return;
+    }
+
+    if (m_vehicles.empty())
+    {
+        std::cerr << "VehicleRenderer::draw() - No vehicles to render!" << std::endl;
+        return;
+    }
+
+    std::cout << "VehicleRenderer::draw() - Rendering " << m_vehicles.size() << " vehicles" << std::endl;
+
     states.transform *= getTransform();
 
     sf::View currentView = target.getView();
@@ -212,6 +232,9 @@ void VehicleRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) co
         // Pass *m_trackRendererRef to calculateScreenPositionAndRotation
         // No const_cast needed as calculateScreenPositionAndRotation is now const
         calculateScreenPositionAndRotation(vehicle, *m_trackRendererRef, worldOriginOffsetPx, screenPos, screenRotation);
+
+        std::cout << "  Vehicle " << vehicle.id << " screen pos: (" << screenPos.x << ", " << screenPos.y << ")" << std::endl;
+
         renderShadow(target, screenPos, screenRotation);
         renderSingleVehicle(target, vehicle, screenPos, screenRotation);
     }
@@ -220,6 +243,13 @@ void VehicleRenderer::draw(sf::RenderTarget &target, sf::RenderStates states) co
 void VehicleRenderer::setVehicleVisualScale(float scale)
 {
     m_vehicleVisualScale = std::max(0.1f, scale);
+}
+
+void VehicleRenderer::setSelectedVehicle(const Vehicle* selectedVehicle)
+{
+    m_selectedVehicle = selectedVehicle;
+    std::cout << "VehicleRenderer: Selected vehicle set to " 
+              << (selectedVehicle ? std::to_string(selectedVehicle->id) : "nullptr") << std::endl;
 }
 
 // Dummy implementations for new helper functions, adapt as needed
@@ -281,7 +311,64 @@ void VehicleRenderer::drawVehicleID(sf::RenderTarget &target, const Vehicle &veh
     target.draw(text);
 }
 
-// Removed old updateVehicleStates, updateState, calculatePosition (now calculateScreenPositionAndRotation)
-// Removed old renderVehicle, renderShadow (now renderSingleVehicle, renderShadow taking screen coords)
-// getColorForStatus renamed to getColorForMotionState
-// getColorForCoreState renamed to getColorForVehicleState
+/**
+ * @brief 绘制方向指示器
+ * @param target 渲染目标
+ * @param position 位置
+ * @param rotation 旋转角度
+ * @param size 大小
+ */
+void VehicleRenderer::drawDirectionIndicator(sf::RenderTarget &target, const sf::Vector2f &position, float rotation, float size) const
+{
+    sf::CircleShape indicator(size / 2.0f);
+    indicator.setFillColor(sf::Color::Yellow);
+    indicator.setOrigin(size / 2.0f, size / 2.0f);
+    indicator.setPosition(position);
+    indicator.setRotation(rotation);
+    target.draw(indicator);
+}
+
+/**
+ * @brief 绘制ID文本
+ * @param target 渲染目标
+ * @param id 车辆ID
+ * @param position 位置
+ * @param scaleFactor 缩放因子
+ */
+void VehicleRenderer::drawIdText(sf::RenderTarget &target, int id, const sf::Vector2f &position, float scaleFactor) const
+{
+    sf::Text idText;
+    idText.setFont(m_font);
+    idText.setString(std::to_string(id));
+    idText.setCharacterSize(static_cast<unsigned int>(12 * scaleFactor));
+    idText.setFillColor(sf::Color::Black);
+
+    sf::FloatRect textBounds = idText.getLocalBounds();
+    idText.setOrigin(textBounds.left + textBounds.width / 2.0f, textBounds.top + textBounds.height / 2.0f);
+    idText.setPosition(position);
+
+    target.draw(idText);
+}
+
+/**
+ * @brief 绘制状态边界
+ * @param target 渲染目标
+ * @param vehicle 车辆对象
+ * @param basePosition 基础位置
+ * @param length 长度
+ * @param width 宽度
+ * @param rotation 旋转角度
+ */
+void VehicleRenderer::drawStatusBounds(sf::RenderTarget &target, const Vehicle &vehicle, const sf::Vector2f &basePosition, float length, float width, float rotation) const
+{
+    sf::RectangleShape bounds;
+    bounds.setSize(sf::Vector2f(length, width));
+    bounds.setOrigin(length / 2.0f, width / 2.0f);
+    bounds.setPosition(basePosition);
+    bounds.setRotation(rotation);
+    bounds.setFillColor(sf::Color::Transparent);
+    bounds.setOutlineThickness(1.0f);
+    bounds.setOutlineColor(sf::Color::White);
+
+    target.draw(bounds);
+}

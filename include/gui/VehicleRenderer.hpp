@@ -56,6 +56,7 @@ private:
 
     // 车辆状态
     std::vector<Vehicle *> m_vehicles; // Store pointers to Vehicle objects
+    const Vehicle* m_selectedVehicle = nullptr; // Track selected vehicle for highlighting
 
     mutable sf::RectangleShape m_body;
     mutable sf::RectangleShape m_statusBounds;    // 新增：用于显示状态的外部矩形
@@ -131,6 +132,12 @@ public:
      * @param scale 缩放比例
      */
     void setVehicleVisualScale(float scale);
+
+    /**
+     * @brief 设置选中的车辆，用于高亮显示
+     * @param selectedVehicle 选中的车辆指针，nullptr表示没有选中
+     */
+    void setSelectedVehicle(const Vehicle* selectedVehicle);
 
     // Helper rendering functions - ensure these use `const Vehicle&`
     void drawDirectionIndicator(sf::RenderTarget &target, const sf::Vector2f &position, float rotation, float size) const;

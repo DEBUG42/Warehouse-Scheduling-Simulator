@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "../../src/Core/Task.hpp" // 使用Core的Task定义
+#include "../src/Core/Task.hpp" // 使用Core的Task定义
 
 // 不再定义重复的Task结构
 

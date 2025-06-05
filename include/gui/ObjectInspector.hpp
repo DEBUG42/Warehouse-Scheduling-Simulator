@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "../src/Core/Vehicle.hpp" // Include full Vehicle definition
+#include "../src/Core/Vehicle.hpp"  // Include full Vehicle definition
 // 前向声明，避免直接包含Core头文件（为了演示简化）
-class Device; // Assuming Device is also in global namespace
+class Device;  // Assuming Device is also in global namespace
 
 /**
  * @brief 对象检视器类
@@ -54,8 +54,7 @@ public:
     ObjectInspector(sf::Font &font, float width); /**
                                                    * @brief 更新当前要显示的对象
                                                    * @param selectedObject 指向 SimObject 的指针，如果为 nullptr 则表示没有对象被选中
-                                                   */
-    void updateObject(const void *selectedObject, const std::string &objectType = "Unknown");
+                                                   */    void updateObject(const void *selectedObject, const std::string &objectType = "Unknown");
 
     /**
      * @brief 设置检视器的尺寸

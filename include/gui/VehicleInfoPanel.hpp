@@ -149,9 +149,7 @@ private:
      * @param seconds 秒数
      * @return 格式化的时间字符串
      */
-    std::string formatTime(float seconds) const;
-
-    /**
+    std::string formatTime(float seconds) const;    /**
      * @brief 格式化速度显示
      * @param speed 速度（米/秒）
      * @return 格式化的速度字符串
@@ -160,7 +158,7 @@ private:
 
     /**
      * @brief 将车辆状态转换为字符串
-     * @param status 状态枚举值
+     * @param status 状态值
      * @return 状态字符串
      */
     std::string vehicleStatusToString(int status) const;
