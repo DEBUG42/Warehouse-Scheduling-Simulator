@@ -43,7 +43,6 @@ struct DeviceState {
     bool is_reserved = false;     // 是否被任务锁定（调度后锁定）
     int reserved_by = -1;         // 被哪个任务锁定
     double reserved_until = 0.0;  // 预计释放时间
-
     bool is_transferring = false; // 是否在搬运中（堆垛机或人工）
 };
 

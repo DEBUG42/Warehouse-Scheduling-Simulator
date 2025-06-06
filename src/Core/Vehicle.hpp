@@ -4,7 +4,6 @@
 #include <iostream>
 #include <iomanip>
 #include <memory>
-//#include "Scheduler.hpp"
 #include "Task.hpp"
 #include "Event.hpp"
 #include <SFML/Graphics.hpp>
@@ -39,23 +38,22 @@ public:
     float m_maxCurveSpeed = (2 / 3) ;     // 弯轨最大速度（米/秒）
     float m_acceleration = 0.5 ;       // 加减速度（米/秒²）
 	float m_loadTime=7.5; // 装卸货时间（秒）
-
+    float last_debug_time = -1; // 上次调试时间（秒）
     int towards_device;          // 要前往的设备编号
     float position_m;            // 在轨道上的位置
     float next_available_time;   // 下一次空车时间
     bool is_executing;           // 是否正在执行任务
     bool is_loaded;              // 是否装载货物
     float velocity_mps;          // 当前速度（米/秒）
-    float max_speed;             // 最大速度（米/秒）
-    float target_position;       // 目标位置（米/秒）
+    float target_position;       // 目标位置（米/秒） 
 
     // 动态状态
     struct {
-        float position;               // 轨道位置（0~trackLength）
-        float currentSpeed;           // 当前速度（米/秒）
+        float position;               // 轨道位置（0~trackLength）  
+        float currentSpeed;           // 当前速度（米/秒）          
         MotionState motionState;      // 当前运动状态
-        Task* currentTask = nullptr; // 当前执行的任务
-        float operationTimer=0.0f;     // 装卸货操作计时器
+        Task* currentTask = nullptr; // 当前执行的任务      
+        float operationTimer=0.0f;     // 装卸货操作计时器  //用不到
     } m_state;
 };
 
@@ -100,10 +98,23 @@ public:
     // 输入: 无
     // 输出: 所有车辆的列表 (const std::vector<Vehicle>&)
     std::vector<Vehicle>& getAllVehicles();
+    void updateKinematics(Vehicle* vehicle, float deltaTime, float LOOP_LENGTH) ;
+    bool shouldDecelerateForCurve(Vehicle* vehicle) ;
+
+    bool shouldDecelerateForCollision(Vehicle* vehicle, Vehicle* leadingVehicle, float LOOP_LENGTH) ;
+
+    void limitSpeed(Vehicle* vehicle) ;
+
+    void checkAndHandleArrival(Vehicle* vehicle, float current_time) ;
+
+    void printVehicleDebugInfo(Vehicle* vehicle, float current_time) ;
+
+    float getDevicePosition(int device_id) ;
+
 
 public:
     std::vector<Vehicle> vehicles; // 定义 vehicles 容器
-    constexpr static double LOOP_LENGTH = 99.47787445225672;  // 环道总长度（可调）
+    constexpr static double LOOP_LENGTH = 99.47787445225672;  // 环道总长度
 
     // 计算两个位置之间的距离
     // 输入: 起始位置 (double from), 结束位置 (double to)

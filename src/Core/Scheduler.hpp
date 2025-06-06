@@ -10,9 +10,8 @@
 class Scheduler {
 public:
 
-    float current_time = 0.0;       // 当前时间
-        // 时间步长
-
+    float current_time = 0.0;       // 当前时间      
+    float last_debug_time = -1;     // 时间步长
     EventQueue* event_queue_ptr;        // 事件队列
     TaskManager* task_manager_ptr;      // 任务管理器
     VehicleManager* vehicle_manager_ptr;      // 车辆管理器
@@ -22,14 +21,13 @@ public:
     void bind(TaskManager* tm, VehicleManager* vm, DeviceManager* dm, EventQueue* eq, Logger* lg);
 
     
-    void run(double frequency = 100.0,float timescale=1.0);
-	void testrun(float dt);
+    void run(float deltatime);
 
     void processEvents();
 
     void handleEvent(const Event& e);
 
-    void updateSystemStates(float dt);
+    void updateSystemStates(float deltatime);
 
     // 尝试分派任务给可用的车辆
     // 输入: 无（依赖于类的成员变量）

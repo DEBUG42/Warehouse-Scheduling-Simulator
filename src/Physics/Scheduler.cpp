@@ -4,7 +4,8 @@
 #include "../Core/Task.hpp"
 #include "../Core/Eventqueue.hpp"
 #include <SFML/Graphics.hpp>
-
+#define EPSILON 0.0001f
+#define PRINT_INTERVAL 1.0f
 
 void Scheduler::bind(TaskManager* tm, VehicleManager* vm, DeviceManager* dm, EventQueue* eq, Logger* lg) {
     task_manager_ptr = tm;
@@ -67,8 +68,18 @@ void Scheduler::handleEvent(const Event& e) {
             this->device_manager_ptr->getDeviceState(e.device_id).has_goods = false;
             break;
 
+        case EventType::VEHICLE_PICK_UP_GOODS:
+            this->device_manager_ptr->getDeviceState(e.device_id).has_goods = false;
+            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->is_assigned = true;
+            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->is_assigned = false;
+            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->pick_time = current_time;
 
-
+        case EventType::VEHICLE_PUT_DOWN_GOODS:
+            this->device_manager_ptr->getDeviceState(e.device_id).has_goods = true;
+            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->is_assigned = true;
+            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->is_assigned = false;
+            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->drop_time = current_time;
+            break;
         default:
             break;
     }
@@ -177,70 +188,27 @@ void Scheduler::tryDispatchTasks() {
 }
 
 // 主运行循环
-void Scheduler::run(double frequency, float timescale) {
-    // dt = 1.0 / frequency * timescale;
-    float dt = 0.01f;
-    current_time = 0.0; 
+void Scheduler::run(float deltatime) {
+    if (!task_manager_ptr->allTasksCompleted()) {
 
-
-    sf::Clock updateClock;
-
-
-    std::cout << "这里表示进入了run循环哦"<< std::endl;
-    std::cout << "这里表示所有任务是否已完成"<<task_manager_ptr->allTasksCompleted() << std::endl;
-
-    int step_count = 0;
-    while (!task_manager_ptr->allTasksCompleted()) {
-
-
-        if (updateClock.getElapsedTime().asSeconds() >= dt) {
-            // 如果时间已到，立即重置时钟，为下一个 dt 步长计时
-            updateClock.restart(); 
-            
             // 执行一次模拟步进的逻辑
             processEvents();
-            updateSystemStates(dt);
+            updateSystemStates(deltatime);
             tryDispatchTasks();
 
             // 打印模拟时间日志
             // 假设你希望每模拟 1 秒 (即 1.0 / dt 步) 打印一次
-            if (step_count % int(1.0 / dt) == 0) { 
+                 // 判断是否到了新的秒刻点，并且需要进行输出
+    if (current_time >= this->last_debug_time + PRINT_INTERVAL - EPSILON) {
                 std::cout << "[SimTime] " << std::fixed << std::setprecision(2) << current_time << "s" << std::endl;
-                std::cout <<"这里是第一辆车的相关信息"<<vehicle_manager_ptr->getAllVehicles()[0].position_m << std::endl;
-                std::cout <<"加速度状态"<< vehicle_manager_ptr->motionStateToString(vehicle_manager_ptr->getAllVehicles()[0].m_state.motionState) <<std::endl;
-                std::cout <<"速度状态"<< vehicle_manager_ptr->getAllVehicles()[0].m_state.currentSpeed <<std::endl;
-                std::cout <<"当前任务"<< vehicle_manager_ptr->getAllVehicles()[0].m_state.currentTask->id<<std::endl;
 
-
-                std::cout <<"这里是第二辆车的相关信息"<< vehicle_manager_ptr->getAllVehicles()[1].position_m <<std::endl;
-                std::cout <<"加速度状态"<< vehicle_manager_ptr->motionStateToString(vehicle_manager_ptr->getAllVehicles()[1].m_state.motionState) <<std::endl;
-                std::cout <<"速度状态"<< vehicle_manager_ptr->getAllVehicles()[1].m_state.currentSpeed <<std::endl;
-                std::cout <<"当前任务"<< vehicle_manager_ptr->getAllVehicles()[1].m_state.currentTask->id <<std::endl;
+        // 更新这辆车上一次输出调试信息的时间
+        this->last_debug_time = current_time;
+    }
                 
-                std::cout <<"这里是第三辆车的相关信息"<< vehicle_manager_ptr->getAllVehicles()[2].position_m <<std::endl;
-                std::cout <<"加速度状态"<< vehicle_manager_ptr->motionStateToString(vehicle_manager_ptr->getAllVehicles()[2].m_state.motionState) <<std::endl; 
-                std::cout <<"速度状态"<< vehicle_manager_ptr->getAllVehicles()[2].m_state.currentSpeed <<std::endl;
-                std::cout <<"当前任务"<< vehicle_manager_ptr->getAllVehicles()[2].m_state.currentTask->id <<std::endl;
-                
-                // std::cout <<"这里是任务的执行情况"
-            }
+            // 更新模拟时间
+            current_time += deltatime;
 
-            //
+        	}
 
-            // 更新模拟时间并增加步数
-            current_time += dt;
-            step_count++;
-        }	}
-
-
-//    std::cout << "[INFO] Simulation finished at time " << current_time << "s" << std::endl;
-}
-void Scheduler::testrun(float dt){
-	if(!task_manager_ptr->allTasksCompleted()){
-		processEvents();
-        updateSystemStates(dt);
-        tryDispatchTasks();
-		current_time += dt;
-	}
-	
 }
