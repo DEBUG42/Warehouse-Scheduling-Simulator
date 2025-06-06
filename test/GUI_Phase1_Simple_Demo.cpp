@@ -135,7 +135,8 @@ public:
 
         // 创建状态面板
         statusPanel = std::make_unique<StatusPanel>(font);
-        statusPanel->resize(window.getSize().y - 10.0f); // 创建车辆信息面板
+        statusPanel->resize(window.getSize().y - 10.0f);
+        // 创建车辆信息面板
         vehicleInfoPanel = std::make_unique<VehicleInfoPanel>(font, VEHICLE_INFO_PANEL_WIDTH, VEHICLE_INFO_PANEL_HEIGHT);
 
         // 创建仿真视图 - 使用正确的构造函数
@@ -157,7 +158,7 @@ public:
         {
             vehiclePtrs.push_back(vehicle.get());
         }
-        simulationView->updateVehicles(vehiclePtrs);
+        simulationView->updateVehicles(vehiclePtrs); // TODO:
 
         // 更新设备数据（当前为空）
         std::vector<DeviceBase *> devicePtrs;
@@ -410,7 +411,7 @@ public:
             std::vector<Vehicle *> vehiclePtrs;
             for (auto &v : vehicles)
             {
-                vehiclePtrs.push_back(v.get());
+                vehiclePtrs.push_back(v.get()); // TODO:
             }
             simulationView->updateVehicles(vehiclePtrs);
         }
