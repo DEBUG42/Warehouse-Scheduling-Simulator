@@ -570,17 +570,17 @@ public:
 
 int main()
 {
-    Scheduler scheduler;
+    // Scheduler scheduler;
     EventQueue event_queue;         // 事件队列
     TaskManager task_manager;       // 任务管理器
     VehicleManager vehicle_manager; // 车辆管理器
     DeviceManager device_manager;   // 设备管理器
     Logger logger;                  // 日志记录器
 
-    scheduler.bind(&task_manager, &vehicle_manager, &device_manager, &event_queue, &logger);
+    // scheduler.bind(&task_manager, &vehicle_manager, &device_manager, &event_queue, &logger);
 
-    SimpleDemoApp app;            // 设置好了，不需要传递scheduler指针
-    app.setScheduler(&scheduler); // 通过setScheduler方法设置scheduler
+    SimpleDemoApp app; // 设置好了，不需要传递scheduler指针
+    // app.setScheduler(&scheduler); // 通过setScheduler方法设置scheduler
     app.toolbar->setOnModeChanged([&app, &scheduler](SimulationMode mode)
                                   {
                                       // 切换任务时重置仿真时间并暂停
@@ -595,7 +595,7 @@ int main()
                                           app.m_mode = SimulationMode::TASK1;
                                           std::cout << "TASK1" << std::endl;
                                           // TASK1模式下初始化3辆车用于演示
-                                          scheduler.vehicle_manager_ptr->initializeVehicles(3);
+                                          app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
 
                                           // 设置随机目标设备并让车辆开始运动
                                           {
@@ -653,7 +653,7 @@ int main()
 
     // 默认启动TASK1模式并初始化车辆
     std::cout << "Initializing default TASK1 mode..." << std::endl;
-    scheduler.vehicle_manager_ptr->initializeVehicles(3);
+    // scheduler.vehicle_manager_ptr->initializeVehicles(3);
 
     // 设置车辆的初始目标设备（用于TASK1演示）
     auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
