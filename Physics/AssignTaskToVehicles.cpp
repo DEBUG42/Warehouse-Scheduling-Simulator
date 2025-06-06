@@ -8,6 +8,9 @@
 #include <cmath>
 #include <limits>
 
+#define EPSILON 0.0001f
+#define PRINT_INTERVAL 1.0f
+
 constexpr double LOOP_LENGTH = 99.47787445225672;  // 环道总长度（可调）
 
 // 获取所有车辆
@@ -37,7 +40,6 @@ void VehicleManager::initializeVehicles(int count) {
         vehicle.is_loaded = false;
         vehicle.towards_device =0;
         vehicle.velocity_mps = 0.0;
-        vehicle.max_speed = 8.0 / 3.0;
         vehicle.m_state.position = vehicle.position_m;
         vehicle.m_state.currentSpeed = 0.0;
         vehicle.m_state.motionState = Vehicle::MotionState::Stopped;
@@ -47,78 +49,6 @@ void VehicleManager::initializeVehicles(int count) {
         vehicles.push_back(vehicle);
     }
 }
-/*
-// 更新所有车辆的状态
-// 输入: double current_time - 当前时间, double dt - 时间步长
-// 输出: 无
-void VehicleManager::updateAllVehicles(double current_time, double dt,double timecale) {
-    for (auto& vehicle : vehicles) {
-        if (!vehicle.m_state.currentTask) continue;
-
-        float& pos = vehicle.position_m;
-        float& v = vehicle.velocity_mps;
-        double a = vehicle.m_acceleration;
-        double vmax = vehicle.max_speed;
-
-        double dist_to_target = getDistance(pos, vehicle.target_position);
-
-        switch (vehicle.m_state.motionState) {
-        case Vehicle::MotionState::Accelerating:
-            v += a * dt;
-            if (v >= vmax) {
-                v = vmax;
-                vehicle.m_state.motionState = Vehicle::MotionState::Cruising;
-            }
-            break;
-
-        case Vehicle::MotionState::Cruising:
-            if (v * v / (2 * a) >= dist_to_target) {
-                vehicle.m_state.motionState = Vehicle::MotionState::Decelerating;
-            }
-            break;
-
-        case Vehicle::MotionState::Decelerating:
-            v -= a * dt;
-            if (v <= 0) {
-                v = 0;
-                vehicle.m_state.motionState = Vehicle::MotionState::Stopped;
-            }
-            break;
-
-        case Vehicle::MotionState::Stopped:
-        default:
-            break;
-        }
-
-        pos += v * dt;
-        if (pos > LOOP_LENGTH) pos -= LOOP_LENGTH;
-        if (pos < 0) pos += LOOP_LENGTH;
-
-        dist_to_target = getDistance(pos, vehicle.target_position);
-        if (dist_to_target < 0.05 && v < 1e-2) {
-            auto& task = *vehicle.m_state.currentTask;
-
-            if (vehicle.m_state.motionState == Vehicle::MotionState::Stopped) {
-                if (!vehicle.is_loaded) {
-                    std::cout << "[Vehicle] #" << vehicle.id << " picked at device " << task.start_device_id << "\n";
-                    vehicle.is_loaded = true;
-                    vehicle.towards_device = task.end_device_id;
-                    vehicle.target_position = task.end_device_id * 5.0;
-                    vehicle.m_state.motionState = Vehicle::MotionState::Accelerating;
-                } else {
-                    std::cout << "[Vehicle] #" << vehicle.id << " dropped at device " << task.end_device_id << "\n";
-                    task.complete_time = current_time;
-                    vehicle.m_state.currentTask = nullptr;
-                    vehicle.is_loaded = false;
-                    vehicle.towards_device = -1;
-                    vehicle.velocity_mps = 0.0;
-                    vehicle.m_state.motionState = Vehicle::MotionState::Stopped;
-                }
-            }
-        }
-    }
-}
-*/
 
 std::string VehicleManager::motionStateToString(Vehicle::MotionState state) {
     switch(state) {
@@ -132,121 +62,23 @@ std::string VehicleManager::motionStateToString(Vehicle::MotionState state) {
 
 void VehicleManager::updateVehicle(float current_time, float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle) {
     const float LOOP_LENGTH = 99.47787445225672f;
-    const float epsilon = 0.55f;  // 防止浮点误差
-    const float safe_margin = 0.2f;  // 追尾安全间距
 
-    // 📍 设备位置映射（注意：索引 = device_id）
-    float device_position[19] = {
-        -1000.0f, 85.9209372261538f, 83.5209372261538f, 79.9209372261538f,
-        77.5209372261538f, 73.9209372261538f, 71.5209372261538f, 67.9209372261538f,
-        65.5209372261538f, 61.9209372261538f, 59.5209372261538f, 55.9209372261538f,
-        53.5209372261538f, 32.000f, 29.000f, 26.000f, 14.0f, 11.000f, 8.000f
-    };
+    updateKinematics(vehicle, deltaTime, LOOP_LENGTH);
 
-    // 📌 处理位置（取模）
-    float pos = std::fmod(vehicle->m_state.position, LOOP_LENGTH);
-    float front_pos = std::fmod(leadingVehicle->m_state.position, LOOP_LENGTH);
-
-    float dist_to_target = device_position[vehicle->towards_device] - pos;
-    if (dist_to_target < 0) dist_to_target += LOOP_LENGTH;
-
-    float dist_to_leading = front_pos - pos;
-    if (dist_to_leading < 0) dist_to_leading += LOOP_LENGTH;
-
-    // 更新车辆位置记录
-    vehicle->position_m = pos;
-    vehicle->velocity_mps = vehicle->m_state.currentSpeed;
-
-    // // ✅ 调试输出（可用宏控制）
-    // std::cout << "Vehicle #" << vehicle->id
-    //           << " Speed: " << vehicle->m_state.currentSpeed
-    //           << " ToDeviceDist: " << dist_to_target << "\n";
-
-    // 🛑 到达目标位置处理
-    if (vehicle->m_state.motionState == Vehicle::MotionState::Stopped &&
-        std::fabs(dist_to_target) < epsilon) {
-
-        vehicle->m_state.operationTimer += deltaTime;
-        if (vehicle->m_state.operationTimer >= vehicle->m_loadTime) {
-            vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
-            vehicle->m_state.operationTimer = 0.0f;
-
-            // 🚨 示例逻辑：执行完一个任务后默认前往 device 15
-            vehicle->towards_device = 15;
-        }
-    }
-
-    // 🚧 动态状态切换：先判断是否要减速或加速
-    if ((vehicle->m_state.currentSpeed * vehicle->m_state.currentSpeed) / (2 * vehicle->m_acceleration)
-         >= (dist_to_leading - vehicle->m_length - safe_margin)) {
+    if (shouldDecelerateForCollision(vehicle, leadingVehicle, LOOP_LENGTH)) {
         vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
     }
-    else if ((vehicle->m_state.currentSpeed * vehicle->m_state.currentSpeed) / (2 * vehicle->m_acceleration)
-             >= dist_to_target) {
+    else if (shouldDecelerateForCurve(vehicle)) {
         vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
     }
-	// 🚧 动态状态切换：再判断是否要进入弯道,进入则减速
-	else if ((pos >= 0.0f && pos <= 40.0f) && 
-                 ((40.0f - pos) <= (((vehicle->m_state.currentSpeed) * (vehicle->m_state.currentSpeed)) - 
-                                  (vehicle->m_maxCurveSpeed) * (vehicle->m_maxCurveSpeed)) / 
-                                  (2 * vehicle->m_acceleration))){
-            vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-        }
-    else if ((pos >= 49.5209372261538f && pos <= 89.5209372261538f) &&
-                 ((89.5209372261538f - pos) <= (((vehicle->m_state.currentSpeed) * (vehicle->m_state.currentSpeed)) - 
-                                                 (vehicle->m_maxCurveSpeed) * (vehicle->m_maxCurveSpeed)) / 
-                                                (2 * vehicle->m_acceleration))) {
-            vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-        }
     else {
-        // 弯道处理（下方弯道 + 上方弯道）
-        bool in_curve1 = (pos > 40.0f && pos < 49.5209f);
-        bool in_curve2 = (pos > 89.5209f && pos < LOOP_LENGTH);
-
-        if ((in_curve1 || in_curve2) &&
-            vehicle->m_state.currentSpeed > vehicle->m_maxCurveSpeed) {
-            vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-        }
-        else {
-            vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
-        }
+        vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
     }
 
-
-    // 🚦 按状态推进速度
-    switch (vehicle->m_state.motionState) {
-        case Vehicle::MotionState::Accelerating:
-            vehicle->m_state.currentSpeed += vehicle->m_acceleration * deltaTime;
-            break;
-        case Vehicle::MotionState::Decelerating:
-            vehicle->m_state.currentSpeed -= vehicle->m_acceleration * deltaTime;
-            if (vehicle->m_state.currentSpeed <= 0.0f) {
-                vehicle->m_state.currentSpeed = 0.0f;
-                vehicle->m_state.motionState = Vehicle::MotionState::Stopped;
-            }
-            break;
-        case Vehicle::MotionState::Cruising:
-            break;
-        case Vehicle::MotionState::Stopped:
-            break;
-    }
-
-    // 🚗 限速（弯道/直道）
-    if ((pos >= 0.0f && pos <= 40.0f) || (pos >= 49.5f && pos <= 89.5f)) {
-        if (vehicle->m_state.currentSpeed > vehicle->m_maxStraightSpeed)
-            vehicle->m_state.currentSpeed = vehicle->m_maxStraightSpeed;
-    }
-    else {
-        if (vehicle->m_state.currentSpeed > vehicle->m_maxCurveSpeed)
-            vehicle->m_state.currentSpeed = vehicle->m_maxCurveSpeed;
-    }
-
-    // 🔁 更新位置
-    vehicle->m_state.position += vehicle->m_state.currentSpeed * deltaTime;
-    if (vehicle->m_state.position >= LOOP_LENGTH)
-        vehicle->m_state.position -= LOOP_LENGTH;
+    limitSpeed(vehicle);
+    checkAndHandleArrival(vehicle, current_time);
+    printVehicleDebugInfo(vehicle, current_time);
 }
-
 
 // 计算从一个位置到另一个位置的距离
 // 输入: double from - 起始位置, double to - 目标位置
@@ -278,7 +110,7 @@ Vehicle* VehicleManager::selectBestVehicle(Task& task, std::vector<Vehicle*>& ca
     double best_time = std::numeric_limits<double>::max();
     Vehicle* best_vehicle = nullptr;
 	float device_position[19]={
-		-1000.0f,
+        -1,
 		85.9209372261538,
 		83.5209372261538,
 		79.9209372261538,
@@ -342,10 +174,109 @@ void VehicleManager::applyTaskToVehicle(Vehicle& vehicle, Task& task, double cur
     vehicle.towards_device = task.start_device_id;
     vehicle.target_position = device_position[task.start_device_id];
     vehicle.velocity_mps = 0.0;
-    vehicle.max_speed = vehicle.m_maxStraightSpeed;
     vehicle.m_state.motionState = Vehicle::MotionState::Accelerating;
     vehicle.is_loaded = false;
 
     std::cout << "[Assign] Vehicle #" << vehicle.id << " → Task #" << task.id << "\n";
 }
 
+void VehicleManager::updateKinematics(Vehicle* vehicle, float deltaTime, float LOOP_LENGTH) {
+    switch (vehicle->m_state.motionState) {
+        case Vehicle::MotionState::Accelerating:
+            vehicle->m_state.currentSpeed += vehicle->m_acceleration * deltaTime;
+            break;
+        case Vehicle::MotionState::Decelerating:
+            vehicle->m_state.currentSpeed -= vehicle->m_acceleration * deltaTime;
+            if (vehicle->m_state.currentSpeed <= 0.0f) {
+                vehicle->m_state.currentSpeed = 0.0f;
+                vehicle->m_state.motionState = Vehicle::MotionState::Stopped;
+            }
+            break;
+        case Vehicle::MotionState::Cruising:
+        case Vehicle::MotionState::Stopped:
+            break;
+    }
+    vehicle->m_state.position += vehicle->m_state.currentSpeed * deltaTime;
+    if (vehicle->m_state.position >= LOOP_LENGTH)
+        vehicle->m_state.position -= LOOP_LENGTH;
+    vehicle->position_m = vehicle->m_state.position;
+    vehicle->velocity_mps = vehicle->m_state.currentSpeed;
+}
+bool VehicleManager::shouldDecelerateForCurve(Vehicle* vehicle) {
+    float pos = vehicle->position_m;
+    float v = vehicle->m_state.currentSpeed;
+    float vc = vehicle->m_maxCurveSpeed;
+    float a = vehicle->m_acceleration;
+
+    if ((pos >= 0.0f && pos <= 40.0f) && ((40.0f - pos) <= ((v * v - vc * vc) / (2 * a))))
+        return true;
+    if ((pos >= 49.5f && pos <= 89.5f) && ((89.5f - pos) <= ((v * v - vc * vc) / (2 * a))))
+        return true;
+    return false;
+}
+
+bool VehicleManager::shouldDecelerateForCollision(Vehicle* vehicle, Vehicle* leadingVehicle, float LOOP_LENGTH) {
+    const float safe_margin = 0.2f;
+    float pos = std::fmod(vehicle->m_state.position, LOOP_LENGTH);
+    float front_pos = std::fmod(leadingVehicle->m_state.position, LOOP_LENGTH);
+
+    float dist = front_pos - pos;
+    if (dist < 0) dist += LOOP_LENGTH;
+
+    float braking_dist = (vehicle->m_state.currentSpeed * vehicle->m_state.currentSpeed) / (2 * vehicle->m_acceleration);
+    return braking_dist >= (dist - vehicle->m_length - safe_margin);
+}
+void VehicleManager::limitSpeed(Vehicle* vehicle) {
+    float pos = vehicle->position_m;
+    float& v = vehicle->m_state.currentSpeed;
+
+    if ((pos >= 0.0f && pos <= 40.0f) || (pos >= 49.5f && pos <= 89.5f)) {
+        if (v > vehicle->m_maxStraightSpeed)
+            v = vehicle->m_maxStraightSpeed;
+    } else {
+        if (v > vehicle->m_maxCurveSpeed)
+            v = vehicle->m_maxCurveSpeed;
+    }
+}
+void VehicleManager::checkAndHandleArrival(Vehicle* vehicle, float current_time) {
+    Task* task = vehicle->m_state.currentTask;
+    if (!task) return;
+
+    float pos = vehicle->position_m;
+    float device_pos = getDevicePosition(task->start_device_id);
+    float dist = fabs(pos - device_pos);
+    if (dist > 0.5f) return;
+    if (vehicle->m_state.currentSpeed > 1e-2f) return;
+
+    if (vehicle->m_state.motionState == Vehicle::MotionState::Stopped) {
+        if (!vehicle->is_loaded) {
+            std::cout << "[Vehicle] #" << vehicle->id << " picked at device " << task->start_device_id << "\n";
+            vehicle->is_loaded = true;
+            vehicle->towards_device = task->end_device_id;
+        } else {
+            std::cout << "[Vehicle] #" << vehicle->id << " dropped at device " << task->end_device_id << "\n";
+            task->complete_time = current_time;
+            vehicle->m_state.currentTask = nullptr;
+            vehicle->is_loaded = false;
+            vehicle->towards_device = -1;
+        }
+    }
+}
+void VehicleManager::printVehicleDebugInfo(Vehicle* vehicle, float current_time) {
+
+    if (current_time >= vehicle->last_debug_time + PRINT_INTERVAL - EPSILON) {
+        std::cout << "[Debug] 车#" << vehicle->id
+                  << " 速度: " << vehicle->m_state.currentSpeed
+                  << " 加减速状态: " << motionStateToString(vehicle->m_state.motionState)
+                  << " 位置: " << vehicle->position_m << "\n";
+        vehicle->last_debug_time = current_time;
+    }
+}
+float VehicleManager::getDevicePosition(int device_id) {
+    static float device_position[19] = {
+        -1, 85.92f, 83.52f, 79.92f, 77.52f, 73.92f, 71.52f,
+        67.92f, 65.52f, 61.92f, 59.52f, 55.92f, 53.52f,
+        32.00f, 29.00f, 26.00f, 14.00f, 11.00f, 8.00f
+    };
+    return device_position[device_id];
+}

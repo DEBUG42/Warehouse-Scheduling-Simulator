@@ -16,7 +16,7 @@ int main() {
     Scheduler scheduler;
     scheduler.bind(&task_manager, &vehicle_manager, &device_manager, &event_queue, &logger);
 
-    auto& vehicles = scheduler.vehicle_manager_ptr->getAllVehicles(); 
+    auto& vehicles = vehicle_manager.getAllVehicles(); 
     vehicle_manager.initializeVehicles(3);
     scheduler.device_manager_ptr->initializeDevices();
     // device_manager.getDeviceState(16).has_goods = true;
@@ -48,7 +48,11 @@ int main() {
 
     // 6. 启动调度主循环
     std::cout << "[Sim] Simulation started...\n";
-    scheduler.run();
+    float deltatime;
+    while(1){
+    deltatime=clock.restart().asSeconds();
+    scheduler.run(deltatime);
+    }
     std::cout << "[Sim] Simulation finished.\n";
 
     // 7. 输出设备使用情况

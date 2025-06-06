@@ -5,7 +5,6 @@
 #include "../Core/Scheduler.hpp"
 #include <fstream>
 #include <sstream>
-#include <iostream>
 #include <string>
 
 std::ostream& operator<<(std::ostream& os, Task& task) {
@@ -197,9 +196,9 @@ std::vector<Task*> TaskManager::getReadyTasks(double current_time, DeviceManager
 
     return ready;
 }
+
 void TaskManager::initializeNextTaskID() {
     next_task_id.clear();
-
     for (const auto& task : tasks) {
         int dev = task.start_device_id;
         if (next_task_id.find(dev) == next_task_id.end() || task.id < next_task_id[dev]) {
