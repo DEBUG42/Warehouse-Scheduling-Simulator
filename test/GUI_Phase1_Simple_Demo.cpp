@@ -333,12 +333,12 @@ public:
             }
 
             // 模拟车辆加减速事件（每3秒一次）
-            static float lastEventTime = 0.0f;
-            if (simulationTime - lastEventTime > 3.0f)
-            {
-                addSimulatedAccelerationEvent();
-                lastEventTime = simulationTime;
-            }
+            // static float lastEventTime = 0.0f;
+            // if (simulationTime - lastEventTime > 3.0f)
+            // {
+            //     addSimulatedAccelerationEvent();
+            //     lastEventTime = simulationTime;
+            // }
         }
     }
 
