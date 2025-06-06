@@ -47,16 +47,11 @@ class SimpleDemoApp
 {
 public:
     sf::RenderWindow window;
-    sf::Font font;                      // GUI组件
-    Scheduler *scheduler_ptr = nullptr; // 改为指针，引用外部scheduler
+    sf::Font font; // GUI组件
 
     std::unique_ptr<StatusPanel> statusPanel;
     std::unique_ptr<VehicleInfoPanel> vehicleInfoPanel;
     std::unique_ptr<SimulationView> simulationView;
-
-    // 删除重复的车辆存储，使用scheduler中的
-    // std::vector<std::unique_ptr<Vehicle>> vehicles;
-    // std::vector<std::unique_ptr<DeviceBase>> devices;
 
     // 仿真状态
     float simulationTime = 0.0f;
@@ -71,29 +66,33 @@ public:
         float stateChangeTime = 0.0f;
         bool hasStateChanged = false;
     };
-    std::map<int, VehicleStateTracker> vehicleTrackers; // 布局参数
+    std::map<int, VehicleStateTracker> vehicleTrackers;
+
+    // 布局参数
     static constexpr float TOOLBAR_HEIGHT = 50.0f;
     static constexpr float STATUS_PANEL_WIDTH = 290.0f;
     static constexpr float SIMULATION_VIEW_MARGIN = 10.0f;
     static constexpr float VEHICLE_INFO_PANEL_WIDTH = 350.0f;  // 车辆信息面板宽度
     static constexpr float VEHICLE_INFO_PANEL_HEIGHT = 415.0f; // 车辆信息面板高度
 
+    // 后端核心组件（从main函数移动过来）
+    Scheduler scheduler;
+    EventQueue event_queue;         // 事件队列
+    TaskManager task_manager;       // 任务管理器
+    VehicleManager vehicle_manager; // 车辆管理器
+    DeviceManager device_manager;   // 设备管理器
+    Logger logger;                  // 日志记录器
+
 public:
     SimulationMode m_mode = SimulationMode::TASK1;
     std::unique_ptr<Toolbar> toolbar;
     SimpleDemoApp() : window(sf::VideoMode(1800, 800), "GUI Phase 1 - Enhanced Demo with Warehouse & Vehicles")
     {
-        loadFont();
-        // initializeSimulationData(); // 删除，不再创建车辆
-        initializeComponents();
-    }
+        // 绑定后端组件
+        scheduler.bind(&task_manager, &vehicle_manager, &device_manager, &event_queue, &logger);
 
-    // 设置scheduler的方法
-    void setScheduler(Scheduler *scheduler)
-    {
-        scheduler_ptr = scheduler;
-        // 重新初始化依赖scheduler的组件
-        updateSchedulerDependentComponents();
+        loadFont();
+        initializeComponents();
     }
 
     // 公共方法：更新GUI显示（供外部调用）
@@ -164,24 +163,15 @@ public:
         toolbar->setOnTimeScaleChanged([this](float speed)
                                        { std::cout << "Speed adjusted to: " << speed << "x" << std::endl; });
 
-        // 如果scheduler还未设置，暂时跳过依赖scheduler的初始化
-        if (scheduler_ptr != nullptr)
-        {
-            updateSchedulerDependentComponents();
-        }
+        // 初始化依赖scheduler的组件
+        updateSchedulerDependentComponents();
     }
 
     // 更新依赖scheduler的组件
     void updateSchedulerDependentComponents()
     {
-        if (scheduler_ptr == nullptr)
-        {
-            std::cout << "如果没有规划器指针，我设置的是直接跳过对她的依赖" << std::endl;
-            return;
-        }
-
-        // 使用scheduler中的车辆数据（可能为空）
-        auto &vehicles = scheduler_ptr->vehicle_manager_ptr->getAllVehicles();
+        // 使用内部的vehicle_manager而不是指针
+        auto &vehicles = vehicle_manager.getAllVehicles();
         std::vector<Vehicle *> vehiclePtrs;
         for (auto &vehicle : vehicles)
         {
@@ -268,13 +258,8 @@ public:
                 case sf::Keyboard::Num2:
                 case sf::Keyboard::Num3:
                 {
-                    if (scheduler_ptr == nullptr)
-                    {
-                        std::cout << "Warning: Scheduler not set, cannot select vehicle" << std::endl;
-                        continue;
-                    }
                     int vehicleId = event.key.code - sf::Keyboard::Num0;
-                    auto &vehicles = scheduler_ptr->vehicle_manager_ptr->getAllVehicles();
+                    auto &vehicles = vehicle_manager.getAllVehicles();
                     if (vehicles.empty())
                     {
                         std::cout << "No vehicles available from backend" << std::endl;
@@ -345,10 +330,7 @@ public:
             simulationTime += deltaTime * timeScale;
 
             // 更新scheduler时间
-            if (scheduler_ptr != nullptr)
-            {
-                scheduler_ptr->current_time = simulationTime;
-            }
+            scheduler.current_time = simulationTime;
 
             // 更新工具栏时间显示
             toolbar->updateTimeDisplay(simulationTime);
@@ -370,10 +352,7 @@ public:
     // 检测车辆状态变化并记录加减速事件
     void checkVehicleStateChanges()
     {
-        if (scheduler_ptr == nullptr)
-            return;
-
-        auto &vehicles = scheduler_ptr->vehicle_manager_ptr->getAllVehicles();
+        auto &vehicles = vehicle_manager.getAllVehicles();
         for (auto &vehicle : vehicles)
         {
             int vehicleId = vehicle.id;
@@ -537,9 +516,9 @@ public:
             render();
 
             // 只有当有车辆时才执行车辆更新逻辑
-            if (isRunning && m_mode == SimulationMode::TASK1 && scheduler_ptr != nullptr)
+            if (isRunning && m_mode == SimulationMode::TASK1)
             {
-                auto &vehicles = scheduler_ptr->vehicle_manager_ptr->getAllVehicles();
+                auto &vehicles = vehicle_manager.getAllVehicles();
                 if (vehicles.size() >= 3)
                 { // 确保有足够的车辆
                     float timeScale = toolbar->getCurrentSpeed();
@@ -549,18 +528,18 @@ public:
                     // 整数部分 - 完整循环
                     for (int i = 0; i < static_cast<int>(intPart); i++)
                     {
-                        updateVehicle1(scheduler_ptr->current_time, deltaTime, &vehicles[0], &vehicles[2]);
-                        updateVehicle1(scheduler_ptr->current_time, deltaTime, &vehicles[1], &vehicles[0]);
-                        updateVehicle1(scheduler_ptr->current_time, deltaTime, &vehicles[2], &vehicles[1]);
+                        updateVehicle1(scheduler.current_time, deltaTime, &vehicles[0], &vehicles[2]);
+                        updateVehicle1(scheduler.current_time, deltaTime, &vehicles[1], &vehicles[0]);
+                        updateVehicle1(scheduler.current_time, deltaTime, &vehicles[2], &vehicles[1]);
                     }
 
                     // 小数部分 - 通过deltaTime实现
                     if (fractionalPart > 0.001f)
                     {
                         float adjustedDeltaTime = deltaTime * fractionalPart;
-                        updateVehicle1(scheduler_ptr->current_time, adjustedDeltaTime, &vehicles[0], &vehicles[2]);
-                        updateVehicle1(scheduler_ptr->current_time, adjustedDeltaTime, &vehicles[1], &vehicles[0]);
-                        updateVehicle1(scheduler_ptr->current_time, adjustedDeltaTime, &vehicles[2], &vehicles[1]);
+                        updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[0], &vehicles[2]);
+                        updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[1], &vehicles[0]);
+                        updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[2], &vehicles[1]);
                     }
                 }
             }
@@ -570,23 +549,13 @@ public:
 
 int main()
 {
-    // Scheduler scheduler;
-    EventQueue event_queue;         // 事件队列
-    TaskManager task_manager;       // 任务管理器
-    VehicleManager vehicle_manager; // 车辆管理器
-    DeviceManager device_manager;   // 设备管理器
-    Logger logger;                  // 日志记录器
-
-    // scheduler.bind(&task_manager, &vehicle_manager, &device_manager, &event_queue, &logger);
-
-    SimpleDemoApp app; // 设置好了，不需要传递scheduler指针
-    // app.setScheduler(&scheduler); // 通过setScheduler方法设置scheduler
-    app.toolbar->setOnModeChanged([&app, &scheduler](SimulationMode mode)
+    SimpleDemoApp app; // 内部已包含所有组件
+    app.toolbar->setOnModeChanged([&app](SimulationMode mode)
                                   {
                                       // 切换任务时重置仿真时间并暂停
                                       app.simulationTime = 0.0f;
                                       app.isRunning = false;
-                                      scheduler.current_time = 0.0f;
+                                      app.scheduler.current_time = 0.0f;
                                       
                                       std::cout << "Mode changed to: ";
                                       switch (mode)
@@ -595,11 +564,11 @@ int main()
                                           app.m_mode = SimulationMode::TASK1;
                                           std::cout << "TASK1" << std::endl;
                                           // TASK1模式下初始化3辆车用于演示
-                                          app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
+                                          app.vehicle_manager.initializeVehicles(3);
 
                                           // 设置随机目标设备并让车辆开始运动
                                           {
-                                              auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
+                                              auto &vehicles = app.vehicle_manager.getAllVehicles();
                                               if (vehicles.size() >= 3)
                                               {
                                                   srand(time(NULL));
@@ -653,10 +622,10 @@ int main()
 
     // 默认启动TASK1模式并初始化车辆
     std::cout << "Initializing default TASK1 mode..." << std::endl;
-    // scheduler.vehicle_manager_ptr->initializeVehicles(3);
+    app.vehicle_manager.initializeVehicles(3);
 
     // 设置车辆的初始目标设备（用于TASK1演示）
-    auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
+    auto &vehicles = app.vehicle_manager.getAllVehicles();
     if (vehicles.size() >= 3)
     {
         srand(time(NULL));
@@ -688,11 +657,6 @@ int main()
     // 确保GUI立即显示车辆
     app.updateSchedulerDependentComponents();
     std::cout << "GUI refreshed to display vehicles" << std::endl;
-
-    // 不再在前端初始化车辆，等待后端通信
-    // 注释掉车辆初始化代码以避免前后端冲突：
-    // scheduler.vehicle_manager_ptr->initializeVehicles(3);
-    // auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
 
     std::cout << "前端默认初始为Task1，后端通信已保证" << std::endl;
 
