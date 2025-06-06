@@ -29,8 +29,8 @@ echo Compiling Warehouse Scheduling Simulator...
     -DTimescale=1.0 ^
     -I"%SFML_INC%" ^
     -I"Warehouse-Scheduling-Simulator" ^
-    -I"/Core" ^
-    -I"/Physics" ^
+    -I"/src/Core" ^
+    -I"/src/Physics" ^
     "log_test.cpp" ^
     "Physics/EventQueue.cpp" ^
     "Physics/Logger.cpp" ^

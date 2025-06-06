@@ -160,11 +160,12 @@ void VehicleInfoPanel::updateInfo(float currentTime)
     m_averageSpeedText.setString("Average Speed: " + formatSpeed(m_statistics.averageSpeed));
 }
 
-void VehicleInfoPanel::recordAccelerationEvent(float startTime, float endTime,
+void VehicleInfoPanel::recordAccelerationEvent(int vehicleId, float startTime, float endTime,
                                                float startSpeed, float endSpeed,
                                                float acceleration, const std::string &type)
 {
     AccelerationEvent event;
+    event.vehicleId = vehicleId;
     event.startTime = startTime;
     event.endTime = endTime;
     event.startSpeed = startSpeed;
@@ -195,9 +196,8 @@ void VehicleInfoPanel::updateAccelerationHistoryDisplay()
         historyText.setFont(m_font);
         historyText.setCharacterSize(10);
         historyText.setFillColor(sf::Color(80, 80, 80));
-
         std::ostringstream oss;
-        oss << event.type << ": " << formatTime(event.startTime) << "-" << formatTime(event.endTime)
+        oss << "V" << event.vehicleId << " " << event.type << ": " << formatTime(event.startTime) << "-" << formatTime(event.endTime)
             << " | " << formatSpeed(event.startSpeed) << "→" << formatSpeed(event.endSpeed);
         historyText.setString(oss.str());
 

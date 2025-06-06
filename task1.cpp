@@ -22,7 +22,7 @@ Scheduler scheduler;
 scheduler.bind(&task_manager, &vehicle_manager, &device_manager, &event_queue, &logger);
 
 scheduler.vehicle_manager->initializeVehicles(3);
-auto& vehicles = scheduler.vehicle_manager->getVehicles();
+auto& vehicles = scheduler.vehicle_manager->getVehicles();//FIXME:
 
 
 srand(time(NULL));
