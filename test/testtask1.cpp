@@ -477,6 +477,10 @@ public:
 	{
         sf::Clock clock;
 		auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
+		scheduler.task_manager_ptr->initializeNextTaskID();
+		scheduler.event_queue_ptr->initializeInitialEvents(); 
+		std::vector<Task>& tasks = task_manager.getAllTasks();
+		scheduler.task_manager_ptr->loadFromFile("D:/Warehouse_Scheduling_Simulator/test/tasks.csv");
         std::cout << "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles Started" << std::endl;
         std::cout << "Features:" << std::endl;
         std::cout << "1. Toolbar - Time format display (HH:MM:SS.mmm)" << std::endl;
@@ -629,7 +633,22 @@ public:
 				current_time += deltaTime * timeScale;
 			}
 			if(isRunning&&m_mode==SimulationMode::TASK2_1||m_mode==SimulationMode::TASK2_2||m_mode==SimulationMode::TASK2_3){
+				float intPart, fractionalPart;
+				fractionalPart = std::modf(timeScale, &intPart);
+
+				for(int i=0; i<static_cast<int>(intPart); i++){
+				auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
 				scheduler.run(deltaTime);
+				updateSchedulerDependentComponents();
+				}
+				
+				// 小数部分 - 通过deltaTime实现
+				if(fractionalPart > 0.001f) {
+				float adjustedDeltaTime = deltaTime * fractionalPart;
+				auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
+				scheduler.run(adjustedDeltaTime);
+				updateSchedulerDependentComponents();
+				}
 			}
         }
     }
