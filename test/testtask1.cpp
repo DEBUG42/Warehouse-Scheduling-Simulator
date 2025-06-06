@@ -44,7 +44,7 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehic
 
 class SimpleDemoApp
 {
-public:
+private:
 
     sf::RenderWindow window;
     sf::Font font;            // GUI组件
@@ -69,6 +69,13 @@ public:
     static constexpr float VEHICLE_INFO_PANEL_HEIGHT = 415.0f; // 车辆信息面板高度
 
 public:
+	EventQueue event_queue;         // 事件队列
+    TaskManager task_manager;       // 任务管理器
+    VehicleManager vehicle_manager; // 车辆管理器
+    DeviceManager device_manager;   // 设备管理器
+    Logger logger;                  // 日志记录器
+    Scheduler scheduler;
+
 	SimulationMode m_mode = SimulationMode::TASK1;
 	std::unique_ptr<Toolbar> toolbar;
 	Scheduler *scheduler_ptr; // 改为指针，引用外部scheduler
@@ -534,11 +541,30 @@ public:
         window.draw(instructions);
     }
     void run()
-    {
+	{
+	if(m_mode == SimulationMode::TASK1){	
         sf::Clock clock;
 
         auto &vehicles = scheduler_ptr->vehicle_manager_ptr->getAllVehicles();
-
+							srand(time(NULL));
+					int random0 = 1 + rand() % 18;
+					int random1 = 1 + rand() % 18;
+					int random2 = 1 + rand() % 18;
+					while (random0 == 15)
+					{
+						random0 = 1 + rand() % 18;
+					}
+					while (random1 == 15)
+					{
+						random1 = 1 + rand() % 18;
+					}
+					while (random2 == 15)
+					{
+						random2 = 1 + rand() % 18;
+					}
+					vehicles[0].towards_device = random0;
+					vehicles[1].towards_device = random1;
+					vehicles[2].towards_device = random2;
         std::cout << "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles Started" << std::endl;
         std::cout << "Features:" << std::endl;
         std::cout << "1. Toolbar - Time format display (HH:MM:SS.mmm)" << std::endl;
@@ -553,16 +579,34 @@ public:
         std::cout << "\nInstructions: Press Space to start simulation, 1/2/3 to select vehicles, WASD to move" << std::endl;
 		
 
-        while (window.isOpen())
+		float current_time = 0.0f;
+		int recording[3]= {0,0,0};
+		int working[3]={0,0,0};
+		float start_time[3] = {0.0f, 0.0f, 0.0f};
+		float end_time[3] = {0.0f, 0.0f, 0.0f};
+		float startspeed[3] = {0.0f, 0.0f, 0.0f};
+		float endspeed[3] = {0.0f, 0.0f, 0.0f};
+		float sumRunningTime[3] = {0.0f,0.0f,0.0f};
+		int stopcount[3] = {0,0,0};
+		Vehicle::MotionState laststate_0 = Vehicle::MotionState::Stopped;
+		Vehicle::MotionState laststate_1 = Vehicle::MotionState::Stopped;
+		Vehicle::MotionState laststate_2 = Vehicle::MotionState::Stopped;
+		while (window.isOpen())
         {
             float deltaTime = clock.restart().asSeconds();
             // printf("Delta Time: %.3f seconds\n", deltaTime); // 输出每帧的时间间隔
             handleEvents();
             update(deltaTime);
             render();
+
+
 			float timeScale = toolbar->getCurrentSpeed();
-            if (isRunning && m_mode == SimulationMode::TASK1)
+            if (isRunning)
 			{
+
+
+
+
 				float intPart, fractionalPart;
 				fractionalPart = std::modf(timeScale, &intPart);
 				
@@ -580,70 +624,151 @@ public:
 					updateVehicle1(scheduler_ptr->current_time, adjustedDeltaTime, &vehicles[1], &vehicles[0]);
 					updateVehicle1(scheduler_ptr->current_time, adjustedDeltaTime, &vehicles[2], &vehicles[1]);
 				}
-            }
+
+
+											// Vehicle 0 recording
+			if(recording[0]==0&&vehicles[0].m_state.motionState!= laststate_0&&(vehicles[0].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[0].m_state.motionState == Vehicle::MotionState::Decelerating)){
+				start_time[0] = current_time;
+				startspeed[0] = vehicles[0].m_state.currentSpeed;
+				recording[0] = 1;
+			}
+			if(recording[0]==1&&vehicles[0].m_state.motionState!= laststate_0){
+				end_time[0] = current_time;
+				endspeed[0] = vehicles[0].m_state.currentSpeed;
+				recording[0] = 0;
+				working[0]=1;
+			}
+			if(recording[0]==0&&working[0]==1){
+				working[0]=0;
+				// vehicleInfoPanel->recordAccelerationEvent(
+				// 	0,start_time[0], end_time[0], startspeed[0], endspeed[0], 0.5, vehicles[0].m_state.motionState);
+
+			}
+
+			// Vehicle 1 recording
+			if(recording[1]==0&&vehicles[1].m_state.motionState!= laststate_1&&(vehicles[1].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[1].m_state.motionState == Vehicle::MotionState::Decelerating)){
+				start_time[1] = current_time;
+				startspeed[1] = vehicles[1].m_state.currentSpeed;
+				recording[1] = 1;
+			}
+			if(recording[1]==1&&vehicles[1].m_state.motionState!= laststate_1){
+				end_time[1] = current_time;
+				endspeed[1] = vehicles[1].m_state.currentSpeed;
+				recording[1] = 0;
+				working[1]=1;
+			}
+			if(recording[1]==0&&working[1]==1){
+				working[1]=0;
+				// vehicleInfoPanel->recordAccelerationEvent(
+				// 	1,start_time[1], end_time[1], startspeed[1], endspeed[1], 0.5, vehicles[1].m_state.motionState);
+			}
+
+			// Vehicle 2 recording
+			if(recording[2]==0&&vehicles[2].m_state.motionState!= laststate_2&&(vehicles[2].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[2].m_state.motionState == Vehicle::MotionState::Decelerating)){
+				start_time[2] = current_time;
+				startspeed[2] = vehicles[2].m_state.currentSpeed;
+				recording[2] = 1;
+			}
+			if(recording[2]==1&&vehicles[2].m_state.motionState!= laststate_2){
+				end_time[2] = current_time;
+				endspeed[2] = vehicles[2].m_state.currentSpeed;
+				recording[2] = 0;
+				working[2]=1;
+			}
+			if(recording[2]==0&&working[2]==1){
+				working[2]=0;
+				if(laststate_2 == Vehicle::MotionState::Accelerating){
+				}
+				// vehicleInfoPanel->recordAccelerationEvent(
+				// 	2,start_time[2], end_time[2], startspeed[2], endspeed[2], 0.5, vehicles[2].m_state.motionState);
+			}
 			
+			
+//记录每辆车运行时间和停车次数
+			if(vehicles[0].m_state.motionState == Vehicle::MotionState::Stopped&&laststate_0!= Vehicle::MotionState::Stopped){
+				stopcount[0]++;
+			}
+			if(vehicles[1].m_state.motionState == Vehicle::MotionState::Stopped&&laststate_1!= Vehicle::MotionState::Stopped){
+				stopcount[1]++;
+			}
+			if(vehicles[2].m_state.motionState == Vehicle::MotionState::Stopped&&laststate_2!= Vehicle::MotionState::Stopped){
+				stopcount[2]++;
+			}
+			std::cout << "Vehicle 0 stop count: " << stopcount[0] << std::endl;
+			std::cout << "Vehicle 1 stop count: " << stopcount[1] << std::endl;
+			std::cout << "Vehicle 2 stop count: " << stopcount[2] << std::endl;
+			
+			if(!(vehicles[0].m_state.motionState == Vehicle::MotionState::Stopped&&(fabs(vehicles[0].position_m-26.0f)<0.55))){
+				sumRunningTime[0] += deltaTime*timeScale;
+			}
+			if(!(vehicles[1].m_state.motionState == Vehicle::MotionState::Stopped&&(fabs(vehicles[1].position_m-26.0f)<0.55))){
+				sumRunningTime[1] += deltaTime*timeScale;
+			}
+			if(!(vehicles[2].m_state.motionState == Vehicle::MotionState::Stopped&&(fabs(vehicles[2].position_m-26.0f)<0.55))){
+				sumRunningTime[2] += deltaTime*timeScale;
+			}
+			std::cout << "Vehicle 0 running time: " << sumRunningTime[0] << std::endl;
+			std::cout << "Vehicle 1 running time: " << sumRunningTime[1] << std::endl;
+			std::cout << "Vehicle 2 running time: " << sumRunningTime[2] << std::endl;
+
+				laststate_0 = vehicles[0].m_state.motionState;
+				laststate_1 = vehicles[1].m_state.motionState;
+				laststate_2 = vehicles[2].m_state.motionState;
+				current_time += deltaTime * timeScale;
+            
+			
+			
+			}
         }
     }
+if(m_mode == SimulationMode::TASK2_1||m_mode == SimulationMode::TASK2_2||m_mode == SimulationMode::TASK2_3){
+
+}
+ 
+}
 };
 
 int main()
 {
-    Scheduler scheduler;
-    EventQueue event_queue;         // 事件队列
+	EventQueue event_queue;         // 事件队列
     TaskManager task_manager;       // 任务管理器
     VehicleManager vehicle_manager; // 车辆管理器
     DeviceManager device_manager;   // 设备管理器
     Logger logger;                  // 日志记录器
-
-    scheduler.bind(&task_manager, &vehicle_manager, &device_manager, &event_queue, &logger);
-
+	Scheduler scheduler;
+	scheduler.bind(&task_manager, &vehicle_manager, &device_manager, &event_queue, &logger);
     SimpleDemoApp app(&scheduler); // 传递scheduler指针
+	// app.scheduler_ptr->bind(&app.task_manager, &app.vehicle_manager, &app.device_manager, &app.event_queue, &app.logger);
+	auto &vehicles = app.scheduler_ptr->vehicle_manager_ptr->getAllVehicles();
 	app.toolbar->setOnModeChanged([&app](SimulationMode mode)
-    {
+    {        
         switch (mode) {
             case SimulationMode::TASK1: 
-				app.m_mode = SimulationMode::TASK1; 
+				{
+					app.m_mode = SimulationMode::TASK1;
+					app.scheduler_ptr->vehicle_manager_ptr->initializeVehicles(3);
+					auto &vehicles = app.scheduler_ptr->vehicle_manager_ptr->getAllVehicles();
+				}
 				break;
             case SimulationMode::TASK2_1: 
 				app.m_mode = SimulationMode::TASK2_1; 
+				app.scheduler_ptr->vehicle_manager_ptr->initializeVehicles(3);
 				break;
             case SimulationMode::TASK2_2:
 				app.m_mode = SimulationMode::TASK2_2;
+				app.scheduler_ptr->vehicle_manager_ptr->initializeVehicles(5);
 				break;
             case SimulationMode::TASK2_3:
 				app.m_mode = SimulationMode::TASK2_3; 
+				app.scheduler_ptr->vehicle_manager_ptr->initializeVehicles(7);
 				break;
         }
 
 	});	
-    app.scheduler_ptr->vehicle_manager_ptr->initializeVehicles(3);
-    auto &vehicles = app.scheduler_ptr->vehicle_manager_ptr->getAllVehicles(); // FIXME:
-	app.initializeComponents();
-    srand(time(NULL));
-    int random0 = 1 + rand() % 18;
-    ;
-    int random1 = 1 + rand() % 18;
-    ;
-    int random2 = 1 + rand() % 18;
-    ;
-    while (random0 == 15)
-    {
-        random0 = 1 + rand() % 18;
-    }
-    while (random1 == 15)
-    {
-        random1 = 1 + rand() % 18;
-    }
-    while (random2 == 15)
-    {
-        random2 = 1 + rand() % 18;
-    }
-    vehicles[0].towards_device = random0;
-    vehicles[1].towards_device = random1;
-    vehicles[2].towards_device = random2;
 
-    app.run();
-
+// if(app.m_mode == SimulationMode::TASK1){
+	app.run();
+// }
     return 0;
 }
 void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehicle *leadingVehicle)
@@ -673,6 +798,7 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehic
         8.000,
     };
     float VehiclePosition = std::fmod(vehicle->m_state.position, 99.47787445225672);
+	vehicle->position_m = VehiclePosition;
     float LeadingVehiclePosition = std::fmod(leadingVehicle->m_state.position, 99.47787445225672);
     float distancetodevice = device_position[vehicle->towards_device] - VehiclePosition;
     if (fabs(distancetodevice) > epsilon && distancetodevice < 0.f)
