@@ -5,7 +5,7 @@
 #include "Logger.hpp"
 #include "EventQueue.hpp"
 #include "Vehicle.hpp"
-#include "../gui/SimulationInterface.hpp" // 包含模式枚举
+// #include "../gui/SimulationInterface.hpp" // 包含模式枚举
 
 // 定义调度器类
 class Scheduler
