@@ -96,9 +96,9 @@ const std::vector<WarehouseRenderer::PredefinedDeviceLayout> WarehouseRenderer::
 
 WarehouseRenderer::WarehouseRenderer()
 {
-    if (!m_font.loadFromFile("assets/fonts/Arial.ttf"))
+    if (!m_font.loadFromFile("C:/Windows/Fonts/COOPBL.TTF"))
     {
-        if (!m_font.loadFromFile("../../../resources/fonts/arial.ttf"))
+        if (!m_font.loadFromFile("../../../assets/fonts/arial.ttf"))
         {
             std::cerr << "WarehouseRenderer - Font Arial.ttf not found. Interface labels may not display correctly." << std::endl;
         }

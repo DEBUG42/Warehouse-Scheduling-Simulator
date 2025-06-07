@@ -33,6 +33,8 @@ public:
         wh.shape.setFillColor(isOutbound ? sf::Color(200, 0, 0) : sf::Color(0, 150, 0)); // Dark Red for Outbound, Dark Green for Inbound (example)
         wh.shape.setOrigin(sizeMm / 2.f);
         wh.shape.setPosition(positionMm);
+		
+		m_font.loadFromFile("C:/Windows/Fonts/COOPBL.TTF");
 
         wh.idText.setFont(m_font);
         wh.idText.setString("ID: " + std::to_string(wh.id));

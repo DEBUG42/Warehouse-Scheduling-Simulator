@@ -472,7 +472,13 @@ public:
 		scheduler.task_manager_ptr->initializeNextTaskID();
 		scheduler.event_queue_ptr->initializeInitialEvents(); 
 		std::vector<Task>& tasks = task_manager.getAllTasks();
-		scheduler.task_manager_ptr->loadFromFile("D:/Warehouse_Scheduling_Simulator/test/tasks.csv");
+		// Try both possible paths (running from root or test directory)
+		std::ifstream test_file("../tasks.csv");
+		if (test_file.good()) {
+			scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
+		} else {
+			scheduler.task_manager_ptr->loadFromFile("tasks.csv");
+		}
         std::cout << "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles Started" << std::endl;
         std::cout << "Features:" << std::endl;
         std::cout << "1. Toolbar - Time format display (HH:MM:SS.mmm)" << std::endl;
@@ -700,7 +706,8 @@ int main()
 				{
 				app.m_mode = SimulationMode::TASK2_1;
 				app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
-				app.scheduler.task_manager_ptr->loadFromFile("D:/Warehouse_Scheduling_Simulator/test/tasks.csv");
+				// Try both possible paths (running from root or test directory)
+				app.scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
 				app.scheduler.task_manager_ptr->initializeNextTaskID();
 				app.scheduler.event_queue_ptr->initializeInitialEvents(); 
 				std::vector<Task>& tasks = app.task_manager.getAllTasks();
@@ -711,7 +718,7 @@ int main()
 				{
 				app.m_mode = SimulationMode::TASK2_2;
 				app.scheduler.vehicle_manager_ptr->initializeVehicles(5);
-				app.scheduler.task_manager_ptr->loadFromFile("D:/Warehouse_Scheduling_Simulator/test/tasks.csv");
+				app.scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
 				app.scheduler.task_manager_ptr->initializeNextTaskID();
 				app.scheduler.event_queue_ptr->initializeInitialEvents(); 
 				std::vector<Task>& tasks = app.task_manager.getAllTasks();
@@ -722,7 +729,7 @@ int main()
 				{
 				app.m_mode = SimulationMode::TASK2_3; 
 				app.scheduler.vehicle_manager_ptr->initializeVehicles(7);
-				app.scheduler.task_manager_ptr->loadFromFile("D:/Warehouse_Scheduling_Simulator/test/tasks.csv");
+				app.scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
 				app.scheduler.task_manager_ptr->initializeNextTaskID();
 				app.scheduler.event_queue_ptr->initializeInitialEvents(); 
 				std::vector<Task>& tasks = app.task_manager.getAllTasks();
