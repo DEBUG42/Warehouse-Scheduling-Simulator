@@ -22,17 +22,19 @@ MIT 许可证是一个宽松的开源许可证，允许：
 ✅ **修改** - 可以修改源代码  
 ✅ **分发** - 可以分发原始或修改后的代码  
 ✅ **私人使用** - 可以私人使用  
-✅ **专利授权** - 明确的专利授权  
+✅ **专利授权** - 明确的专利授权
 
 ⚠️ **条件要求：**
+
 - 必须包含版权声明和许可证声明
 - 必须包含原始许可证文本
 
 ❌ **不提供：**
+
 - 责任保证
 - 质量保证
 
 ## 相关链接
 
 - [English Version (LICENSE)](./LICENSE) - 英文原版许可证
-- [Open Source Initiative - MIT License](https://opensource.org/licenses/MIT) - MIT许可证官方说明
+- [Open Source Initiative - MIT License](https://opensource.org/licenses/MIT) - MIT 许可证官方说明
