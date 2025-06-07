@@ -68,18 +68,40 @@ void Scheduler::handleEvent(const Event& e) {
             this->device_manager_ptr->getDeviceState(e.device_id).has_goods = false;
             break;
 
-        case EventType::VEHICLE_PICK_UP_GOODS:
-            this->device_manager_ptr->getDeviceState(e.device_id).has_goods = false;
-            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->is_assigned = true;
-            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->is_assigned = false;
-            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->pick_time = current_time;
+        case EventType::VEHICLE_PICK_UP_GOODS: {
+            // 车辆从设备取货 → 设备变为空，车辆变为已装载
+            auto& device = this->device_manager_ptr->getDeviceState(e.device_id);
+            device.has_goods = false;
+            device.is_reserved = false;
+            Vehicle& vehicle = this->vehicle_manager_ptr->getVehicleByTaskId(e.task_id);           
+            vehicle.is_loaded = true;
 
-        case EventType::VEHICLE_PUT_DOWN_GOODS:
-            this->device_manager_ptr->getDeviceState(e.device_id).has_goods = true;
-            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->is_assigned = true;
-            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->is_assigned = false;
-            this->vehicle_manager_ptr->getAllVehicles()[e.device_id].m_state.currentTask->drop_time = current_time;
+            std::cout << "[Event] VEHICLE_PICK_UP_GOODS: Vehicle #" << vehicle.id 
+                      << " picked up goods from Device #" << e.device_id << std::endl;
             break;
+        }
+
+        case EventType::VEHICLE_PUT_DOWN_GOODS: {
+            // 车辆向设备放货 → 设备变有货，车辆清空任务
+            auto& device = this->device_manager_ptr->getDeviceState(e.device_id);
+            device.has_goods = true;
+            device.is_reserved = false;
+
+            Vehicle& vehicle = this->vehicle_manager_ptr->getVehicleByTaskId(e.task_id);
+            vehicle.is_loaded = false;
+            vehicle.m_state.currentTask = nullptr;
+            vehicle.towards_device = -1;
+            vehicle.m_state.motionState = Vehicle::MotionState::Stopped;
+
+            Task& task = this->task_manager_ptr->getTask(e.task_id);
+            task.complete_time = this->current_time;
+
+            std::cout << "[Event] VEHICLE_PUT_DOWN_GOODS: Vehicle #" << vehicle.id 
+                      << " dropped goods at Device #" << e.device_id 
+                      << " → Task #" << e.task_id << " completed.\n";
+            break;
+        }
+
         default:
             break;
     }
@@ -93,7 +115,13 @@ void Scheduler::updateSystemStates(float dt) {
     for (size_t i = 0; i < n; ++i) {
         Vehicle* self = &vehicles[i];
         Vehicle* front = &vehicles[(i + n - 1) % n]; // 环形选择前车
-        vehicle_manager_ptr->updateVehicle(current_time, dt, self, front);
+        VehicleManager::VehicleUpdateResult result = this->vehicle_manager_ptr->updateVehicle(current_time, dt, self, front);
+        if (result.trigger == VehicleEventTrigger::PickUpArrived) {
+            addEventForVehiclePickUp(result.device_id, result.task_id, current_time);
+    }
+        else if (result.trigger == VehicleEventTrigger::PutDownArrived) {
+            addEventForVehiclePutDown(result.device_id, result.task_id, current_time);
+}
     }
 
     device_manager_ptr->update(current_time);
@@ -138,8 +166,31 @@ void Scheduler::addEventForStackerPick(int device_id, int task_id, double curren
     e.task_id = task_id;
     event_queue_ptr->addEvent(e);
 }
+void Scheduler::addEventForVehiclePickUp(int device_id, int task_id, double current_time) {
+    Event e;
+    e.time = current_time + 0.01;  // 稍后立即触发，也可以根据需要设定延迟
+    e.type = EventType::VEHICLE_PICK_UP_GOODS;
+    e.device_id = device_id;
+    e.task_id = task_id;
+    this->event_queue_ptr->addEvent(e);
 
-// Scheduler.cpp
+    std::cout << "[Event] Scheduled VEHICLE_PICK_UP_GOODS for Task #" 
+              << task_id << " at Device #" << device_id 
+              << " (TriggerTime: " << e.time << ")\n";
+}
+void Scheduler::addEventForVehiclePutDown(int device_id, int task_id, double current_time) {
+    Event e;
+    e.time = current_time + 0.01;  // 稍后立即触发，也可以加延迟
+    e.type = EventType::VEHICLE_PUT_DOWN_GOODS;
+    e.device_id = device_id;
+    e.task_id = task_id;
+    this->event_queue_ptr->addEvent(e);
+
+    std::cout << "[Event] Scheduled VEHICLE_PUT_DOWN_GOODS for Task #" 
+              << task_id << " at Device #" << device_id 
+              << " (TriggerTime: " << e.time << ")\n";
+}
+
 
 void Scheduler::tryDispatchTasks() {
     double current_time = this->current_time;
