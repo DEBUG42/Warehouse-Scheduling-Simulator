@@ -7,8 +7,7 @@
 #include "Task.hpp"
 #include "Event.hpp"
 #include <SFML/Graphics.hpp>
-
-
+#include <stdexcept>
 // 定义车辆类
 class Vehicle {
 public:
@@ -46,6 +45,8 @@ public:
     bool is_loaded;              // 是否装载货物
     float velocity_mps;          // 当前速度（米/秒）
     float target_position;       // 目标位置（米/秒） 
+    bool has_triggered_putdown = false; // 是否触发卸货事件
+    bool has_triggered_pickup = false; // 是否触发取货事件
 
     // 动态状态
     struct {
@@ -58,8 +59,29 @@ public:
 };
 
 // 储存和管理车辆的类
+    //用于将事件触发逻辑传回schedule
+    enum class VehicleEventTrigger {
+        None,
+        PickUpArrived,
+        PutDownArrived
+    };
 class VehicleManager {
 public:
+
+    struct VehicleUpdateResult {
+        VehicleEventTrigger trigger;
+        int task_id;
+        int device_id;
+    };
+
+    Vehicle& getVehicleByTaskId(int task_id) {
+    for (auto& v : vehicles) {
+        if (v.m_state.currentTask && v.m_state.currentTask->id == task_id)
+            return v;
+    }
+    throw std::runtime_error("No vehicle found with the given task_id.");
+}
+
     // 初始化指定数量的车辆
     // 输入: 车辆数量 (int count)
     // 输出: 无
@@ -68,20 +90,7 @@ public:
     
     static std::string motionStateToString(Vehicle::MotionState state); 
 
-    // 更新所有车辆的状态
-    // 输入: 当前时间 (double current_time), 时间步长 (double dt)
-    // 输出: 无
-    //void updateAllVehicles(double current_time, double dt,);
 
-	//更新单个车辆的状态
-	//输入：当前时间（double current_time），时间步长（double dt）时间倍率（Timescal）
-	//		当前车辆，前一辆车
-    void updateVehicle(float current_time,float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle);
-
-
-    // 获取可用于执行指定任务的车辆列表
-    // 输入: 任务对象 (const Task& task), 当前时间 (double current_time)
-    // 输出: 可用车辆列表 (std::vector<Vehicle*>)
     std::vector<Vehicle*> getAvailableVehicles(Task& task, double current_time);
 
     // 选择最适合执行指定任务的车辆
@@ -98,6 +107,8 @@ public:
     // 输入: 无
     // 输出: 所有车辆的列表 (const std::vector<Vehicle>&)
     std::vector<Vehicle>& getAllVehicles();
+    VehicleUpdateResult updateVehicle(float current_time,float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle);
+
     void updateKinematics(Vehicle* vehicle, float deltaTime, float LOOP_LENGTH) ;
     bool shouldDecelerateForCurve(Vehicle* vehicle) ;
 
@@ -105,14 +116,18 @@ public:
 
     void limitSpeed(Vehicle* vehicle) ;
 
-    void checkAndHandleArrival(Vehicle* vehicle, float current_time) ;
+    bool checkArrival(Vehicle* vehicle, float current_time) ;
+    bool checkPickUp(Vehicle* vehicle, float current_time) ;
+
+    bool checkPutDown(Vehicle* vehicle, float current_time) ;
+
 
     void printVehicleDebugInfo(Vehicle* vehicle, float current_time) ;
 
     float getDevicePosition(int device_id) ;
 
 
-public:
+private:
     std::vector<Vehicle> vehicles; // 定义 vehicles 容器
     constexpr static double LOOP_LENGTH = 99.47787445225672;  // 环道总长度
 

@@ -41,6 +41,9 @@ public:
     void addEventForForkliftPut(int device_id, int task_id, double current_time);
 
     void addEventForStackerPick(int device_id, int task_id, double current_time);
+    void addEventForVehiclePickUp(int device_id, int task_id, double current_time) ;
+
+    void addEventForVehiclePutDown(int device_id, int task_id, double current_time) ;
 
     void vehiclePickUpgoods(int vehicle_id,int device_id,int task_id,double current_time);
 

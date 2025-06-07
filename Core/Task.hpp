@@ -4,6 +4,7 @@
 #include <queue>
 #include <vector>
 #include <unordered_map>
+#include <stdexcept>
 // 前向声明
 class DeviceManager;
 
@@ -39,6 +40,13 @@ public:
     
     friend std::ostream& operator<<(std::ostream& os, Task& task);
     std::vector<Task>& getAllTasks();
+    Task& getTaskById(int task_id) {
+    for (auto& task : tasks) {
+        if (task.id == task_id)
+            return task;
+    }
+    throw std::runtime_error("No task found with the given task_id.");
+}
 
     Task& getTask(int task_id);
     void initializeNextTaskID();
@@ -51,7 +59,7 @@ public:
 
 private:
     std::vector<Task> tasks;
-
+    float last_debug_time = 0;
     std::unordered_map<int, int> next_task_id; // 起始设备 → 当前待调度任务编号
     friend void testTasks(TaskManager& taskmanager);//用于调试的友元函数
 };
