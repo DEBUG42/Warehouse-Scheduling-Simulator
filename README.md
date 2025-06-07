@@ -326,11 +326,11 @@ cd build && ctest
 
 ### 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) and [LICENSE-zh.md](LICENSE-zh.md) files for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 许可证
+### 📄 许可证
 
-本项目采用 MIT 许可证 - 详见[LICENSE](LICENSE)文件
+本项目采用 MIT 许可证 - 详见 [LICENSE-zh.md](LICENSE-zh.md) 文件（中文版）或 [LICENSE](LICENSE) 文件（英文版）
 
 ## 联系方式
 
