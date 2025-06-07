@@ -1,11 +1,11 @@
 @echo off
 chcp 65001 > nul
 
-:: Configuration for testtask1.cpp compilation
+:: Configuration for main.cpp compilation
 set "COMPILER=g++"
-set "SFML_INC=D:\SFML\include"
-set "SFML_LIB=D:\SFML\lib"
-set "OUTPUT=bin\testtask1.exe"
+set "SFML_INC=G:\SFML\SFML-2.6.2\include"
+set "SFML_LIB=G:\SFML\SFML-2.6.2\lib"
+set "OUTPUT=bin\main.exe"
 
 :: Verify SFML paths
 if not exist "%SFML_INC%" (
@@ -24,7 +24,7 @@ if not exist "%SFML_LIB%" (
 if not exist "bin" mkdir "bin"
 
 :: Compile command
-echo Compiling testtask1.cpp...
+echo Compiling main.cpp...
 %COMPILER% -std=c++17 -Wall -DSFML_STATIC ^
     -I"%SFML_INC%" ^
     -I"include" ^
@@ -32,7 +32,7 @@ echo Compiling testtask1.cpp...
     -I"include/gui" ^
     -I"src/Core" ^
     -I".." ^
-    "test/testtask1.cpp" ^
+    "test/main.cpp" ^
     "src/gui/SimulationView.cpp" ^
     "src/gui/Toolbar.cpp" ^
     "src/gui/StatusPanel.cpp" ^

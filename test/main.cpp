@@ -74,10 +74,10 @@ public:
 	Scheduler scheduler;
 public:
 
-	SimulationMode m_mode = SimulationMode::TASK1;
+	SimulationMode m_mode;
 	std::unique_ptr<Toolbar> toolbar;
 
-    SimpleDemoApp() : window(sf::VideoMode(1800, 800), "GUI Phase 1 - Enhanced Demo with Warehouse & Vehicles")
+    SimpleDemoApp() : window(sf::VideoMode(1800, 800), "Warehouse-Scheduling-Simulator")
     {
         // 绑定后端组件
         scheduler.bind(&task_manager, &vehicle_manager, &device_manager, &event_queue, &logger);
@@ -407,9 +407,9 @@ public:
         if (simulationView)
         {
             // 设置仿真视图的视口（排除工具栏、状态面板和车辆信息面板区域）
-            float simulationViewLeft = VEHICLE_INFO_PANEL_WIDTH + SIMULATION_VIEW_MARGIN * 2;
+            float simulationViewLeft = SIMULATION_VIEW_MARGIN; // 从左边缘开始（VehicleInfoPanel不占用布局空间）
             float simulationViewTop = TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN;
-            float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - VEHICLE_INFO_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 4;
+            float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 2; // 只排除StatusPanel
             float simulationViewHeight = window.getSize().y - TOOLBAR_HEIGHT - SIMULATION_VIEW_MARGIN * 2;
 
             sf::FloatRect simulationViewport(
@@ -429,7 +429,7 @@ public:
         statusPanel->render(window, window.getSize());
 
         // 渲染车辆信息面板（左侧，不与轨道重叠）
-        sf::Vector2f vehicleInfoPos(SIMULATION_VIEW_MARGIN, TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN);
+        sf::Vector2f vehicleInfoPos(10.0f, TOOLBAR_HEIGHT + 10.0f); // 距离左边缘10像素，距离工具栏下方10像素
         vehicleInfoPanel->setPosition(vehicleInfoPos);
         window.draw(*vehicleInfoPanel);
 
@@ -443,32 +443,24 @@ public:
     {
         sf::Text instructions;
         instructions.setFont(font);
-        instructions.setCharacterSize(14);
+        instructions.setCharacterSize(20);
         instructions.setFillColor(sf::Color::Black);
-        instructions.setPosition(10, window.getSize().y - 150);
-        std::string text = "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles\n"
-                           "=== Simulation Control ===\n"
-                           "Space: Start/Pause simulation\n"
-                           "R: Reset simulation\n"
-                           "ESC: Exit program\n"
-                           "\n=== Display Control ===\n"
-                           "T: Toggle coordinate grid display\n"
-                           "G: Toggle warehouse display\n"
-                           "V: Toggle vehicle display\n"
-                           "C: Toggle debug info display\n"
-                           "\n=== Vehicle Control ===\n"
-                           "1/2/3: Select vehicle (by number)\n"
-                           "W/S: Move selected vehicle forward/backward along track\n"
-                           "Mouse: Click to select vehicle/device\n"
-                           "\n=== Vehicle Status ===\n"
-                           "• Vehicle 1: Empty Stopped (Blue)\n"
-                           "• Vehicle 2: Empty Cruising (Blue Moving)\n"
-                           "• Vehicle 3: Loaded Accelerating (Orange Moving)\n"
-                           "\n=== GUI Components ===\n"
-                           "• Toolbar: Time display (HH:MM:SS.mmm)\n"
-                           "• Status Panel: Simulation statistics\n"
-                           "• Vehicle Info Panel: Acceleration/Deceleration events\n"
-                           "• Simulation View: Track & multi-vehicle rendering";
+        instructions.setPosition(10, window.getSize().y - 52.0f);
+        std::string text = "Developed by :\n DEBUG42 & EpochHIT & PrachEwigkeit\n";
+                        //    "=== Simulation Control ===\n"
+                        //    "Space: Start/Pause simulation\n"
+                        //    "R: Reset simulation\n"
+                        //    "ESC: Exit program\n"
+                        //    "\n=== Display Control ===\n"
+                        //    "T: Toggle coordinate grid display\n"
+                        //    "G: Toggle warehouse display\n"
+                        //    "V: Toggle vehicle display\n"
+                        //    "C: Toggle debug info display\n"
+                        //    "\n=== GUI Components ===\n"
+                        //    "• Toolbar: Time display (HH:MM:SS.mmm)\n"
+                        //    "• Status Panel: Simulation statistics\n"
+                        //    "• Vehicle Info Panel: Acceleration/Deceleration events\n"
+                        //    "• Simulation View: Track & multi-vehicle rendering";
         instructions.setString(text);
 
         window.draw(instructions);
@@ -547,7 +539,7 @@ public:
 				startspeed[0] = vehicles[0].m_state.currentSpeed;
 				recording[0] = 1;
 			}
-			if(recording[0]==1&&vehicles[0].m_state.motionState!= laststate_0){
+			else if(recording[0]==1&&vehicles[0].m_state.motionState!= laststate_0){
 				end_time[0] = current_time;
 				endspeed[0] = vehicles[0].m_state.currentSpeed;
 				recording[0] = 0;
@@ -555,11 +547,12 @@ public:
 			}
 			if(recording[0]==0&&working[0]==1){
 				working[0]=0;
-				std::string eventType0 = (laststate_2 == Vehicle::MotionState::Accelerating) ? "Acceleration" : "Deceleration";
+				std::string eventType0 = (endspeed[0]>startspeed[0]) ? "Acc" : "Dec";
 				vehicleInfoPanel->recordAccelerationEvent(
 					0,start_time[0], end_time[0], startspeed[0], endspeed[0], 0.5, eventType0);
-
+				std::cout << "0 " << eventType0 <<"time"<< start_time[0] << " endtime"<< end_time[0] <<"startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
 			}
+
 
 			// Vehicle 1 recording
 			if(recording[1]==0&&vehicles[1].m_state.motionState!= laststate_1&&(vehicles[1].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[1].m_state.motionState == Vehicle::MotionState::Decelerating)){
@@ -567,7 +560,7 @@ public:
 				startspeed[1] = vehicles[1].m_state.currentSpeed;
 				recording[1] = 1;
 			}
-			if(recording[1]==1&&vehicles[1].m_state.motionState!= laststate_1){
+			else if(recording[1]==1&&vehicles[1].m_state.motionState!= laststate_1){
 				end_time[1] = current_time;
 				endspeed[1] = vehicles[1].m_state.currentSpeed;
 				recording[1] = 0;
@@ -575,10 +568,12 @@ public:
 			}
 			if(recording[1]==0&&working[1]==1){
 				working[1]=0;
-				std::string eventType1 = (laststate_2 == Vehicle::MotionState::Accelerating) ? "Acceleration" : "Deceleration";
+				std::string eventType1 = (endspeed[1]>startspeed[1]) ? "Acc" : "Dec";
 				vehicleInfoPanel->recordAccelerationEvent(
 					1,start_time[1], end_time[1], startspeed[1], endspeed[1], 0.5, eventType1);
+					std::cout << "1 " << eventType1 <<"time"<< start_time[1] << " endtime"<< end_time[1] <<"startspeed" << startspeed[1] << "m/s -> " << endspeed[1] << "m/s" << std::endl;
 			}
+
 
 			// Vehicle 2 recording
 			if(recording[2]==0&&vehicles[2].m_state.motionState!= laststate_2&&(vehicles[2].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[2].m_state.motionState == Vehicle::MotionState::Decelerating)){
@@ -586,7 +581,7 @@ public:
 				startspeed[2] = vehicles[2].m_state.currentSpeed;
 				recording[2] = 1;
 			}
-			if(recording[2]==1&&vehicles[2].m_state.motionState!= laststate_2){
+			else if(recording[2]==1&&vehicles[2].m_state.motionState!= laststate_2){
 				end_time[2] = current_time;
 				endspeed[2] = vehicles[2].m_state.currentSpeed;
 				recording[2] = 0;
@@ -594,10 +589,17 @@ public:
 			}
 			if(recording[2]==0&&working[2]==1){
 				working[2]=0;
-				std::string eventType2 = (laststate_2 == Vehicle::MotionState::Accelerating) ? "Acceleration" : "Deceleration";
+				std::string eventType2 = (endspeed[2]>startspeed[2]) ? "Acc" : "Dec";
 				vehicleInfoPanel->recordAccelerationEvent(
 					2,start_time[2], end_time[2], startspeed[2], endspeed[2], 0.5, eventType2);
+				std::cout << "2 " << eventType2 <<"time"<< start_time[2] << " endtime"<< end_time[2] <<"startspeed" << startspeed[2] << "m/s -> " << endspeed[2] << "m/s" << std::endl;
 			}
+			// if(vehicles[2].m_state.motionState == Vehicle::MotionState::Decelerating){
+			// 	std::cout <<"DECELERATING "<<current_time<<"  "<<vehicles[2].m_state.currentSpeed<<"  "<<std::endl;
+			// }
+			// if(vehicles[2].m_state.motionState == Vehicle::MotionState::Accelerating){
+			// 	std::cout <<"ACCELERATING "<<current_time<<"  "<<vehicles[2].m_state.currentSpeed<<"  "<<std::endl;
+			// }
 			
 			
 //记录每辆车运行时间和停车次数
@@ -632,7 +634,7 @@ public:
 				laststate_2 = vehicles[2].m_state.motionState;
 				current_time += deltaTime * timeScale;
 			}
-			if(isRunning&&m_mode==SimulationMode::TASK2_1||m_mode==SimulationMode::TASK2_2||m_mode==SimulationMode::TASK2_3){
+			if(isRunning&&(m_mode==SimulationMode::TASK2_1||m_mode==SimulationMode::TASK2_2||m_mode==SimulationMode::TASK2_3)){
 				float intPart, fractionalPart;
 				fractionalPart = std::modf(timeScale, &intPart);
 
@@ -658,9 +660,10 @@ int main()
 {
 
 	SimpleDemoApp app;
-	app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
+	// app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
 	app.scheduler.device_manager_ptr->initializeDevices();
 	app.updateSchedulerDependentComponents();
+	auto &vehicles = app.scheduler.vehicle_manager_ptr->getAllVehicles();
 	
 	app.toolbar->setOnModeChanged([&app](SimulationMode mode)
     {        
@@ -697,7 +700,7 @@ int main()
 				{
 				app.m_mode = SimulationMode::TASK2_1;
 				app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
-				app.scheduler.task_manager_ptr->loadFromFile("tasks.csv");
+				app.scheduler.task_manager_ptr->loadFromFile("D:/Warehouse_Scheduling_Simulator/test/tasks.csv");
 				app.scheduler.task_manager_ptr->initializeNextTaskID();
 				app.scheduler.event_queue_ptr->initializeInitialEvents(); 
 				std::vector<Task>& tasks = app.task_manager.getAllTasks();
@@ -705,14 +708,26 @@ int main()
 				}
 				break;
             case SimulationMode::TASK2_2:
+				{
 				app.m_mode = SimulationMode::TASK2_2;
 				app.scheduler.vehicle_manager_ptr->initializeVehicles(5);
+				app.scheduler.task_manager_ptr->loadFromFile("D:/Warehouse_Scheduling_Simulator/test/tasks.csv");
+				app.scheduler.task_manager_ptr->initializeNextTaskID();
+				app.scheduler.event_queue_ptr->initializeInitialEvents(); 
+				std::vector<Task>& tasks = app.task_manager.getAllTasks();
 				app.updateSchedulerDependentComponents();
+				}
 				break;
             case SimulationMode::TASK2_3:
+				{
 				app.m_mode = SimulationMode::TASK2_3; 
 				app.scheduler.vehicle_manager_ptr->initializeVehicles(7);
+				app.scheduler.task_manager_ptr->loadFromFile("D:/Warehouse_Scheduling_Simulator/test/tasks.csv");
+				app.scheduler.task_manager_ptr->initializeNextTaskID();
+				app.scheduler.event_queue_ptr->initializeInitialEvents(); 
+				std::vector<Task>& tasks = app.task_manager.getAllTasks();
 				app.updateSchedulerDependentComponents();
+				}
 				break;
         }
 
