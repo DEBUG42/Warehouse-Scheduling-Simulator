@@ -98,7 +98,7 @@ WarehouseRenderer::WarehouseRenderer()
 {
     if (!m_font.loadFromFile("assets/fonts/Arial.ttf"))
     {
-        if (!m_font.loadFromFile("resources/fonts/arial.ttf"))
+        if (!m_font.loadFromFile("../../../resources/fonts/arial.ttf"))
         {
             std::cerr << "WarehouseRenderer - Font Arial.ttf not found. Interface labels may not display correctly." << std::endl;
         }

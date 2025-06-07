@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <map>
 #define _USE_MATH_DEFINES
 #include <cmath>
 
@@ -14,21 +15,30 @@
 #include "gui/StatusPanel.hpp"
 #include "gui/UIControls.hpp"
 #include "gui/SimulationView.hpp"
+#include "gui/VehicleInfoPanel.hpp" // 添加 VehicleInfoPanel 头文件
 
 // Core组件包含
 #include "../src/Core/Vehicle.hpp"
 #include "../src/Core/Device.hpp"
 #include "../src/Core/Task.hpp" // Include Task.hpp for Task structure
 
+// 车辆状态跟踪结构
+struct VehicleStateTracker
+{
+    Vehicle::MotionState lastMotionState = Vehicle::MotionState::Stopped;
+    float lastSpeed = 0.0f;
+    float stateChangeTime = 0.0f;
+    bool hasStateChanged = false;
+};
+
 /**
  * @brief GUI优化第一阶段增强演示测试
- *
- * 展示内容：
+ * * 展示内容：
  * 1. Toolbar时间显示优化 - HH:MM:SS.mmm格式
- * 2. StatusPanel比例调整 - 25:35:40布局
- * 3. VehicleInfoPanel新组件 - 车辆加减速信息显示
- * 4. UIControls工具函数 - 时间格式化和颜色映射
- * 5. SimulationView - 仓库渲染和可控制车辆系统
+ * 2. StatusPanel比例调整 - 25:35:40布局，包含ObjectInspector和TaskListView
+ * 3. UIControls工具函数 - 时间格式化和颜色映射
+ * 4. SimulationView - 仓库渲染和可控制车辆系统
+ * 5. Vehicle选择和状态显示功能
  */
 
 class SimpleDemoApp
@@ -39,10 +49,14 @@ private:
     std::unique_ptr<Toolbar> toolbar;
     std::unique_ptr<StatusPanel> statusPanel;
     std::unique_ptr<SimulationView> simulationView;
+    std::unique_ptr<VehicleInfoPanel> vehicleInfoPanel; // 添加车辆信息面板
 
     // 仿真数据 - 多个车辆实现
     std::vector<std::unique_ptr<Vehicle>> vehicles;
     std::vector<std::unique_ptr<DeviceBase>> devices;
+
+    // 车辆状态跟踪器
+    std::map<int, VehicleStateTracker> vehicleTrackers; // 车辆状态跟踪器
 
     // 仿真状态
     float simulationTime = 0.0f;
@@ -50,6 +64,8 @@ private:
     int selectedVehicleId = -1; // 布局参数
     static constexpr float TOOLBAR_HEIGHT = 50.0f;
     static constexpr float STATUS_PANEL_WIDTH = 290.0f;
+    static constexpr float VEHICLE_INFO_PANEL_WIDTH = 500.0f;  // 车辆信息面板宽度
+    static constexpr float VEHICLE_INFO_PANEL_HEIGHT = 660.0f; // 车辆信息面板高度
     static constexpr float SIMULATION_VIEW_MARGIN = 10.0f;
 
     // Sample Tasks for TaskListView
@@ -59,6 +75,30 @@ private:
 public:
     SimpleDemoApp() : window(sf::VideoMode(1800, 800), "GUI Phase 1 - Enhanced Demo with Warehouse & Vehicles")
     {
+        // 添加窗口和DPI信息调试输出
+        std::cout << "=== Window and DPI Information ===" << std::endl;
+        std::cout << "Created window with VideoMode: 1800x800" << std::endl;
+
+        // 获取窗口实际尺寸
+        sf::Vector2u actualWindowSize = window.getSize();
+        std::cout << "Actual window size after creation: " << actualWindowSize.x << "x" << actualWindowSize.y << std::endl;
+
+        // 获取默认视图信息
+        sf::View defaultView = window.getDefaultView();
+        sf::Vector2f viewSize = defaultView.getSize();
+        std::cout << "Default view size: " << viewSize.x << "x" << viewSize.y << std::endl;
+
+        // 检查是否有DPI缩放
+        float scaleX = static_cast<float>(actualWindowSize.x) / 1800.0f;
+        float scaleY = static_cast<float>(actualWindowSize.y) / 800.0f;
+        std::cout << "Window scale factors - X: " << scaleX << ", Y: " << scaleY << std::endl;
+
+        if (scaleX != 1.0f || scaleY != 1.0f)
+        {
+            std::cout << "WARNING: Window scaling detected! This may affect GUI element sizes." << std::endl;
+        }
+        std::cout << "=====================================" << std::endl;
+
         loadFont();
         initializeSimulationData();
         initializeComponents();
@@ -100,7 +140,7 @@ public:
             vehicle->id = i + 1;                                                // ID从1开始
             vehicle->position_m = (32.000 - 0.002 * i - vehicle->m_length * i); // 每辆车相距间距，按VehicleManager::initializeVehicles的方法
             vehicle->velocity_mps = 0.0f;
-            vehicle->max_speed = 8.0f / 3.0f; // 使用VehicleManager的默认最大速度
+            vehicle->m_maxStraightSpeed = 8.0f / 3.0f; // 使用VehicleManager的默认最大速度
             vehicle->is_loaded = false;
             vehicle->is_executing = false;
             vehicle->towards_device = 0;
@@ -137,13 +177,17 @@ public:
 
         // 创建状态面板
         statusPanel = std::make_unique<StatusPanel>(font);
-        statusPanel->resize(window.getSize().y - 10.0f); // 创建车辆信息面板
+        statusPanel->resize(window.getSize().y - 10.0f); // 创建车辆信息面板 - 固定尺寸悬浮窗
+        vehicleInfoPanel = std::make_unique<VehicleInfoPanel>(font, VEHICLE_INFO_PANEL_WIDTH, VEHICLE_INFO_PANEL_HEIGHT);
+
+        // 添加调试信息：输出VehicleInfoPanel的设计尺寸
+        std::cout << "VehicleInfoPanel created with design size: " << VEHICLE_INFO_PANEL_WIDTH << " x " << VEHICLE_INFO_PANEL_HEIGHT << std::endl;
 
         // 创建仿真视图 - 使用正确的构造函数
         simulationView = std::make_unique<SimulationView>(font);
 
-        // 初始化仿真视图 - 使用参考实现的参数设置
-        float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 2; // Adjusted width
+        // 初始化仿真视图 - SimulationView现在占用除StatusPanel外的全部可用宽度（VehicleInfoPanel作为悬浮窗不占用布局空间）
+        float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 2; // 只排除StatusPanel的宽度
         float simulationViewHeight = window.getSize().y - TOOLBAR_HEIGHT - SIMULATION_VIEW_MARGIN * 2;
         sf::Vector2f simulationViewSize(simulationViewWidth, simulationViewHeight);
 
@@ -158,7 +202,7 @@ public:
         {
             vehiclePtrs.push_back(vehicle.get());
         }
-        simulationView->updateVehicles(vehiclePtrs);
+        simulationView->updateVehicles(vehiclePtrs); // TODO:
 
         // 添加调试信息
         std::cout << "Updated SimulationView with " << vehiclePtrs.size() << " vehicles:" << std::endl;
@@ -190,6 +234,9 @@ public:
                 // 更新StatusPanel显示选中车辆的信息
                 if (statusPanel) {
                     statusPanel->refreshContent(vehicles[selectedVehicleId - 1].get(), "Vehicle", sampleTasks);
+                }                // 更新VehicleInfoPanel显示选中车辆的信息
+                if (vehicleInfoPanel) {
+                    vehicleInfoPanel->setVehicle(vehicles[selectedVehicleId - 1].get());
                 }
             } else {
                 selectedVehicleId = -1;
@@ -197,6 +244,9 @@ public:
                 // 清除ObjectInspector的车辆信息
                 if (statusPanel) {
                     statusPanel->refreshContent(nullptr, "", sampleTasks);
+                }                // 清除VehicleInfoPanel的车辆信息
+                if (vehicleInfoPanel) {
+                    vehicleInfoPanel->setVehicle(nullptr);
                 }
             } });
 
@@ -310,8 +360,7 @@ public:
                     }
                     continue;
 
-                // 车辆控制键
-                case sf::Keyboard::Num1:
+                // 车辆控制键                case sf::Keyboard::Num1:
                 case sf::Keyboard::Num2:
                 case sf::Keyboard::Num3:
                 {
@@ -324,6 +373,10 @@ public:
                         if (statusPanel)
                         {
                             statusPanel->refreshContent(vehicles[selectedVehicleId - 1].get(), "Vehicle", sampleTasks);
+                        } // Update VehicleInfoPanel with selected vehicle info
+                        if (vehicleInfoPanel)
+                        {
+                            vehicleInfoPanel->setVehicle(vehicles[selectedVehicleId - 1].get());
                         }
                     }
                 }
@@ -344,11 +397,10 @@ public:
                 continue; // 工具栏消费了事件，跳过其他处理
             } // 仿真视图事件处理 - 只在仿真区域内处理事件
             if (simulationView)
-            {
-                // 检查鼠标是否在仿真视图区域内
-                float simulationViewLeft = SIMULATION_VIEW_MARGIN;
+            {                                                      // 检查鼠标是否在仿真视图区域内 - 现在SimulationView占用除StatusPanel外的全部可用空间
+                float simulationViewLeft = SIMULATION_VIEW_MARGIN; // 从左边缘开始（VehicleInfoPanel不占用布局空间）
                 float simulationViewTop = TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN;
-                float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 2;
+                float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 2; // 只排除StatusPanel
                 float simulationViewHeight = window.getSize().y - TOOLBAR_HEIGHT - SIMULATION_VIEW_MARGIN * 2;
 
                 bool inSimulationArea = (mousePos.x >= simulationViewLeft &&
@@ -375,6 +427,10 @@ public:
                                 if (statusPanel && selectedVehicleId > 0 && selectedVehicleId <= vehicles.size())
                                 {
                                     statusPanel->refreshContent(vehicles[selectedVehicleId - 1].get(), "Vehicle", sampleTasks);
+                                } // Update VehicleInfoPanel with selected vehicle info
+                                if (vehicleInfoPanel && selectedVehicleId > 0 && selectedVehicleId <= vehicles.size())
+                                {
+                                    vehicleInfoPanel->setVehicle(vehicles[selectedVehicleId - 1].get());
                                 }
                             }
                         }
@@ -386,6 +442,10 @@ public:
                             if (statusPanel)
                             {
                                 statusPanel->refreshContent(nullptr, "", sampleTasks);
+                            } // Clear VehicleInfoPanel
+                            if (vehicleInfoPanel)
+                            {
+                                vehicleInfoPanel->setVehicle(nullptr);
                             }
                         }
                     }
@@ -416,6 +476,149 @@ public:
             }
         }
     }
+    void checkVehicleStateChanges()
+    {
+        for (auto &vehicle : vehicles)
+        {
+            int vehicleId = vehicle->id;
+
+            // 初始化跟踪器（如果不存在）
+            if (vehicleTrackers.find(vehicleId) == vehicleTrackers.end())
+            {
+                vehicleTrackers[vehicleId] = VehicleStateTracker();
+                vehicleTrackers[vehicleId].lastMotionState = vehicle->m_state.motionState;
+                vehicleTrackers[vehicleId].lastSpeed = vehicle->m_state.currentSpeed;
+                vehicleTrackers[vehicleId].stateChangeTime = simulationTime;
+                continue;
+            }
+
+            auto &tracker = vehicleTrackers[vehicleId];
+
+            // 检测状态变化
+            if (tracker.lastMotionState != vehicle->m_state.motionState)
+            {
+                // 记录上一阶段的加减速事件
+                if (tracker.hasStateChanged)
+                { // 不是第一次状态变化
+                    std::string eventType = "";
+                    switch (tracker.lastMotionState)
+                    {
+                    case Vehicle::MotionState::Accelerating:
+                        eventType = "Accelerating";
+                        break;
+                    case Vehicle::MotionState::Decelerating:
+                        eventType = "Decelerating";
+                        break;
+                    case Vehicle::MotionState::Cruising:
+                        eventType = "Cruising";
+                        break;
+                    case Vehicle::MotionState::Stopped:
+                        eventType = "Stopped";
+                        break;
+                    }
+
+                    if (!eventType.empty() && vehicleInfoPanel)
+                    {
+                        float timeDiff = simulationTime - tracker.stateChangeTime;
+                        float acceleration = 0.0f;
+
+                        // 计算加速度（仅对加速和减速事件）
+                        if (timeDiff > 0.001f)
+                        {
+                            acceleration = (vehicle->m_state.currentSpeed - tracker.lastSpeed) / timeDiff;
+                        }
+
+                        vehicleInfoPanel->recordAccelerationEvent(
+                            vehicleId,
+                            tracker.stateChangeTime,
+                            simulationTime,
+                            tracker.lastSpeed,
+                            vehicle->m_state.currentSpeed,
+                            acceleration,
+                            eventType);
+
+                        std::cout << "Vehicle " << vehicleId << " " << eventType
+                                  << ": " << tracker.lastSpeed << "m/s -> "
+                                  << vehicle->m_state.currentSpeed << "m/s" << std::endl;
+                    }
+                }
+
+                // 更新跟踪器
+                tracker.lastMotionState = vehicle->m_state.motionState;
+                tracker.lastSpeed = vehicle->m_state.currentSpeed;
+                tracker.stateChangeTime = simulationTime;
+                tracker.hasStateChanged = true;
+            }
+        }
+    }
+    void simulateVehicleMovement(float deltaTime)
+    {
+        // 简单的车辆运动模拟以演示加减速事件
+        for (auto &vehicle : vehicles)
+        {
+            // 基于时间的状态变化模拟
+            static float stateChangeTimer = 0.0f;
+            stateChangeTimer += deltaTime;
+
+            if (stateChangeTimer > 4.0f) // 每4秒改变一次状态
+            {
+                // 循环改变车辆状态以演示加减速事件
+                switch (vehicle->m_state.motionState)
+                {
+                case Vehicle::MotionState::Stopped:
+                    vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
+                    vehicle->m_state.currentSpeed = 0.5f;
+                    break;
+                case Vehicle::MotionState::Accelerating:
+                    vehicle->m_state.motionState = Vehicle::MotionState::Cruising;
+                    vehicle->m_state.currentSpeed = 2.0f;
+                    break;
+                case Vehicle::MotionState::Cruising:
+                    vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+                    vehicle->m_state.currentSpeed = 1.0f;
+                    break;
+                case Vehicle::MotionState::Decelerating:
+                    vehicle->m_state.motionState = Vehicle::MotionState::Stopped;
+                    vehicle->m_state.currentSpeed = 0.0f;
+                    break;
+                }
+
+                if (vehicle->id == 1) // 重置计时器（只对第一辆车）
+                {
+                    stateChangeTimer = 0.0f;
+                }
+            }
+
+            // 更新车辆位置（基于当前速度）
+            if (vehicle->m_state.currentSpeed > 0.0f)
+            {
+                vehicle->position_m += vehicle->m_state.currentSpeed * deltaTime;
+                vehicle->m_state.position = vehicle->position_m;
+
+                // 处理轨道边界
+                float maxTrackLengthMm = simulationView->getTrackRenderer().getTotalCenterLineLengthMm();
+                float maxTrackLength = maxTrackLengthMm / 1000.0f;
+
+                if (vehicle->position_m >= maxTrackLength)
+                {
+                    vehicle->position_m = std::fmod(vehicle->position_m, maxTrackLength);
+                    vehicle->m_state.position = vehicle->position_m;
+                }
+            }
+        }
+
+        // 更新仿真视图中的车辆数据
+        if (simulationView)
+        {
+            std::vector<Vehicle *> vehiclePtrs;
+            for (auto &v : vehicles)
+            {
+                vehiclePtrs.push_back(v.get());
+            }
+            simulationView->updateVehicles(vehiclePtrs);
+        }
+    }
+
     void update(float deltaTime)
     {
         if (isRunning)
@@ -428,11 +631,33 @@ public:
             toolbar->updateTimeDisplay(simulationTime);
 
             // 更新状态面板
-            statusPanel->setSimulationTime(simulationTime); // 更新仿真视图
+            statusPanel->setSimulationTime(simulationTime);
+
+            // 检测车辆状态变化并记录加减速事件
+            checkVehicleStateChanges();
+
+            // 简单的车辆运动模拟以演示加减速事件
+            simulateVehicleMovement(deltaTime * timeScale);
+
+            // 更新车辆信息面板
+            if (vehicleInfoPanel)
+            {
+                vehicleInfoPanel->updateInfo(simulationTime);
+            }
+
+            // 更新仿真视图
             if (simulationView)
             {
                 simulationView->updateViewTransforms(deltaTime * timeScale);
             }
+
+            // 模拟车辆加减速事件（每3秒一次）
+            // static float lastEventTime = 0.0f;
+            // if (simulationTime - lastEventTime > 3.0f)
+            // {
+            //     addSimulatedAccelerationEvent();
+            //     lastEventTime = simulationTime;
+            // }
         }
     }
 
@@ -486,7 +711,7 @@ public:
             std::vector<Vehicle *> vehiclePtrs;
             for (auto &v : vehicles)
             {
-                vehiclePtrs.push_back(v.get());
+                vehiclePtrs.push_back(v.get()); // TODO:
             }
             simulationView->updateVehicles(vehiclePtrs);
         }
@@ -545,11 +770,10 @@ public:
         window.clear(sf::Color(245, 245, 245)); // 浅灰色背景        // 首先渲染仓库仿真视图（背景层）
         if (simulationView)
         {
-            // 设置仿真视图的视口（排除工具栏、状态面板和车辆信息面板区域）
-            // Adjust SimulationView position and width calculation
-            float simulationViewLeft = SIMULATION_VIEW_MARGIN; // Starts from left margin
+            // 设置仿真视图的视口 - 现在SimulationView占用除StatusPanel外的全部可用空间
+            float simulationViewLeft = SIMULATION_VIEW_MARGIN; // 从左边缘开始（VehicleInfoPanel不占用布局空间）
             float simulationViewTop = TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN;
-            float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 2; // Adjusted width
+            float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 2; // 只排除StatusPanel
             float simulationViewHeight = window.getSize().y - TOOLBAR_HEIGHT - SIMULATION_VIEW_MARGIN * 2;
 
             sf::FloatRect simulationViewport(
@@ -560,10 +784,16 @@ public:
 
             simulationView->updateViewport(simulationViewport);
             simulationView->renderWorld(window);
+        } // 然后渲染GUI组件（顶层）- 确保在SimulationView之后渲染
+        // 渲染工具栏（顶部）
+        toolbar->render(window, sf::Vector2f(0, 0)); // 渲染车辆信息面板（悬浮窗，左上角固定位置）
+        if (vehicleInfoPanel)
+        {
+            float panelX = 10.0f;                  // 距离左边缘10像素
+            float panelY = TOOLBAR_HEIGHT + 10.0f; // 距离工具栏下方10像素
+            vehicleInfoPanel->setPosition(panelX, panelY);
+            window.draw(*vehicleInfoPanel);
         }
-
-        // 然后渲染GUI组件（顶层）- 确保在SimulationView之后渲染        // 渲染工具栏（顶部）
-        toolbar->render(window, sf::Vector2f(0, 0));
 
         // 渲染状态面板（右侧，自动贴在右边缘）
         statusPanel->render(window, window.getSize());
@@ -581,7 +811,7 @@ public:
         instructions.setCharacterSize(14);
         instructions.setFillColor(sf::Color::Black);
         instructions.setPosition(10, window.getSize().y - 150);
-        std::string text = "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles\n"
+        std::string text = "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles with Acceleration Tracking\n"
                            "=== Simulation Control ===\n"
                            "Space: Start/Pause simulation\n"
                            "R: Reset simulation\n"
@@ -601,8 +831,14 @@ public:
                            "• Vehicle 3: Loaded Accelerating (Orange Moving)\n"
                            "\n=== GUI Components ===\n"
                            "• Toolbar: Time display (HH:MM:SS.mmm)\n"
-                           "• Status Panel: Simulation statistics\n"
-                           "• Simulation View: Track & multi-vehicle rendering";
+                           "• Status Panel: Simulation statistics (Right)\n"
+                           "• Vehicle Info Panel: Acceleration events (Left)\n"
+                           "• Simulation View: Track & multi-vehicle rendering\n"
+                           "\n=== New Features ===\n"
+                           "• Real-time acceleration event tracking\n"
+                           "• Vehicle state change detection\n"
+                           "• Automatic acceleration/deceleration recording\n"
+                           "• Vehicle motion statistics display";
         instructions.setString(text);
 
         window.draw(instructions);
@@ -611,13 +847,15 @@ public:
     void run()
     {
         sf::Clock clock;
-        std::cout << "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles Started" << std::endl;
+        std::cout << "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles with Acceleration Tracking Started" << std::endl;
         std::cout << "Features:" << std::endl;
         std::cout << "1. Toolbar - Time format display (HH:MM:SS.mmm)" << std::endl;
         std::cout << "2. StatusPanel - 25:35:40 ratio layout" << std::endl;
-        std::cout << "3. VehicleInfoPanel - Vehicle acceleration info recording" << std::endl;
+        std::cout << "3. StatusPanel - Enhanced with ObjectInspector and TaskListView" << std::endl;
         std::cout << "4. SimulationView - Track rendering with 3 vehicles" << std::endl;
-        std::cout << "5. Encapsulated rendering logic from VehiclePathPositionTest.cpp" << std::endl;
+        std::cout << "5. VehicleInfoPanel - Real-time acceleration event tracking (Left)" << std::endl;
+        std::cout << "6. Vehicle state change detection and recording" << std::endl;
+        std::cout << "7. Automatic motion simulation for demonstration" << std::endl;
         std::cout << "\nVehicles initialized:" << std::endl;
         std::cout << "• Vehicle 1: Empty, Stopped (Blue)" << std::endl;
         std::cout << "• Vehicle 2: Empty, Cruising (Blue, moving)" << std::endl;

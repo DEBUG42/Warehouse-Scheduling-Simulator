@@ -7,73 +7,76 @@
 VehicleInfoPanel::VehicleInfoPanel(sf::Font &font, float width, float height)
     : m_font(font), m_width(width), m_height(height), m_selectedVehicle(nullptr)
 {
-    // 设置布局参数
-    m_padding = 10.0f;
-    m_lineSpacing = 18.0f;
-    m_backgroundColor = sf::Color(245, 245, 245, 230); // 浅灰色半透明背景
+    // 调试信息：输出构造函数接收的参数
+    std::cout << "VehicleInfoPanel constructor called with width=" << width << ", height=" << height << std::endl;
 
-    // 初始化背景
+    // 设置布局参数
+    m_padding = 15.0f;
+    m_lineSpacing = 20.0f;
+    m_backgroundColor = sf::Color(25, 35, 45, 180); // 深蓝灰色半透明背景，适度透明
+
+    // 初始化背景 - 悬浮窗样式
     m_background.setSize(sf::Vector2f(m_width, m_height));
     m_background.setFillColor(m_backgroundColor);
-    m_background.setOutlineThickness(1.0f);
-    m_background.setOutlineColor(sf::Color(120, 120, 120));
+    m_background.setOutlineThickness(2.0f);
+    m_background.setOutlineColor(sf::Color(60, 120, 180, 200)); // 蓝色边框，微透明
+
+    // 调试信息：输出背景矩形的实际尺寸
+    sf::Vector2f actualSize = m_background.getSize();
+    std::cout << "VehicleInfoPanel background actual size: " << actualSize.x << " x " << actualSize.y << std::endl;
 
     initializeUI();
     updateLayout();
 }
 
 void VehicleInfoPanel::initializeUI()
-{
-    // 标题
+{ // 标题
     m_titleText.setFont(m_font);
-    m_titleText.setCharacterSize(14);
-    m_titleText.setFillColor(sf::Color(50, 50, 50));
+    m_titleText.setCharacterSize(16);
+    m_titleText.setFillColor(sf::Color(220, 230, 240)); // 浅色文字适配深色背景
     m_titleText.setString("Vehicle Information");
     m_titleText.setStyle(sf::Text::Bold);
 
     // 当前状态信息
     m_motionStateText.setFont(m_font);
-    m_motionStateText.setCharacterSize(12);
-    m_motionStateText.setFillColor(sf::Color(70, 70, 70));
+    m_motionStateText.setCharacterSize(13);
+    m_motionStateText.setFillColor(sf::Color(190, 200, 210)); // 浅灰白色
 
     m_currentSpeedText.setFont(m_font);
-    m_currentSpeedText.setCharacterSize(12);
-    m_currentSpeedText.setFillColor(sf::Color(70, 70, 70));
+    m_currentSpeedText.setCharacterSize(13);
+    m_currentSpeedText.setFillColor(sf::Color(190, 200, 210));
 
     m_accelerationText.setFont(m_font);
-    m_accelerationText.setCharacterSize(12);
-    m_accelerationText.setFillColor(sf::Color(70, 70, 70));
+    m_accelerationText.setCharacterSize(13);
+    m_accelerationText.setFillColor(sf::Color(190, 200, 210));
 
     m_positionText.setFont(m_font);
-    m_positionText.setCharacterSize(12);
-    m_positionText.setFillColor(sf::Color(70, 70, 70));
-
-    // 加减速历史标题
+    m_positionText.setCharacterSize(13);
+    m_positionText.setFillColor(sf::Color(190, 200, 210)); // 加减速历史标题
     m_accelerationHistoryTitle.setFont(m_font);
-    m_accelerationHistoryTitle.setCharacterSize(13);
-    m_accelerationHistoryTitle.setFillColor(sf::Color(50, 50, 50));
+    m_accelerationHistoryTitle.setCharacterSize(14);
+    m_accelerationHistoryTitle.setFillColor(sf::Color(180, 220, 255)); // 淡蓝色标题
     m_accelerationHistoryTitle.setString("Acceleration History:");
     m_accelerationHistoryTitle.setStyle(sf::Text::Bold);
 
     // 统计信息标题
     m_statisticsTitle.setFont(m_font);
-    m_statisticsTitle.setCharacterSize(13);
-    m_statisticsTitle.setFillColor(sf::Color(50, 50, 50));
+    m_statisticsTitle.setCharacterSize(14);
+    m_statisticsTitle.setFillColor(sf::Color(180, 220, 255)); // 淡蓝色标题
     m_statisticsTitle.setString("Statistics:");
     m_statisticsTitle.setStyle(sf::Text::Bold);
 
     // 统计信息文本
     m_totalRunTimeText.setFont(m_font);
-    m_totalRunTimeText.setCharacterSize(11);
-    m_totalRunTimeText.setFillColor(sf::Color(70, 70, 70));
+    m_totalRunTimeText.setCharacterSize(12);
+    m_totalRunTimeText.setFillColor(sf::Color(190, 200, 210));
 
     m_stopCountText.setFont(m_font);
-    m_stopCountText.setCharacterSize(11);
-    m_stopCountText.setFillColor(sf::Color(70, 70, 70));
-
+    m_stopCountText.setCharacterSize(12);
+    m_stopCountText.setFillColor(sf::Color(190, 200, 210));
     m_averageSpeedText.setFont(m_font);
-    m_averageSpeedText.setCharacterSize(11);
-    m_averageSpeedText.setFillColor(sf::Color(70, 70, 70));
+    m_averageSpeedText.setCharacterSize(12);
+    m_averageSpeedText.setFillColor(sf::Color(190, 200, 210));
 }
 
 void VehicleInfoPanel::updateLayout()
@@ -188,11 +191,12 @@ void VehicleInfoPanel::updateInfo(float currentTime)
     m_averageSpeedText.setString("Average Speed: " + formatSpeed(m_statistics.averageSpeed));
 }
 
-void VehicleInfoPanel::recordAccelerationEvent(float startTime, float endTime,
+void VehicleInfoPanel::recordAccelerationEvent(int vehicleId, float startTime, float endTime,
                                                float startSpeed, float endSpeed,
                                                float acceleration, const std::string &type)
 {
     AccelerationEvent event;
+    event.vehicleId = vehicleId;
     event.startTime = startTime;
     event.endTime = endTime;
     event.startSpeed = startSpeed;
@@ -221,12 +225,11 @@ void VehicleInfoPanel::updateAccelerationHistoryDisplay()
     {
         sf::Text historyText;
         historyText.setFont(m_font);
-        historyText.setCharacterSize(10);
-        historyText.setFillColor(sf::Color(80, 80, 80));
-
+        historyText.setCharacterSize(11);
+        historyText.setFillColor(sf::Color(160, 180, 200)); // 浅蓝灰色文字
         std::ostringstream oss;
-        oss << event.type << ": " << formatTime(event.startTime) << "-" << formatTime(event.endTime)
-            << " | " << formatSpeed(event.startSpeed) << "→" << formatSpeed(event.endSpeed);
+        oss << "V" << event.vehicleId << " " << event.type << ": " << formatTime(event.startTime) << "-" << formatTime(event.endTime)
+            << " | " << formatSpeed(event.startSpeed) << "->" << formatSpeed(event.endSpeed);
         historyText.setString(oss.str());
 
         m_accelerationHistory.push_back(historyText);

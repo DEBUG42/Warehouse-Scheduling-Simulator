@@ -1,4 +1,3 @@
-
 #include "../Core/Task.hpp"
 #include "../Core/Event.hpp"
 #include "../Core/Device.hpp"
@@ -6,15 +5,50 @@
 #include "../Core/Scheduler.hpp"
 #include <fstream>
 #include <sstream>
-#include <iostream>
-#include "string"
+#include <string>
 
+std::ostream& operator<<(std::ostream& os, Task& task) {
+    os << "任务[ID: " << task.id << ", 名称: " << task.material_id << ", 起始设备: " << task.start_device_id << ", 终止设备: " << task.end_device_id << ", 已分配车辆: " << task.assigned_vehicle_id << ", 已分配: " << task.is_assigned << ", 就绪时间: " << task.ready_time << ", 分配时间: " << task.assign_time << ", 拾取时间: " << task.pick_time << ", 放下时间: " << task.drop_time << ", 完成时间: " << task.complete_time << "]";
+    return os;
+}
+//辅助函数：从被保护的task容器中获取task对象
+std::vector<Task>& TaskManager::getAllTasks() {
+    return tasks;
+}
+// Physics/TaskManager.cpp
+// Physics/TaskManager.cpp
+Task& TaskManager::getTask(int task_id) {
+    // 假设 TaskManager 内部用一个名为 'tasks_' 的 std::vector 存储所有任务
+    for (auto& task : tasks) { // 遍历 tasks_ 向量中的每个任务
+        if (task.id == task_id) { // 如果找到匹配的 ID
+            return task; // 返回该任务的常量引用
+        }
+    }
+    // 如果循环结束仍未找到任务，则返回一个默认的 Task 对象
+    // 这是一个安全措施，防止返回无效引用。
+    // 你应该确保这个默认任务有一个可识别的无效 ID (例如 -1)
+    static Task dummy_task;
+    dummy_task.id = -1; // 设置一个无效的任务ID，以便调用方可以检查
+    return dummy_task;
+}
+
+//辅助函数：将枚举型 TaskType 转换为字符串
+std::string TaskManager::taskTypeToString(TaskType type) {
+    switch (type) {
+        case INBOUND:
+            return "INBOUND";
+        case OUTBOUND:
+            return "OUTBOUND";
+        default:
+            return "UNKNOWN";
+    }
+}
 
 
 // 辅助函数：将字符串按指定分隔符分割
 // 输入: 字符串 (const std::string& s), 分隔符 (char delimiter)
 // 输出: 分割后的字符串列表 (std::vector<std::string>)
-std::vector<std::string> split(const std::string& s, char delimiter) {
+std::vector<std::string> TaskManager::split(const std::string& s, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
     std::istringstream tokenStream(s);
@@ -35,7 +69,7 @@ std::vector<std::string> split(const std::string& s, char delimiter) {
  *   - tasks: 所有任务的结构体列表
  *   - next_task_id: 每个起始设备应执行的最小编号任务
  */
-void TaskManager::loadFromFile(std::string& filepath) {
+void TaskManager::loadFromFile(const std::string& filepath) {
     std::ifstream fin(filepath);
     std::string line;
 
@@ -78,47 +112,115 @@ void TaskManager::loadFromFile(std::string& filepath) {
             next_task_id[task.start_device_id] = task.id;
         }
     }
+    for (const Task& task : tasks) {
+    int dev = task.start_device_id;
+    if (next_task_id.count(dev) == 0 || task.id < next_task_id[dev]) {
+        next_task_id[dev] = task.id;
+    }
+}
+    for (auto& task : tasks) {
+        if (task.ready_time < 0.0) {
+            task.ready_time = 0.0; // 所有任务默认立即就绪
+        }
+    }
 
-    // 输出加载的任务数量信息
+
+    // 输出加载的任务数量信息    
     std::cout << "[INFO] Loaded " << tasks.size() << " tasks from " << filepath << std::endl;
 }
 
-// 获取当前时间可以执行的任务
-// 输入: 当前时间 (double current_time), 设备管理器引用 (const DeviceManager& device_manager)
-// 输出: 准备好执行的任务列表 (std::vector<Task*>)
-std::vector<Task*> TaskManager::getReadyTasks(double current_time,  DeviceManager& device_manager) {
+// 获取当前时间点下所有可以立即执行的任务。
+// 一个任务被认为是“准备好执行”的，如果它满足以下所有条件：
+// 1. 尚未被分配（即没有人或设备在处理它）。
+// 2. 满足顺序约束（如果存在）。例如，一个任务可能需要前一个任务完成后才能开始。
+// 3. 任务的就绪时间 (ready_time) 已经到达或过去。
+// 4. 任务所需的起始设备和结束设备目前都未被保留（即空闲）。
+
+// 输入:
+//   current_time: 当前仿真的时间戳 (double类型)。
+//   device_manager: 设备管理器的常量引用。用于查询设备当前的占用状态。
+//
+// 输出:
+//   std::vector<Task*>: 一个指向所有当前准备好执行任务的指针列表。
+//                        返回指针是为了避免复制大型 Task 对象，并允许直接操作原始任务。
+std::vector<Task*> TaskManager::getReadyTasks(double current_time, DeviceManager& device_manager) {
     std::vector<Task*> ready;
 
-    // 遍历所有任务，检查哪些任务已经准备好执行
     for (Task& task : tasks) {
         if (task.is_assigned) continue;
 
-        // 检查任务是否满足顺序约束（即必须先完成前一个任务）
+        // 顺序限制
         if (task.id != next_task_id[task.start_device_id]) continue;
 
-        // 检查任务的就绪时间是否已经到达，并且设备状态是否允许任务执行
         if (task.ready_time > current_time) continue;
 
-        auto& dev_start = device_manager.getState(task.start_device_id);
-        auto& dev_end = device_manager.getState(task.end_device_id);
-        if (dev_start.is_reserved || dev_end.is_reserved) continue;
+        const auto& dev_start = device_manager.getDeviceState(task.start_device_id);
+        const auto& dev_end = device_manager.getDeviceState(task.end_device_id);
 
-        // 将满足条件的任务加入 ready 列表
+        if (dev_start.is_reserved || dev_end.is_reserved || !dev_start.has_goods)
+            continue;
+
         ready.push_back(&task);
     }
+    //
+    for (Task& task : tasks) {
+    // std::cout << "\n[Check] Task #" << task.id << " (StartDev: " << task.start_device_id << ", ReadyTime: " << task.ready_time << ")\n";
+    if (task.is_assigned) {
+        // std::cout << "  ⛔ Already assigned.\n";
+        continue;
+    }
+
+    if (task.id != next_task_id[task.start_device_id]) {
+        // std::cout << "  ⛔ Not next task on this device (Expected: " << next_task_id[task.start_device_id] << ").\n";
+        continue;
+    }
+
+    if (task.ready_time > current_time) {
+        std::cout << "  ⛔ Not ready yet (Current Time: " << current_time << ").\n";
+        continue;
+    }
+
+    const auto& dev_start = device_manager.getDeviceState(task.start_device_id);
+    const auto& dev_end = device_manager.getDeviceState(task.end_device_id);
+
+    if (dev_start.is_reserved) std::cout << "  ⛔ Start device is reserved.\n";
+    if (dev_end.is_reserved) std::cout << "  ⛔ End device is reserved.\n";
+    // if (!dev_start.has_goods) std::cout << "  ⛔ Start device has no goods.\n";
+
+    if (dev_start.is_reserved || dev_end.is_reserved || !dev_start.has_goods)
+        continue;
+
+    // std::cout << "  ✅ Task is ready!\n";
+    ready.push_back(&task);
+}
+
     return ready;
+}
+
+void TaskManager::initializeNextTaskID() {
+    next_task_id.clear();
+    for (const auto& task : tasks) {
+        int dev = task.start_device_id;
+        if (next_task_id.find(dev) == next_task_id.end() || task.id < next_task_id[dev]) {
+            next_task_id[dev] = task.id;
+        }
+    }
 }
 
 // 检查所有任务是否已经完成
 // 输入: 无
 // 输出: 布尔值，指示所有任务是否已完成 (bool)
+// TaskManager.cpp 中实现
 bool TaskManager::allTasksCompleted() {
-    // 检查所有任务是否已经完成
-    for (auto& task : tasks) {
-        if (!task.is_assigned || task.complete_time < 0) return false;
+    for (const auto& task : tasks) {
+        // 任务未被分配，或者未完成，都不算完成
+        if (!task.is_assigned || task.complete_time < 0.0) {
+            return false;
+        }
     }
     return true;
 }
+
 
 // 标记指定的任务已分配给车辆，并记录分配时间和车辆ID
 // 输入: 任务ID (int task_id), 车辆ID (int vehicle_id), 分配时间 (double assign_time)
@@ -143,38 +245,38 @@ void TaskManager::markTaskAssigned(int task_id, int vehicle_id, double assign_ti
 
 
 
-// 尝试分派任务给可用的车辆
-// 输入: 无（依赖于类的成员变量）
-// 输出: 无
-void Scheduler::tryDispatchTasks() {
-    auto ready_tasks = task_manager.getReadyTasks(current_time, device_manager);
+// // 尝试分派任务给可用的车辆
+// // 输入: 无（依赖于类的成员变量）
+// // 输出: 无
+// void Scheduler::tryDispatchTasks() {
+//     auto ready_tasks = task_manager.getReadyTasks(current_time, device_manager);
 
-    for (Task* task : ready_tasks) {
-        if (task->is_assigned) continue;
+//     for (Task* task : ready_tasks) {
+//         if (task->is_assigned) continue;
 
-        auto candidates = vehicle_manager.getAvailableVehicles(*task, current_time);
-        if (candidates.empty()) continue;
+//         auto candidates = vehicle_manager.getAvailableVehicles(*task, current_time);
+//         if (candidates.empty()) continue;
 
-        Vehicle* best_vehicle = vehicle_manager.selectBestVehicle(*task, candidates, current_time);
-        if (!best_vehicle) continue;
+//         Vehicle* best_vehicle = vehicle_manager.selectBestVehicle(*task, candidates, current_time);
+//         if (!best_vehicle) continue;
 
-        // 分配任务
-        vehicle_manager.applyTaskToVehicle(*best_vehicle, *task, current_time);
-        task_manager.markTaskAssigned(task->id, best_vehicle->id, current_time);
-        device_manager.reserve(task->start_device_id, task->id, current_time + 5.0);  // 假设锁定5s
+//         // 分配任务
+//         vehicle_manager.applyTaskToVehicle(*best_vehicle, *task, current_time);
+//         task_manager.markTaskAssigned(task->id, best_vehicle->id, current_time);
+//         device_manager.reserve(task->start_device_id, task->id, current_time + 5.0);  // 假设锁定5s
 
-        // 如果任务为出库任务，添加“人工卸货完成”延迟事件
-        if (task->type == TaskType::OUTBOUND) {
-            Event e {
-                .time = current_time + 30.0,
-                .type = EventType::DEVICE_BECOMES_EMPTY,
-                .device_id = task->end_device_id,
-                .task_id = task->id
-            };
-            event_queue.addEvent(e);
-        }
+//         // 如果任务为出库任务，添加“人工卸货完成”延迟事件
+//         if (task->type == TaskType::OUTBOUND) {
+//             Event e {
+//                 .time = current_time + 30.0,
+//                 .type = EventType::DEVICE_BECOMES_EMPTY,
+//                 .device_id = task->end_device_id,
+//                 .task_id = task->id
+//             };
+//             event_queue.addEvent(e);
+//         }
 
-        // 日志记录任务分配情况
-        logger.logTaskAssignment(*task, *best_vehicle);
-    }
-}
+//         // 日志记录任务分配情况
+//         logger.logTaskAssignment(*task, *best_vehicle);
+//     }
+// }

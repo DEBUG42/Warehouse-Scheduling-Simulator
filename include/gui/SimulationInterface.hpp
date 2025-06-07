@@ -12,6 +12,7 @@
  */
 enum class SimulationMode
 {
+    NONE,    ///< 无模式选择
     TASK1,   ///< 任务1模式
     TASK2_1, ///< 任务2.1模式
     TASK2_2, ///< 任务2.2模式

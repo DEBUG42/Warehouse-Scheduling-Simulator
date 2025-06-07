@@ -33,9 +33,7 @@ private:
     // 时间显示区域
     sf::RectangleShape m_timeBackground;
     sf::Text m_timeText;
-    sf::FloatRect m_timeAreaBounds;
-
-    // 速度控制区域
+    sf::FloatRect m_timeAreaBounds; // 速度控制区域
     sf::RectangleShape m_speedSliderTrack;
     sf::RectangleShape m_speedSliderHandle;
     sf::Text m_speedLabel;
@@ -45,6 +43,7 @@ private:
     float m_minSpeed;
     float m_maxSpeed;
     bool m_isDragging;
+    bool m_useLogarithmicMapping; // 是否使用对数映射
 
     // 仿真模式切换按钮区域
     struct ModeButton
@@ -58,13 +57,11 @@ private:
 
     std::vector<ModeButton> m_modeButtons;
     sf::FloatRect m_modeAreaBounds;
-    SimulationMode m_currentMode;
-
-    // 布局常量
+    SimulationMode m_currentMode; // 布局常量
     static constexpr float PADDING = 10.0f;
     static constexpr float BUTTON_WIDTH = 80.0f;
     static constexpr float TIME_AREA_WIDTH = 200.0f;
-    static constexpr float SPEED_AREA_WIDTH = 250.0f;
+    static constexpr float SPEED_AREA_WIDTH = 400.0f; // 增加宽度以容纳更长的滑杆
     static constexpr float MODE_AREA_WIDTH = 350.0f;
     static constexpr float MODE_BUTTON_WIDTH = 70.0f;
     static constexpr float COMPONENT_HEIGHT = 30.0f; // 回调函数
@@ -82,6 +79,10 @@ private:
     // 格式化函数
     std::string formatTime(float seconds) const;
     std::string formatSpeed(float speed) const;
+
+    // 对数映射相关函数
+    float speedToSliderPosition(float speed) const;
+    float sliderPositionToSpeed(float position) const;
 
 public:
     /**
@@ -147,6 +148,12 @@ public:
      * @return 当前仿真模式
      */
     SimulationMode getCurrentMode() const { return m_currentMode; }
+
+    /**
+     * @brief 设置是否使用对数映射
+     * @param useLog 是否使用对数映射
+     */
+    void setUseLogarithmicMapping(bool useLog);
 
     // 回调设置
     void setOnTimeScaleChanged(std::function<void(float)> callback) { m_onTimeScaleChanged = callback; }

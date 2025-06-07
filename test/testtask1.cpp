@@ -3,7 +3,6 @@
 #include <iostream>
 #include <memory>
 #include <vector>
-#include <map>
 #define _USE_MATH_DEFINES
 #include <cmath>
 
@@ -58,34 +57,26 @@ public:
     bool isRunning = false;
     int selectedVehicleId = -1;
 
-    // 车辆状态跟踪（用于检测状态变化和记录加减速事件）
-    struct VehicleStateTracker
-    {
-        Vehicle::MotionState lastMotionState = Vehicle::MotionState::Stopped;
-        float lastSpeed = 0.0f;
-        float stateChangeTime = 0.0f;
-        bool hasStateChanged = false;
-    };
-    std::map<int, VehicleStateTracker> vehicleTrackers;
-
     // 布局参数
     static constexpr float TOOLBAR_HEIGHT = 50.0f;
     static constexpr float STATUS_PANEL_WIDTH = 290.0f;
     static constexpr float SIMULATION_VIEW_MARGIN = 10.0f;
-    static constexpr float VEHICLE_INFO_PANEL_WIDTH = 400.0f;  // 车辆信息面板宽度
-    static constexpr float VEHICLE_INFO_PANEL_HEIGHT = 430.0f; // 车辆信息面板高度
+    static constexpr float VEHICLE_INFO_PANEL_WIDTH = 350.0f;  // 车辆信息面板宽度
+    static constexpr float VEHICLE_INFO_PANEL_HEIGHT = 415.0f; // 车辆信息面板高度
 
     // 后端核心组件（从main函数移动过来）
-    Scheduler scheduler;
+    
     EventQueue event_queue;         // 事件队列
     TaskManager task_manager;       // 任务管理器
     VehicleManager vehicle_manager; // 车辆管理器
     DeviceManager device_manager;   // 设备管理器
     Logger logger;                  // 日志记录器
-
+	Scheduler scheduler;
 public:
-    SimulationMode m_mode = SimulationMode::NONE;
-    std::unique_ptr<Toolbar> toolbar;
+
+	SimulationMode m_mode = SimulationMode::TASK1;
+	std::unique_ptr<Toolbar> toolbar;
+
     SimpleDemoApp() : window(sf::VideoMode(1800, 800), "GUI Phase 1 - Enhanced Demo with Warehouse & Vehicles")
     {
         // 绑定后端组件
@@ -95,7 +86,6 @@ public:
         initializeComponents();
     }
 
-    // 公共方法：更新GUI显示（供外部调用）
     void refreshGUI()
     {
         updateSchedulerDependentComponents();
@@ -124,13 +114,11 @@ public:
         return false;
     }
 
+
     void initializeComponents()
     {
         // 创建工具栏 - 修正参数顺序：(font, width, height)
         toolbar = std::make_unique<Toolbar>(font, window.getSize().x, TOOLBAR_HEIGHT);
-
-        // 保持默认模式为NONE，不设置任何特定模式
-        // toolbar->setCurrentMode(SimulationMode::NONE); // 不需要显式设置，因为构造函数已经默认为NONE
 
         // 创建状态面板
         statusPanel = std::make_unique<StatusPanel>(font);
@@ -166,12 +154,10 @@ public:
         // 初始化依赖scheduler的组件
         updateSchedulerDependentComponents();
     }
-
-    // 更新依赖scheduler的组件
-    void updateSchedulerDependentComponents()
+	    void updateSchedulerDependentComponents()
     {
         // 使用内部的vehicle_manager而不是指针
-        auto &vehicles = vehicle_manager.getAllVehicles();
+        auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
         std::vector<Vehicle *> vehiclePtrs;
         for (auto &vehicle : vehicles)
         {
@@ -191,8 +177,7 @@ public:
 
         std::cout << "前端工作已做好: 收到" << vehicles.size() << " 后端小车" << std::endl;
     }
-
-    void handleEvents()
+        void handleEvents()
     {
         sf::Event event;
         while (window.pollEvent(event))
@@ -344,92 +329,87 @@ public:
                 simulationView->updateViewTransforms(deltaTime * timeScale);
             }
 
-            // 检测车辆状态变化并记录加减速事件
-            checkVehicleStateChanges();
+
         }
     }
 
-    // 检测车辆状态变化并记录加减速事件
-    void checkVehicleStateChanges()
-    {
-        auto &vehicles = vehicle_manager.getAllVehicles();
-        for (auto &vehicle : vehicles)
-        {
-            int vehicleId = vehicle.id;
+    // void addSimulatedAccelerationEvent()
+    // {
+    //     static int eventCounter = 0;
+    //     eventCounter++;
 
-            // 初始化跟踪器（如果不存在）
-            if (vehicleTrackers.find(vehicleId) == vehicleTrackers.end())
-            {
-                vehicleTrackers[vehicleId] = VehicleStateTracker();
-                vehicleTrackers[vehicleId].lastMotionState = vehicle.m_state.motionState;
-                vehicleTrackers[vehicleId].lastSpeed = vehicle.m_state.currentSpeed;
-                vehicleTrackers[vehicleId].stateChangeTime = simulationTime;
-                continue;
-            }
+    //     float startTime = simulationTime - 2.0f;
+    //     float endTime = simulationTime;
+    //     float startSpeed = 0.0f + (eventCounter % 3) * 0.5f;
+    //     float endSpeed = 1.5f + (eventCounter % 4) * 0.3f;
+    //     float acceleration = (endSpeed - startSpeed) / (endTime - startTime);
+    //     std::string eventType = (eventCounter % 2 == 0) ? "Acceleration" : "Deceleration";
 
-            auto &tracker = vehicleTrackers[vehicleId];
+    //     vehicleInfoPanel->recordAccelerationEvent(
+    //         startTime, endTime, startSpeed, endSpeed, acceleration, eventType);
 
-            // 检测状态变化
-            if (tracker.lastMotionState != vehicle.m_state.motionState)
-            {
-                // 记录上一阶段的加减速事件
-                if (tracker.hasStateChanged)
-                { // 不是第一次状态变化
-                    std::string eventType = "";
-                    switch (tracker.lastMotionState)
-                    {
-                    case Vehicle::MotionState::Accelerating:
-                        eventType = "Accelerating";
-                        break;
-                    case Vehicle::MotionState::Decelerating:
-                        eventType = "Decelerating";
-                        break;
-                    case Vehicle::MotionState::Cruising:
-                        eventType = "Cruising";
-                        break;
-                    case Vehicle::MotionState::Stopped:
-                        eventType = "Stopped";
-                        break;
-                    }
+    //     std::cout << "Record " << eventType << " event: "
+    //               << startSpeed << "m/s -> " << endSpeed << "m/s" << std::endl;
+    // }
+    // void resetSimulation()
+    // {
+    //     auto &vehicles = scheduler_ptr->vehicle_manager_ptr->getAllVehicles();
+    //     // 重置所有车辆位置和状态
+    //     for (int i = 0; i < vehicles.size(); ++i)
+    //     {
+    //         auto &vehicle = vehicles[i];
+    //         vehicle.position_m = (32.000 - 0.002 * i - vehicle.m_length * i); // 使用VehicleManager的初始位置方法
+    //         vehicle.velocity_mps = 0.0f;
+    //         vehicle.is_loaded = false;
+    //         vehicle.m_state.position = vehicle.position_m;
+    //         vehicle.m_state.currentSpeed = 0.0f;
+    //         vehicle.m_state.motionState = Vehicle::MotionState::Stopped;
+    //     }
 
-                    if (!eventType.empty())
-                    {
-                        float acceleration = (vehicle.m_state.currentSpeed - tracker.lastSpeed) /
-                                             (simulationTime - tracker.stateChangeTime);
+    //     // 重新设置不同状态
+    //     if (vehicles.size() >= 2)
+    //     {
+    //         vehicles[1].is_loaded = false;                                    // 车辆2：空载状态
+    //         vehicles[1].m_state.motionState = Vehicle::MotionState::Cruising; // 巡航状态
+    //     }
+    //     if (vehicles.size() >= 3)
+    //     {
+    //         vehicles[2].is_loaded = true;                                         // 车辆3：载货状态
+    //         vehicles[2].m_state.motionState = Vehicle::MotionState::Accelerating; // 加速状态
+    //     }
 
-                        vehicleInfoPanel->recordAccelerationEvent(
-                            vehicleId,
-                            tracker.stateChangeTime,
-                            simulationTime,
-                            tracker.lastSpeed,
-                            vehicle.m_state.currentSpeed,
-                            acceleration,
-                            eventType);
+    //     // 清除选择
+    //     selectedVehicleId = -1;
 
-                        std::cout << "Vehicle " << vehicleId << " " << eventType
-                                  << ": " << tracker.lastSpeed << "m/s -> "
-                                  << vehicle.m_state.currentSpeed << "m/s" << std::endl;
-                    }
-                }
+    //     // 更新仿真视图数据
+    //     if (simulationView)
+    //     {
+    //         std::vector<Vehicle *> vehiclePtrs;
+    //         for (auto &vehicle : vehicles)
+    //         {
+    //             vehiclePtrs.push_back(&vehicle);
+    //         }
+    //         simulationView->updateVehicles(vehiclePtrs);
 
-                // 更新跟踪器
-                tracker.lastMotionState = vehicle.m_state.motionState;
-                tracker.lastSpeed = vehicle.m_state.currentSpeed;
-                tracker.stateChangeTime = simulationTime;
-                tracker.hasStateChanged = true;
-            }
-        }
-    }
+    //         // 设备重置暂时跳过，因为我们没有创建设备
+    //         std::vector<DeviceBase *> devicePtrs;
+    //         simulationView->updateDevices(devicePtrs);
+    //     }
 
+    //     // 重置统计
+    //     statusPanel->setCompletedTaskCount(0);
+    //     statusPanel->setPendingTaskCount(5);
+    //     std::cout << "Simulation reset - " << vehicles.size() << " vehicles positioned" << std::endl;
+    // }
     void render()
     {
         window.clear(sf::Color(245, 245, 245)); // 浅灰色背景        // 首先渲染仓库仿真视图（背景层）
         if (simulationView)
         {
-            // 设置仿真视图的视口 - 现在SimulationView占用除StatusPanel外的全部可用空间（VehicleInfoPanel作为悬浮窗不占用布局空间）
-            float simulationViewLeft = SIMULATION_VIEW_MARGIN; // 从左边缘开始（VehicleInfoPanel不占用布局空间）
+            // 设置仿真视图的视口（排除工具栏、状态面板和车辆信息面板区域）
+            float simulationViewLeft = VEHICLE_INFO_PANEL_WIDTH + SIMULATION_VIEW_MARGIN * 2;
             float simulationViewTop = TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN;
-            float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 2; // 只排除StatusPanel
+            float simulationViewWidth = window.getSize().x - STATUS_PANEL_WIDTH - VEHICLE_INFO_PANEL_WIDTH - SIMULATION_VIEW_MARGIN * 4;
             float simulationViewHeight = window.getSize().y - TOOLBAR_HEIGHT - SIMULATION_VIEW_MARGIN * 2;
 
             sf::FloatRect simulationViewport(
@@ -448,8 +428,8 @@ public:
         // 渲染状态面板（右侧，自动贴在右边缘）
         statusPanel->render(window, window.getSize());
 
-        // 渲染车辆信息面板（悬浮窗，左上角固定位置）
-        sf::Vector2f vehicleInfoPos(10.0f, TOOLBAR_HEIGHT + 10.0f); // 距离左边缘10像素，距离工具栏下方10像素
+        // 渲染车辆信息面板（左侧，不与轨道重叠）
+        sf::Vector2f vehicleInfoPos(SIMULATION_VIEW_MARGIN, TOOLBAR_HEIGHT + SIMULATION_VIEW_MARGIN);
         vehicleInfoPanel->setPosition(vehicleInfoPos);
         window.draw(*vehicleInfoPanel);
 
@@ -466,177 +446,286 @@ public:
         instructions.setCharacterSize(14);
         instructions.setFillColor(sf::Color::Black);
         instructions.setPosition(10, window.getSize().y - 150);
-        std::string text = "GUI Frontend - Warehouse Visualization\n"
+        std::string text = "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles\n"
                            "=== Simulation Control ===\n"
                            "Space: Start/Pause simulation\n"
+                           "R: Reset simulation\n"
                            "ESC: Exit program\n"
                            "\n=== Display Control ===\n"
                            "T: Toggle coordinate grid display\n"
                            "G: Toggle warehouse display\n"
                            "V: Toggle vehicle display\n"
                            "C: Toggle debug info display\n"
-                           "\n=== Vehicle Selection ===\n"
+                           "\n=== Vehicle Control ===\n"
                            "1/2/3: Select vehicle (by number)\n"
+                           "W/S: Move selected vehicle forward/backward along track\n"
                            "Mouse: Click to select vehicle/device\n"
-                           "\n=== Current Status ===\n"
-                           "• Warehouse: Visible\n"
-                           "• Track: Visible\n"
-                           "• Vehicles: Running in TASK1 mode\n"
-                           "• Mode Switching: Available with time reset\n"
+                           "\n=== Vehicle Status ===\n"
+                           "• Vehicle 1: Empty Stopped (Blue)\n"
+                           "• Vehicle 2: Empty Cruising (Blue Moving)\n"
+                           "• Vehicle 3: Loaded Accelerating (Orange Moving)\n"
                            "\n=== GUI Components ===\n"
-                           "• Toolbar: Time display (HH:MM:SS.mmm) & Mode switching\n"
+                           "• Toolbar: Time display (HH:MM:SS.mmm)\n"
                            "• Status Panel: Simulation statistics\n"
-                           "• Vehicle Info Panel: Vehicle acceleration events\n"
-                           "• Simulation View: Track & warehouse rendering\n"
-                           "• Backend Communication: Integrated";
+                           "• Vehicle Info Panel: Acceleration/Deceleration events\n"
+                           "• Simulation View: Track & multi-vehicle rendering";
         instructions.setString(text);
 
         window.draw(instructions);
     }
     void run()
-    {
+	{
         sf::Clock clock;
-
-        std::cout << "GUI Frontend Started - Warehouse Visualization" << std::endl;
+		auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
+		scheduler.task_manager_ptr->initializeNextTaskID();
+		scheduler.event_queue_ptr->initializeInitialEvents(); 
+		std::vector<Task>& tasks = task_manager.getAllTasks();
+		scheduler.task_manager_ptr->loadFromFile("D:/Warehouse_Scheduling_Simulator/test/tasks.csv");
+        std::cout << "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles Started" << std::endl;
         std::cout << "Features:" << std::endl;
         std::cout << "1. Toolbar - Time format display (HH:MM:SS.mmm)" << std::endl;
         std::cout << "2. StatusPanel - 25:35:40 ratio layout" << std::endl;
         std::cout << "3. VehicleInfoPanel - Vehicle acceleration info recording" << std::endl;
-        std::cout << "4. SimulationView - Track and warehouse rendering" << std::endl;
-        std::cout << "5. Backend communication interface ready" << std::endl;
-        std::cout << "\nFrontend ready for backend vehicle data..." << std::endl;
-        std::cout << "\nInstructions: Press Space to start simulation when vehicles are loaded from backend" << std::endl;
+        std::cout << "4. SimulationView - Track rendering with 3 vehicles" << std::endl;
+        std::cout << "5. Encapsulated rendering logic from VehiclePathPositionTest.cpp" << std::endl;
+        std::cout << "\nVehicles initialized:" << std::endl;
+        std::cout << "• Vehicle 1: Empty, Stopped (Blue)" << std::endl;
+        std::cout << "• Vehicle 2: Empty, Cruising (Blue, moving)" << std::endl;
+        std::cout << "• Vehicle 3: Loaded, Accelerating (Orange, moving)" << std::endl;
+        std::cout << "\nInstructions: Press Space to start simulation, 1/2/3 to select vehicles, WASD to move" << std::endl;
+		
 
-        while (window.isOpen())
+		float current_time = 0.0f;
+		int recording[3]= {0,0,0};
+		int working[3]={0,0,0};
+		float start_time[3] = {0.0f, 0.0f, 0.0f};
+		float end_time[3] = {0.0f, 0.0f, 0.0f};
+		float startspeed[3] = {0.0f, 0.0f, 0.0f};
+		float endspeed[3] = {0.0f, 0.0f, 0.0f};
+		float sumRunningTime[3] = {0.0f,0.0f,0.0f};
+		int stopcount[3] = {0,0,0};
+		Vehicle::MotionState laststate_0 = Vehicle::MotionState::Stopped;
+		Vehicle::MotionState laststate_1 = Vehicle::MotionState::Stopped;
+		Vehicle::MotionState laststate_2 = Vehicle::MotionState::Stopped;
+		while (window.isOpen())
         {
             float deltaTime = clock.restart().asSeconds();
             // printf("Delta Time: %.3f seconds\n", deltaTime); // 输出每帧的时间间隔
             handleEvents();
             update(deltaTime);
             render();
+			float timeScale = toolbar->getCurrentSpeed();
 
-            // 只有当选择了模式且有车辆时才执行车辆更新逻辑
-            if (isRunning && m_mode != SimulationMode::NONE && m_mode == SimulationMode::TASK1)
-            {
-                auto &vehicles = vehicle_manager.getAllVehicles();
-                if (vehicles.size() >= 3)
-                { // 确保有足够的车辆
-                    float timeScale = toolbar->getCurrentSpeed();
-                    float intPart, fractionalPart;
-                    fractionalPart = std::modf(timeScale, &intPart);
+            if (isRunning&&m_mode==SimulationMode::TASK1)
+			{
 
-                    // 整数部分 - 完整循环
-                    for (int i = 0; i < static_cast<int>(intPart); i++)
-                    {
-                        updateVehicle1(scheduler.current_time, deltaTime, &vehicles[0], &vehicles[2]);
-                        updateVehicle1(scheduler.current_time, deltaTime, &vehicles[1], &vehicles[0]);
-                        updateVehicle1(scheduler.current_time, deltaTime, &vehicles[2], &vehicles[1]);
-                    }
 
-                    // 小数部分 - 通过deltaTime实现
-                    if (fractionalPart > 0.001f)
-                    {
-                        float adjustedDeltaTime = deltaTime * fractionalPart;
-                        updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[0], &vehicles[2]);
-                        updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[1], &vehicles[0]);
-                        updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[2], &vehicles[1]);
-                    }
-                }
-            }
+
+
+				float intPart, fractionalPart;
+				fractionalPart = std::modf(timeScale, &intPart);
+				
+				// 整数部分 - 完整循环
+				for(int i=0; i<static_cast<int>(intPart); i++){
+					updateVehicle1(scheduler.current_time, deltaTime, &vehicles[0], &vehicles[2]);
+					updateVehicle1(scheduler.current_time, deltaTime, &vehicles[1], &vehicles[0]);
+					updateVehicle1(scheduler.current_time, deltaTime, &vehicles[2], &vehicles[1]);
+				}
+				
+				// 小数部分 - 通过deltaTime实现
+				if(fractionalPart > 0.001f) {
+					float adjustedDeltaTime = deltaTime * fractionalPart;
+					updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[0], &vehicles[2]);
+					updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[1], &vehicles[0]);
+					updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[2], &vehicles[1]);
+				}
+
+
+											// Vehicle 0 recording
+			if(recording[0]==0&&vehicles[0].m_state.motionState!= laststate_0&&(vehicles[0].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[0].m_state.motionState == Vehicle::MotionState::Decelerating)){
+				start_time[0] = current_time;
+				startspeed[0] = vehicles[0].m_state.currentSpeed;
+				recording[0] = 1;
+			}
+			if(recording[0]==1&&vehicles[0].m_state.motionState!= laststate_0){
+				end_time[0] = current_time;
+				endspeed[0] = vehicles[0].m_state.currentSpeed;
+				recording[0] = 0;
+				working[0]=1;
+			}
+			if(recording[0]==0&&working[0]==1){
+				working[0]=0;
+				std::string eventType0 = (laststate_2 == Vehicle::MotionState::Accelerating) ? "Acceleration" : "Deceleration";
+				vehicleInfoPanel->recordAccelerationEvent(
+					0,start_time[0], end_time[0], startspeed[0], endspeed[0], 0.5, eventType0);
+
+			}
+
+			// Vehicle 1 recording
+			if(recording[1]==0&&vehicles[1].m_state.motionState!= laststate_1&&(vehicles[1].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[1].m_state.motionState == Vehicle::MotionState::Decelerating)){
+				start_time[1] = current_time;
+				startspeed[1] = vehicles[1].m_state.currentSpeed;
+				recording[1] = 1;
+			}
+			if(recording[1]==1&&vehicles[1].m_state.motionState!= laststate_1){
+				end_time[1] = current_time;
+				endspeed[1] = vehicles[1].m_state.currentSpeed;
+				recording[1] = 0;
+				working[1]=1;
+			}
+			if(recording[1]==0&&working[1]==1){
+				working[1]=0;
+				std::string eventType1 = (laststate_2 == Vehicle::MotionState::Accelerating) ? "Acceleration" : "Deceleration";
+				vehicleInfoPanel->recordAccelerationEvent(
+					1,start_time[1], end_time[1], startspeed[1], endspeed[1], 0.5, eventType1);
+			}
+
+			// Vehicle 2 recording
+			if(recording[2]==0&&vehicles[2].m_state.motionState!= laststate_2&&(vehicles[2].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[2].m_state.motionState == Vehicle::MotionState::Decelerating)){
+				start_time[2] = current_time;
+				startspeed[2] = vehicles[2].m_state.currentSpeed;
+				recording[2] = 1;
+			}
+			if(recording[2]==1&&vehicles[2].m_state.motionState!= laststate_2){
+				end_time[2] = current_time;
+				endspeed[2] = vehicles[2].m_state.currentSpeed;
+				recording[2] = 0;
+				working[2]=1;
+			}
+			if(recording[2]==0&&working[2]==1){
+				working[2]=0;
+				std::string eventType2 = (laststate_2 == Vehicle::MotionState::Accelerating) ? "Acceleration" : "Deceleration";
+				vehicleInfoPanel->recordAccelerationEvent(
+					2,start_time[2], end_time[2], startspeed[2], endspeed[2], 0.5, eventType2);
+			}
+			
+			
+//记录每辆车运行时间和停车次数
+			if(vehicles[0].m_state.motionState == Vehicle::MotionState::Stopped&&laststate_0!= Vehicle::MotionState::Stopped){
+				stopcount[0]++;
+			}
+			if(vehicles[1].m_state.motionState == Vehicle::MotionState::Stopped&&laststate_1!= Vehicle::MotionState::Stopped){
+				stopcount[1]++;
+			}
+			if(vehicles[2].m_state.motionState == Vehicle::MotionState::Stopped&&laststate_2!= Vehicle::MotionState::Stopped){
+				stopcount[2]++;
+			}
+			std::cout << "Vehicle 0 stop count: " << stopcount[0] << std::endl;
+			std::cout << "Vehicle 1 stop count: " << stopcount[1] << std::endl;
+			std::cout << "Vehicle 2 stop count: " << stopcount[2] << std::endl;
+			
+			if(!(vehicles[0].m_state.motionState == Vehicle::MotionState::Stopped&&(fabs(vehicles[0].position_m-26.0f)<0.55))){
+				sumRunningTime[0] += deltaTime*timeScale;
+			}
+			if(!(vehicles[1].m_state.motionState == Vehicle::MotionState::Stopped&&(fabs(vehicles[1].position_m-26.0f)<0.55))){
+				sumRunningTime[1] += deltaTime*timeScale;
+			}
+			if(!(vehicles[2].m_state.motionState == Vehicle::MotionState::Stopped&&(fabs(vehicles[2].position_m-26.0f)<0.55))){
+				sumRunningTime[2] += deltaTime*timeScale;
+			}
+			std::cout << "Vehicle 0 running time: " << sumRunningTime[0] << std::endl;
+			std::cout << "Vehicle 1 running time: " << sumRunningTime[1] << std::endl;
+			std::cout << "Vehicle 2 running time: " << sumRunningTime[2] << std::endl;
+
+				laststate_0 = vehicles[0].m_state.motionState;
+				laststate_1 = vehicles[1].m_state.motionState;
+				laststate_2 = vehicles[2].m_state.motionState;
+				current_time += deltaTime * timeScale;
+			}
+			if(isRunning&&m_mode==SimulationMode::TASK2_1||m_mode==SimulationMode::TASK2_2||m_mode==SimulationMode::TASK2_3){
+				float intPart, fractionalPart;
+				fractionalPart = std::modf(timeScale, &intPart);
+
+				for(int i=0; i<static_cast<int>(intPart); i++){
+				auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
+				scheduler.run(deltaTime);
+				updateSchedulerDependentComponents();
+				}
+				
+				// 小数部分 - 通过deltaTime实现
+				if(fractionalPart > 0.001f) {
+				float adjustedDeltaTime = deltaTime * fractionalPart;
+				auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
+				scheduler.run(adjustedDeltaTime);
+				updateSchedulerDependentComponents();
+				}
+			}
         }
     }
 };
 
 int main()
 {
-    SimpleDemoApp app; // 内部已包含所有组件
-    app.toolbar->setOnModeChanged([&app](SimulationMode mode)
-                                  {
-                                      // 切换任务时重置仿真时间并暂停
-                                      app.simulationTime = 0.0f;
-                                      app.isRunning = false;
-                                      app.scheduler.current_time = 0.0f;
-                                      
-                                      std::cout << "Mode changed to: ";
-                                      switch (mode)
-                                      {
-                                      case SimulationMode::NONE:
-                                          app.m_mode = SimulationMode::NONE;
-                                          std::cout << "NONE (No mode selected)" << std::endl;
-                                          // 清除车辆状态，停止仿真
-                                          app.vehicle_manager.getAllVehicles().clear();
-                                          break;
-                                      case SimulationMode::TASK1:
-                                          app.m_mode = SimulationMode::TASK1;
-                                          std::cout << "TASK1" << std::endl;
-                                          // TASK1模式下初始化3辆车用于演示
-                                          app.vehicle_manager.initializeVehicles(3);
 
-                                          // 设置随机目标设备并让车辆开始运动
-                                          {
-                                              auto &vehicles = app.vehicle_manager.getAllVehicles();
-                                              if (vehicles.size() >= 3)
-                                              {
-                                                  srand(time(NULL));
-                                                  int random0 = 1 + rand() % 18;
-                                                  int random1 = 1 + rand() % 18;
-                                                  int random2 = 1 + rand() % 18;
+	SimpleDemoApp app;
+	app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
+	app.scheduler.device_manager_ptr->initializeDevices();
+	app.updateSchedulerDependentComponents();
+	
+	app.toolbar->setOnModeChanged([&app](SimulationMode mode)
+    {        
+        app.simulationTime = 0.0f;
+        app.isRunning = false;
+		app.scheduler.current_time=0.0f;
+        switch (mode) {
+            case SimulationMode::TASK1: 
+				{
+					app.m_mode = SimulationMode::TASK1;
+					app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
+					app.updateSchedulerDependentComponents();
+					auto &vehicles = app.scheduler.vehicle_manager_ptr->getAllVehicles();
+					{
+					srand(time(NULL));
+                    int random0 = 1 + rand() % 18;
+                    int random1 = 1 + rand() % 18;
+                    int random2 = 1 + rand() % 18;
+                    // 确保不选择设备15
+                    while (random0 == 15)
+                        random0 = 1 + rand() % 18;
+                    while (random1 == 15)
+                        random1 = 1 + rand() % 18;
+                    while (random2 == 15)
+                        random2 = 1 + rand() % 18;
+                    vehicles[0].towards_device = random0;
+                    vehicles[1].towards_device = random1;
+                    vehicles[2].towards_device = random2;
+	
+					}
+				}
+				break;
+            case SimulationMode::TASK2_1: 
+				{
+				app.m_mode = SimulationMode::TASK2_1;
+				app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
+				app.scheduler.task_manager_ptr->loadFromFile("tasks.csv");
+				app.scheduler.task_manager_ptr->initializeNextTaskID();
+				app.scheduler.event_queue_ptr->initializeInitialEvents(); 
+				std::vector<Task>& tasks = app.task_manager.getAllTasks();
+				app.updateSchedulerDependentComponents();
+				}
+				break;
+            case SimulationMode::TASK2_2:
+				app.m_mode = SimulationMode::TASK2_2;
+				app.scheduler.vehicle_manager_ptr->initializeVehicles(5);
+				app.updateSchedulerDependentComponents();
+				break;
+            case SimulationMode::TASK2_3:
+				app.m_mode = SimulationMode::TASK2_3; 
+				app.scheduler.vehicle_manager_ptr->initializeVehicles(7);
+				app.updateSchedulerDependentComponents();
+				break;
+        }
 
-                                                  // 确保不选择设备15
-                                                  while (random0 == 15)
-                                                      random0 = 1 + rand() % 18;
-                                                  while (random1 == 15)
-                                                      random1 = 1 + rand() % 18;
-                                                  while (random2 == 15)
-                                                      random2 = 1 + rand() % 18;
+	});	
 
-                                                  vehicles[0].towards_device = random0;
-                                                  vehicles[1].towards_device = random1;
-                                                  vehicles[2].towards_device = random2;
-
-                                                  // 让车辆开始运动
-                                                  vehicles[0].m_state.motionState = Vehicle::MotionState::Accelerating;
-                                                  vehicles[1].m_state.motionState = Vehicle::MotionState::Accelerating;
-                                                  vehicles[2].m_state.motionState = Vehicle::MotionState::Accelerating;
-
-                                                  std::cout << "TASK1 vehicles targets: " << random0 << ", " << random1 << ", " << random2 << std::endl;
-                                              }
-                                          }
-
-                                          app.updateSchedulerDependentComponents(); // 刷新GUI显示
-                                          break;
-                                      case SimulationMode::TASK2_1:
-                                          app.m_mode = SimulationMode::TASK2_1;
-                                          std::cout << "TASK2_1" << std::endl;
-                                          break;
-                                      case SimulationMode::TASK2_2:
-                                          app.m_mode = SimulationMode::TASK2_2;
-                                          std::cout << "TASK2_2" << std::endl;
-                                          break;
-                                      case SimulationMode::TASK2_3:
-                                          app.m_mode = SimulationMode::TASK2_3;
-                                          std::cout << "TASK2_3" << std::endl;
-                                          break;
-                                      }
-
-                                      // 更新GUI显示重置后的时间
-                                      app.toolbar->updateTimeDisplay(app.simulationTime);
-                                      app.statusPanel->setSimulationTime(app.simulationTime);
-                                      
-                                      // 通知后端模式变化
-                                      std::cout << "仿真时间已重置，仿真已暂停，前端传入工作已经完成，后端确认" << std::endl; });
-
-    // 默认无模式选择，用户需要手动选择模式
-    std::cout << "Application started with no mode selected. Please select a simulation mode from the toolbar." << std::endl;
-    std::cout << "前端默认初始为无模式状态，等待用户选择" << std::endl;
-
-    app.run();
-
+// if(app.m_mode == SimulationMode::TASK1){
+	app.run();
+// }
     return 0;
 }
 void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehicle *leadingVehicle)
 {
-    // 前车与后车相对距离
+  // 前车与后车相对距离
     float distance;
     float epsilon = 0.05f; // 防止浮点数误差
     float device_position[19] = {
@@ -661,6 +750,7 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehic
         8.000,
     };
     float VehiclePosition = std::fmod(vehicle->m_state.position, 99.47787445225672);
+	vehicle->position_m = VehiclePosition;
     float LeadingVehiclePosition = std::fmod(leadingVehicle->m_state.position, 99.47787445225672);
     float distancetodevice = device_position[vehicle->towards_device] - VehiclePosition;
     if (fabs(distancetodevice) > epsilon && distancetodevice < 0.f)
@@ -701,8 +791,7 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehic
         {
             vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
             vehicle->m_state.operationTimer = 0.0f;
-            vehicle->towards_device = 15;
-            vehicle->towards_device = rand() % 18 + 1;
+			vehicle->towards_device=15;
         }
         else
         {
@@ -787,4 +876,5 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehic
     }
     // 位置的更新
     vehicle->m_state.position += vehicle->m_state.currentSpeed * deltaTime;
+
 }

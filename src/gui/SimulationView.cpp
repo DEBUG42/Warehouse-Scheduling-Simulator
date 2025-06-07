@@ -1,7 +1,7 @@
 #include "gui/SimulationView.hpp"
 #include <iostream>
 #include <cmath>
-#include "gui/DeviceState.hpp"
+// #include "gui/DeviceState.hpp"
 #include "gui/CoordinateUtils.hpp"
 
 /**
@@ -144,17 +144,43 @@ void SimulationView::renderWorld(sf::RenderTarget &target)
     } // 4. 渲染车辆（使用测试文件验证的VehicleRenderer方法）
     if (m_showVehicles && !m_vehicles.empty())
     {
-        std::cout << "SimulationView::renderWorld() - Rendering vehicles (count: " << m_vehicles.size() << ")" << std::endl;
+        // 减少调试输出频率 - 仅在车辆数量改变时输出
+        static size_t lastVehicleCount = 0;
+        if (m_vehicles.size() != lastVehicleCount)
+        {
+            std::cout << "SimulationView::renderWorld() - Vehicle count changed: " << m_vehicles.size() << std::endl;
+            lastVehicleCount = m_vehicles.size();
+        }
+
         // 更新车辆渲染器状态
         m_vehicleRenderer.setVehiclesToRender(m_vehicles);
         target.draw(m_vehicleRenderer);
     }
     else
     {
-        if (!m_showVehicles)
+        // 减少调试输出频率 - 仅在状态改变时输出
+        static bool lastShowVehicles = true;
+        static bool lastVehiclesEmpty = false;
+
+        if (!m_showVehicles && lastShowVehicles)
+        {
             std::cout << "SimulationView::renderWorld() - Vehicle rendering disabled" << std::endl;
-        if (m_vehicles.empty())
+            lastShowVehicles = false;
+        }
+        else if (m_showVehicles && !lastShowVehicles)
+        {
+            lastShowVehicles = true;
+        }
+
+        if (m_vehicles.empty() && !lastVehiclesEmpty)
+        {
             std::cout << "SimulationView::renderWorld() - No vehicles available" << std::endl;
+            lastVehiclesEmpty = true;
+        }
+        else if (!m_vehicles.empty() && lastVehiclesEmpty)
+        {
+            lastVehiclesEmpty = false;
+        }
     }
 
     // 5. 渲染路径原点标记（与测试文件一致）

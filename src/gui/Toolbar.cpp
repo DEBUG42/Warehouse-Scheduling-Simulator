@@ -8,8 +8,8 @@
 Toolbar::Toolbar(sf::Font &font, float width, float height)
     : m_font(font), m_width(width), m_height(height),
       m_isPlaying(false), m_isDragging(false),
-      m_currentSpeed(1.0f), m_minSpeed(0.1f), m_maxSpeed(10.0f),
-      m_currentMode(SimulationMode::TASK1)
+      m_currentSpeed(1.0f), m_minSpeed(0.1f), m_maxSpeed(128.0f),
+      m_useLogarithmicMapping(true), m_currentMode(SimulationMode::NONE)
 {
     calculateLayout();
 
@@ -28,7 +28,7 @@ Toolbar::Toolbar(sf::Font &font, float width, float height)
     m_playButtonText.setFont(m_font);
     m_playButtonText.setCharacterSize(14);
     m_playButtonText.setFillColor(sf::Color::White);
-    m_playButtonText.setString("▶ Play");
+    m_playButtonText.setString("Play");
 
     // 初始化时间显示
     m_timeBackground.setSize(sf::Vector2f(TIME_AREA_WIDTH, COMPONENT_HEIGHT));
@@ -36,11 +36,9 @@ Toolbar::Toolbar(sf::Font &font, float width, float height)
 
     m_timeText.setFont(m_font);
     m_timeText.setCharacterSize(14);
-    m_timeText.setFillColor(sf::Color(200, 200, 200)); // 浅灰色文字
-    m_timeText.setString("Time: 00:00:00.000");
-
-    // 初始化速度控制
-    m_speedSliderTrack.setSize(sf::Vector2f(150.0f, 6.0f));
+    m_timeText.setFillColor(sf::Color(200, 200, 200));      // 浅灰色文字
+    m_timeText.setString("Time: 00:00:00.000");             // 初始化速度控制
+    m_speedSliderTrack.setSize(sf::Vector2f(300.0f, 6.0f)); // 增加到原来的两倍
     m_speedSliderTrack.setFillColor(sf::Color(60, 60, 60));
 
     m_speedSliderHandle.setSize(sf::Vector2f(12.0f, 20.0f));
@@ -87,8 +85,18 @@ void Toolbar::updateSpeedSlider()
 {
     // 计算滑块位置
     float trackStart = m_speedAreaBounds.left + 60.0f; // 给标签留空间
-    float trackWidth = 150.0f;
-    float normalizedPos = (m_currentSpeed - m_minSpeed) / (m_maxSpeed - m_minSpeed);
+    float trackWidth = 300.0f;                         // 增加到原来的两倍
+
+    float normalizedPos;
+    if (m_useLogarithmicMapping)
+    {
+        normalizedPos = speedToSliderPosition(m_currentSpeed);
+    }
+    else
+    {
+        normalizedPos = (m_currentSpeed - m_minSpeed) / (m_maxSpeed - m_minSpeed);
+    }
+
     float handleX = trackStart + normalizedPos * trackWidth - m_speedSliderHandle.getSize().x / 2.0f;
 
     m_speedSliderHandle.setPosition(handleX, m_speedAreaBounds.top + (COMPONENT_HEIGHT - 20.0f) / 2.0f);
@@ -135,7 +143,18 @@ std::string Toolbar::formatTime(float seconds) const
 std::string Toolbar::formatSpeed(float speed) const
 {
     std::ostringstream ss;
-    ss << std::fixed << std::setprecision(1) << speed << "x";
+
+    // 对于大于等于10的速度值，使用整数显示
+    if (speed >= 10.0f)
+    {
+        ss << std::fixed << std::setprecision(0) << speed << "x";
+    }
+    else
+    {
+        // 对于小于10的速度值，保留一位小数
+        ss << std::fixed << std::setprecision(1) << speed << "x";
+    }
+
     return ss.str();
 }
 
@@ -153,7 +172,8 @@ bool Toolbar::handleEvent(const sf::Event &event, const sf::Vector2f &mousePos)
         if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
         {
             m_isPlaying = !m_isPlaying;
-            m_playButtonText.setString(m_isPlaying ? "⏸ Pause" : "▶ Play");
+            // m_playButtonText.setString(m_isPlaying ? "⏸ Pause" : "▶ Play");
+            m_playButtonText.setString(m_isPlaying ? " Pause" : " Play");
 
             if (m_onPlayPauseToggled)
             {
@@ -161,25 +181,29 @@ bool Toolbar::handleEvent(const sf::Event &event, const sf::Vector2f &mousePos)
             }
             return true;
         }
-    }
-
-    // 处理速度滑块
+    } // 处理速度滑块
     if (m_speedAreaBounds.contains(mousePos))
     {
         float trackStart = m_speedAreaBounds.left + 60.0f;
-        float trackWidth = 150.0f;
+        float trackWidth = 300.0f; // 增加到原来的两倍
         sf::FloatRect trackBounds(trackStart, m_speedAreaBounds.top, trackWidth, COMPONENT_HEIGHT);
 
         if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
         {
             if (trackBounds.contains(mousePos))
             {
-                m_isDragging = true;
-
-                // 计算新的速度值
+                m_isDragging = true; // 计算新的速度值
                 float normalizedPos = (mousePos.x - trackStart) / trackWidth;
                 normalizedPos = std::max(0.0f, std::min(1.0f, normalizedPos));
-                m_currentSpeed = m_minSpeed + normalizedPos * (m_maxSpeed - m_minSpeed);
+
+                if (m_useLogarithmicMapping)
+                {
+                    m_currentSpeed = sliderPositionToSpeed(normalizedPos);
+                }
+                else
+                {
+                    m_currentSpeed = m_minSpeed + normalizedPos * (m_maxSpeed - m_minSpeed);
+                }
 
                 updateSpeedSlider();
                 m_speedValue.setString(formatSpeed(m_currentSpeed));
@@ -199,11 +223,18 @@ bool Toolbar::handleEvent(const sf::Event &event, const sf::Vector2f &mousePos)
         }
 
         if (event.type == sf::Event::MouseMoved && m_isDragging)
-        {
-            // 拖拽滑块
+        { // 拖拽滑块
             float normalizedPos = (mousePos.x - trackStart) / trackWidth;
             normalizedPos = std::max(0.0f, std::min(1.0f, normalizedPos));
-            m_currentSpeed = m_minSpeed + normalizedPos * (m_maxSpeed - m_minSpeed);
+
+            if (m_useLogarithmicMapping)
+            {
+                m_currentSpeed = sliderPositionToSpeed(normalizedPos);
+            }
+            else
+            {
+                m_currentSpeed = m_minSpeed + normalizedPos * (m_maxSpeed - m_minSpeed);
+            }
 
             updateSpeedSlider();
             m_speedValue.setString(formatSpeed(m_currentSpeed));
@@ -292,11 +323,9 @@ void Toolbar::render(sf::RenderTarget &target, const sf::Vector2f &position)
     m_speedSliderHandle.setPosition(
         position.x + m_speedSliderHandle.getPosition().x,
         position.y + m_speedSliderHandle.getPosition().y);
-    target.draw(m_speedSliderHandle);
-
-    // 绘制速度值
+    target.draw(m_speedSliderHandle); // 绘制速度值
     m_speedValue.setPosition(
-        position.x + m_speedAreaBounds.left + 220.0f,
+        position.x + m_speedAreaBounds.left + 370.0f, // 调整位置以适应更长的滑杆
         position.y + m_speedAreaBounds.top + (COMPONENT_HEIGHT - 12.0f) / 2.0f);
     target.draw(m_speedValue);
 
@@ -362,7 +391,6 @@ void Toolbar::initializeModeButtons()
     float startX = m_modeAreaBounds.left;
     float y = m_modeAreaBounds.top;
     float buttonSpacing = 5.0f;
-
     for (size_t i = 0; i < modes.size(); ++i)
     {
         ModeButton modeButton;
@@ -377,7 +405,13 @@ void Toolbar::initializeModeButtons()
         modeButton.button.setPosition(buttonX, y);
 
         // 根据是否激活设置颜色
-        if (modeButton.isActive)
+        if (m_currentMode == SimulationMode::NONE)
+        {
+            // 无模式选择时，所有按钮显示为灰色
+            modeButton.button.setFillColor(sf::Color(100, 100, 100)); // 灰色
+            modeButton.isActive = false;
+        }
+        else if (modeButton.isActive)
         {
             modeButton.button.setFillColor(sf::Color(100, 150, 255)); // 激活状态 - 蓝色
         }
@@ -411,7 +445,13 @@ void Toolbar::setCurrentMode(SimulationMode mode)
     {
         modeButton.isActive = (modeButton.mode == mode);
 
-        if (modeButton.isActive)
+        if (m_currentMode == SimulationMode::NONE)
+        {
+            // 无模式选择时，所有按钮显示为灰色
+            modeButton.button.setFillColor(sf::Color(100, 100, 100)); // 灰色
+            modeButton.isActive = false;
+        }
+        else if (modeButton.isActive)
         {
             modeButton.button.setFillColor(sf::Color(100, 150, 255)); // 激活状态
         }
@@ -420,4 +460,62 @@ void Toolbar::setCurrentMode(SimulationMode mode)
             modeButton.button.setFillColor(sf::Color(70, 70, 70)); // 非激活状态
         }
     }
+}
+
+// 对数映射函数实现
+float Toolbar::speedToSliderPosition(float speed) const
+{
+    if (speed <= m_minSpeed)
+        return 0.0f;
+    if (speed >= m_maxSpeed)
+        return 1.0f;
+
+    // 改进的对数映射：使用分段方式，让1.0x附近有更合理的分布
+    // 将速度范围分为两段：0.1-1.0 和 1.0-128.0
+    // 给小数段分配较少的空间（20%），给整数段分配更多空间（80%）
+
+    if (speed <= 1.0f)
+    {
+        // 0.1 到 1.0 的范围映射到滑块的 0% 到 20%
+        float normalizedInRange = (speed - m_minSpeed) / (1.0f - m_minSpeed);
+        return normalizedInRange * 0.2f;
+    }
+    else
+    {
+        // 1.0 到 128.0 的范围使用对数映射到滑块的 20% 到 100%
+        float logSpeed = std::log(speed / 1.0f);
+        float logRange = std::log(m_maxSpeed / 1.0f);
+        float logPosition = logSpeed / logRange;
+        return 0.2f + logPosition * 0.8f;
+    }
+}
+
+float Toolbar::sliderPositionToSpeed(float position) const
+{
+    if (position <= 0.0f)
+        return m_minSpeed;
+    if (position >= 1.0f)
+        return m_maxSpeed;
+
+    // 反向映射：根据滑块位置计算速度值
+    if (position <= 0.2f)
+    {
+        // 滑块前20%对应0.1到1.0的速度范围
+        float normalizedPos = position / 0.2f;
+        return m_minSpeed + normalizedPos * (1.0f - m_minSpeed);
+    }
+    else
+    {
+        // 滑块后80%对应1.0到128.0的速度范围（对数分布）
+        float logPosition = (position - 0.2f) / 0.8f;
+        float logRange = std::log(m_maxSpeed / 1.0f);
+        float speedRatio = std::exp(logPosition * logRange);
+        return 1.0f * speedRatio;
+    }
+}
+
+void Toolbar::setUseLogarithmicMapping(bool useLog)
+{
+    m_useLogarithmicMapping = useLog;
+    updateSpeedSlider(); // 更新滑块位置以反映新的映射模式
 }

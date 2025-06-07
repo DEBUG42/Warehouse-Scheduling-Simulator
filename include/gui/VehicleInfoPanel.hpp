@@ -42,13 +42,13 @@ private:
     sf::Text m_statisticsTitle;
     sf::Text m_totalRunTimeText;
     sf::Text m_stopCountText;
-    sf::Text m_averageSpeedText;
-    // 当前选中的车辆
+    sf::Text m_averageSpeedText; // 当前选中的车辆
     const Vehicle *m_selectedVehicle;
 
     // 加减速事件记录结构
     struct AccelerationEvent
     {
+        int vehicleId;
         float startTime;
         float endTime;
         float startSpeed;
@@ -87,18 +87,17 @@ public:
      * @brief 更新车辆信息显示
      * @param currentTime 当前仿真时间
      */
-    void updateInfo(float currentTime);
-
-    /**
-     * @brief 记录加减速事件
-     * @param startTime 开始时间
-     * @param endTime 结束时间
-     * @param startSpeed 起始速度
-     * @param endSpeed 终止速度
-     * @param acceleration 加速度
-     * @param type 事件类型
-     */
-    void recordAccelerationEvent(float startTime, float endTime,
+    void updateInfo(float currentTime); /**
+                                         * @brief 记录加减速事件
+                                         * @param vehicleId 车辆ID
+                                         * @param startTime 开始时间
+                                         * @param endTime 结束时间
+                                         * @param startSpeed 起始速度
+                                         * @param endSpeed 终止速度
+                                         * @param acceleration 加速度
+                                         * @param type 事件类型
+                                         */
+    void recordAccelerationEvent(int vehicleId, float startTime, float endTime,
                                  float startSpeed, float endSpeed,
                                  float acceleration, const std::string &type);
 
