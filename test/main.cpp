@@ -546,52 +546,6 @@ public:
                     updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[2], &vehicles[1]);
                 }
 
-                // Vehicle 0 recording
-                if (recording[0] == 0 && vehicles[0].m_state.motionState != laststate_0 && (vehicles[0].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[0].m_state.motionState == Vehicle::MotionState::Decelerating))
-                {
-                    start_time[0] = current_time;
-                    startspeed[0] = vehicles[0].m_state.currentSpeed;
-                    recording[0] = 1;
-                }
-                else if (recording[0] == 1 && vehicles[0].m_state.motionState != laststate_0)
-                {
-                    end_time[0] = current_time;
-                    endspeed[0] = vehicles[0].m_state.currentSpeed;
-                    recording[0] = 0;
-                    working[0] = 1;
-                }
-                if (recording[0] == 0 && working[0] == 1)
-                {
-                    working[0] = 0;
-                    std::string eventType0 = (endspeed[0] > startspeed[0]) ? "Acc" : "Dec";
-                    vehicleInfoPanel->recordAccelerationEvent(
-                        0, start_time[0], end_time[0], startspeed[0], endspeed[0], 0.5, eventType0);
-                    std::cout << "0 " << eventType0 << "time" << start_time[0] << " endtime" << end_time[0] << "startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
-                }
-
-                // Vehicle 1 recording
-                if (recording[1] == 0 && vehicles[1].m_state.motionState != laststate_1 && (vehicles[1].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[1].m_state.motionState == Vehicle::MotionState::Decelerating))
-                {
-                    start_time[1] = current_time;
-                    startspeed[1] = vehicles[1].m_state.currentSpeed;
-                    recording[1] = 1;
-                }
-                else if (recording[1] == 1 && vehicles[1].m_state.motionState != laststate_1)
-                {
-                    end_time[1] = current_time;
-                    endspeed[1] = vehicles[1].m_state.currentSpeed;
-                    recording[1] = 0;
-                    working[1] = 1;
-                }
-                if (recording[1] == 0 && working[1] == 1)
-                {
-                    working[1] = 0;
-                    std::string eventType1 = (endspeed[1] > startspeed[1]) ? "Acc" : "Dec";
-                    vehicleInfoPanel->recordAccelerationEvent(
-                        1, start_time[1], end_time[1], startspeed[1], endspeed[1], 0.5, eventType1);
-                    std::cout << "1 " << eventType1 << "time" << start_time[1] << " endtime" << end_time[1] << "startspeed" << startspeed[1] << "m/s -> " << endspeed[1] << "m/s" << std::endl;
-                }
-
                 for (int i = 0; i < 3; i++)
                 { // Vehicle 0 recording
                     if (recording[i] == 0 && vehicles[i].m_state.motionState != laststate[i] && (vehicles[i].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[i].m_state.motionState == Vehicle::MotionState::Decelerating))
@@ -612,21 +566,21 @@ public:
                         working[i] = 0;
                         std::string eventType = (endspeed[i] > startspeed[i]) ? "Acc" : "Dec";
                         vehicleInfoPanel->recordAccelerationEvent(
-                            i, start_time[0], end_time[0], startspeed[0], endspeed[0], 0.5, eventType);
-                        std::cout << "0 " << eventType << "time" << start_time[0] << " endtime" << end_time[0] << "startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
+                            i, start_time[i], end_time[i], startspeed[i], endspeed[i], 0.5, eventType);
+                        std::cout << "0 " << eventType << "time" << start_time[i] << " endtime" << end_time[i] << "startspeed" << startspeed[i] << "m/s -> " << endspeed[i] << "m/s" << std::endl;
                     }
                 }
 
                 // 记录每辆车运行时间和停车次数
-                if (vehicles[0].m_state.motionState == Vehicle::MotionState::Stopped && laststate_0 != Vehicle::MotionState::Stopped)
+                if (vehicles[0].m_state.motionState == Vehicle::MotionState::Stopped && laststate[0] != Vehicle::MotionState::Stopped)
                 {
                     stopcount[0]++;
                 }
-                if (vehicles[1].m_state.motionState == Vehicle::MotionState::Stopped && laststate_1 != Vehicle::MotionState::Stopped)
+                if (vehicles[1].m_state.motionState == Vehicle::MotionState::Stopped && laststate[1] != Vehicle::MotionState::Stopped)
                 {
                     stopcount[1]++;
                 }
-                if (vehicles[2].m_state.motionState == Vehicle::MotionState::Stopped && laststate_2 != Vehicle::MotionState::Stopped)
+                if (vehicles[2].m_state.motionState == Vehicle::MotionState::Stopped && laststate[2] != Vehicle::MotionState::Stopped)
                 {
                     stopcount[2]++;
                 }
@@ -754,7 +708,7 @@ public:
                             std::string eventType = (endspeed[i] > startspeed[i]) ? "Acc" : "Dec";
                             vehicleInfoPanel->recordAccelerationEvent(
                                 i, start_time[i], end_time[i], startspeed[i], endspeed[i], 0.5, eventType);
-                            std::cout << "0 " << eventType << "time" << start_time[0] << " endtime" << end_time[0] << "startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
+                            std::cout << "0 " << eventType << "time" << start_time[i] << " endtime" << end_time[i] << "startspeed" << startspeed[i] << "m/s -> " << endspeed[i] << "m/s" << std::endl;
                         }
                     }
                     laststate[0] = vehicles[0].m_state.motionState;
@@ -787,7 +741,7 @@ public:
                             std::string eventType = (endspeed[i] > startspeed[i]) ? "Acc" : "Dec";
                             vehicleInfoPanel->recordAccelerationEvent(
                                 i, start_time[i], end_time[i], startspeed[i], endspeed[i], 0.5, eventType);
-                            std::cout << "0 " << eventType << "time" << start_time[0] << " endtime" << end_time[0] << "startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
+                            std::cout << "0 " << eventType << "time" << start_time[i] << " endtime" << end_time[i] << "startspeed" << startspeed[i] << "m/s -> " << endspeed[i] << "m/s" << std::endl;
                         }
                     }
                     laststate[0] = vehicles[0].m_state.motionState;
