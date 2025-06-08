@@ -24,6 +24,7 @@ void Scheduler::processEvents() {
         bool before = device_manager_ptr->getDeviceState(event.device_id).has_goods;
 
         // 3. 调用设备管理器处理事件（设备状态更新）
+        std::cout << "Processing event: "  << " at time " << event.time << std::endl;
         this->handleEvent(event);  // 改变 has_goods 等状态
 
         // 4. 获取更新后的设备状态
@@ -73,9 +74,16 @@ void Scheduler::handleEvent(const Event& e) {
             auto& device = this->device_manager_ptr->getDeviceState(e.device_id);
             device.has_goods = false;
             device.is_reserved = false;
+            
+            Task& task = this->task_manager_ptr->getTask(e.task_id);
+            
             Vehicle& vehicle = this->vehicle_manager_ptr->getVehicleByTaskId(e.task_id);           
             vehicle.is_loaded = true;
+            vehicle.towards_device = task.end_device_id;
 
+
+
+            vehicle.m_state.motionState = Vehicle::MotionState::Accelerating;
             std::cout << "[Event] VEHICLE_PICK_UP_GOODS: Vehicle #" << vehicle.id 
                       << " picked up goods from Device #" << e.device_id << std::endl;
             break;
@@ -91,7 +99,7 @@ void Scheduler::handleEvent(const Event& e) {
             vehicle.is_loaded = false;
             vehicle.m_state.currentTask = nullptr;
             vehicle.towards_device = -1;
-            vehicle.m_state.motionState = Vehicle::MotionState::Stopped;
+            vehicle.m_state.motionState = Vehicle::MotionState::Accelerating;
 
             Task& task = this->task_manager_ptr->getTask(e.task_id);
             task.complete_time = this->current_time;
@@ -168,7 +176,7 @@ void Scheduler::addEventForStackerPick(int device_id, int task_id, double curren
 }
 void Scheduler::addEventForVehiclePickUp(int device_id, int task_id, double current_time) {
     Event e;
-    e.time = current_time + 0.01;  // 稍后立即触发，也可以根据需要设定延迟
+    e.time = current_time + 7.5;  // 稍后立即触发，也可以根据需要设定延迟
     e.type = EventType::VEHICLE_PICK_UP_GOODS;
     e.device_id = device_id;
     e.task_id = task_id;
@@ -180,7 +188,7 @@ void Scheduler::addEventForVehiclePickUp(int device_id, int task_id, double curr
 }
 void Scheduler::addEventForVehiclePutDown(int device_id, int task_id, double current_time) {
     Event e;
-    e.time = current_time + 0.01;  // 稍后立即触发，也可以加延迟
+    e.time = current_time + 7.5;  // 稍后立即触发，也可以加延迟
     e.type = EventType::VEHICLE_PUT_DOWN_GOODS;
     e.device_id = device_id;
     e.task_id = task_id;
