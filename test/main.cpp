@@ -167,6 +167,10 @@ public:
 
         // 更新设备数据（当前为空）
         std::vector<DeviceBase *> devicePtrs;
+		for (auto &device : scheduler->device_manager.getAllDevices())
+        {
+            devicePtrs.push_back(&device);
+        }
         simulationView->updateDevices(devicePtrs);
 
         // 设置初始状态
