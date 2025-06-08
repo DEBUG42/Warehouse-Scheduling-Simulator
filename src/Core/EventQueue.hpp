@@ -6,7 +6,7 @@
 class EventQueue {
 public:
     void addEvent(const Event& e);         // ✅ 参数加 const
-
+    size_t size();
     bool hasEvent(double current_time);
     Event peek();
     Event pop();

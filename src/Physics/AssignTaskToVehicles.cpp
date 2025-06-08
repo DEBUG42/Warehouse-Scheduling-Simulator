@@ -60,25 +60,6 @@ std::string VehicleManager::motionStateToString(Vehicle::MotionState state) {
     }
 }
 
-void VehicleManager::updateVehicle(float current_time, float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle) {
-    const float LOOP_LENGTH = 99.47787445225672f;
-
-    updateKinematics(vehicle, deltaTime, LOOP_LENGTH);
-
-    if (shouldDecelerateForCollision(vehicle, leadingVehicle, LOOP_LENGTH)) {
-        vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-    }
-    else if (shouldDecelerateForCurve(vehicle)) {
-        vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
-    }
-    else {
-        vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
-    }
-
-    limitSpeed(vehicle);
-    checkAndHandleArrival(vehicle, current_time);
-    printVehicleDebugInfo(vehicle, current_time);
-}
 
 // 计算从一个位置到另一个位置的距离
 // 输入: double from - 起始位置, double to - 目标位置
@@ -95,8 +76,7 @@ double VehicleManager::getDistance(double from, double to) {
 std::vector<Vehicle*> VehicleManager::getAvailableVehicles(Task& task, double current_time) {
     std::vector<Vehicle*> result;
     for (size_t i = 0; i < vehicles.size(); ++i) {
-        if (vehicles[i].m_state.motionState == Vehicle::MotionState::Stopped &&
-            vehicles[i].m_state.currentTask == nullptr) {
+        if (vehicles[i].m_state.currentTask == nullptr) {
             result.push_back(&vehicles[i]);
         }
     }
@@ -107,38 +87,59 @@ std::vector<Vehicle*> VehicleManager::getAvailableVehicles(Task& task, double cu
 // 输入: Task& task - 任务, std::vector<Vehicle*>& candidates - 候选车辆列表, double current_time - 当前时间
 // 输出: Vehicle* - 最佳车辆的指针
 Vehicle* VehicleManager::selectBestVehicle(Task& task, std::vector<Vehicle*>& candidates, double current_time) {
-    double best_time = std::numeric_limits<double>::max();
-    Vehicle* best_vehicle = nullptr;
-	float device_position[19]={
+    const float LOOP_LENGTH = 99.47787445225672f;
+    float device_position[19] = {
         -1,
-		85.9209372261538,
-		83.5209372261538,
-		79.9209372261538,
-		77.5209372261538,
-		73.9209372261538,
-		71.5209372261538,
-		67.9209372261538,
-		65.5209372261538,
-		61.9209372261538,
-		59.5209372261538,
-		55.9209372261538,
-		53.5209372261538,
-		32.000,
-		29.000,
-		26.000,
-		14.000,
-		11.000,
-		8.000,
-	};
+        85.9209, 83.5209, 79.9209, 77.5209, 73.9209, 71.5209,
+        67.9209, 65.5209, 61.9209, 59.5209, 55.9209, 53.5209,
+        32.0000, 29.0000, 26.0000, 14.0000, 11.0000, 8.0000
+    };
+
+    double best_score = -1e9;
+    Vehicle* best_vehicle = nullptr;
+    float alpha = 1.0;  // 奖励：越近越好
+    float beta  = 2.0;  // 惩罚：后车被堵
+    float gamma = 1.0;  // 惩罚：后车的后车也被堵
+
     double pickup_pos = device_position[task.start_device_id];
 
-    for (auto* vehicle : candidates) {
-        double dist = getDistance(vehicle->position_m, pickup_pos);
-        double est_time = std::sqrt(2 * dist / vehicle->m_acceleration); // ✅ 用 m_acceleration
-        if (est_time < best_time) {
-            best_time = est_time;
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        Vehicle* vehicle = candidates[i];
+        double pos = std::fmod(vehicle->position_m, LOOP_LENGTH);
+        double dist_to_task = getDistance(pos, pickup_pos);
+
+        // 后车距离（一级）
+        double dist_to_back = 999;
+        if (i < candidates.size() - 1) {
+            Vehicle* back = candidates[fmod(i + 1, candidates.size())];
+            dist_to_back = getDistance(pos, back->position_m);
+        }
+
+        // 后车的后车距离（二级）
+        double dist_to_back2 = 999;
+        if (i < candidates.size() - 2) {
+            Vehicle* back2 = candidates[fmod(i + 2, candidates.size())];
+            dist_to_back2 = getDistance(pos, back2->position_m);
+        }
+
+        // 评分函数
+        double score = -alpha * dist_to_task + beta / dist_to_back + gamma / dist_to_back2;
+
+        std::cout << "[Select] Vehicle #" << vehicle->id << " | dist: " << dist_to_task
+                  << ", back: " << dist_to_back << ", back2: " << dist_to_back2
+                  << ", score: " << score << "\n";
+
+        if (score > best_score) {
+            best_score = score;
             best_vehicle = vehicle;
         }
+    }
+
+    if (best_vehicle) {
+        std::cout << "[Select ✅] Best Vehicle is #" << best_vehicle->id
+                  << " with score = " << best_score << " for Task #" << task.id << "\n";
+    } else {
+        std::cout << "[Select ❌] No suitable vehicle found for Task #" << task.id << "\n";
     }
 
     return best_vehicle;
@@ -178,6 +179,46 @@ void VehicleManager::applyTaskToVehicle(Vehicle& vehicle, Task& task, double cur
     vehicle.is_loaded = false;
 
     std::cout << "[Assign] Vehicle #" << vehicle.id << " → Task #" << task.id << "\n";
+}
+VehicleManager::VehicleUpdateResult VehicleManager::updateVehicle(float current_time, float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle) {
+    const float LOOP_LENGTH = 99.47787445225672f;
+
+    updateKinematics(vehicle, deltaTime, LOOP_LENGTH);
+
+    float pos = std::fmod(vehicle->m_state.position, LOOP_LENGTH);
+    vehicle->target_position = getDevicePosition(vehicle->towards_device);
+    float target = vehicle->target_position;
+
+    float dist_to_target = target - pos;
+    const float safe_margin = 0.2f;
+    if (dist_to_target < 0) dist_to_target += LOOP_LENGTH;
+
+    float stopping_dist = (vehicle->m_state.currentSpeed * vehicle->m_state.currentSpeed) / (2.0f * vehicle->m_acceleration);
+
+    if (dist_to_target <= stopping_dist + safe_margin) {
+        vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+    }
+    else if (shouldDecelerateForCollision(vehicle, leadingVehicle, LOOP_LENGTH)) {
+        vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+    }
+    else if (shouldDecelerateForCurve(vehicle)) {
+        vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
+    }
+    else {
+        vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
+    }
+
+    limitSpeed(vehicle);
+    if (checkPickUp(vehicle, current_time)) {
+        return {VehicleEventTrigger::PickUpArrived, vehicle->m_state.currentTask->id, vehicle->m_state.currentTask->start_device_id};
+    }
+
+    if (checkPutDown(vehicle, current_time)) {
+        return {VehicleEventTrigger::PutDownArrived, vehicle->m_state.currentTask->id, vehicle->m_state.currentTask->end_device_id};
+    }
+    printVehicleDebugInfo(vehicle, current_time);
+    return VehicleManager::VehicleUpdateResult{VehicleEventTrigger::None, -1, -1};
+
 }
 
 void VehicleManager::updateKinematics(Vehicle* vehicle, float deltaTime, float LOOP_LENGTH) {
@@ -238,37 +279,81 @@ void VehicleManager::limitSpeed(Vehicle* vehicle) {
             v = vehicle->m_maxCurveSpeed;
     }
 }
-void VehicleManager::checkAndHandleArrival(Vehicle* vehicle, float current_time) {
+
+
+bool VehicleManager::checkPickUp(Vehicle* vehicle, float current_time) {
     Task* task = vehicle->m_state.currentTask;
-    if (!task) return;
+    if (!task) return false;
 
     float pos = vehicle->position_m;
     float device_pos = getDevicePosition(task->start_device_id);
-    float dist = fabs(pos - device_pos);
-    if (dist > 0.5f) return;
-    if (vehicle->m_state.currentSpeed > 1e-2f) return;
+    const float LOOP_LENGTH = 99.477874f;
 
-    if (vehicle->m_state.motionState == Vehicle::MotionState::Stopped) {
-        if (!vehicle->is_loaded) {
-            std::cout << "[Vehicle] #" << vehicle->id << " picked at device " << task->start_device_id << "\n";
-            vehicle->is_loaded = true;
-            vehicle->towards_device = task->end_device_id;
-        } else {
-            std::cout << "[Vehicle] #" << vehicle->id << " dropped at device " << task->end_device_id << "\n";
-            task->complete_time = current_time;
-            vehicle->m_state.currentTask = nullptr;
-            vehicle->is_loaded = false;
-            vehicle->towards_device = -1;
-        }
+    // 📌 计算环形距离
+    float dist = fmod(device_pos - pos + LOOP_LENGTH, LOOP_LENGTH);
+    if (dist > 0.5f && (LOOP_LENGTH - dist) > 0.5f) return false;
+
+    // 🚩确保完全停下
+    if (vehicle->m_state.currentSpeed > 5e-2f) return false;
+
+    // ✅ 满足取货条件
+    if (!vehicle->is_loaded &&
+        vehicle->towards_device == task->start_device_id &&
+        !vehicle->has_triggered_pickup) {
+
+        vehicle->has_triggered_pickup = true;
+
+        std::cout << "[Event Trigger] Vehicle #" << vehicle->id << " picks up goods at device #" 
+                  << task->start_device_id << "\n";
+        return true;
     }
-}
-void VehicleManager::printVehicleDebugInfo(Vehicle* vehicle, float current_time) {
 
+    return false;  // 🔁 补上默认返回
+}
+bool VehicleManager::checkPutDown(Vehicle* vehicle, float current_time) {
+    Task* task = vehicle->m_state.currentTask;
+    if (!task) return false;
+
+    float pos = vehicle->position_m;
+    float device_pos = getDevicePosition(task->end_device_id);
+    const float LOOP_LENGTH = 99.477874f;
+
+    // 📌 环形距离计算，考虑fmod处理
+    float dist = fmod(device_pos - pos + LOOP_LENGTH, LOOP_LENGTH);
+    if (dist > 0.5f && (LOOP_LENGTH - dist) > 0.5f) return false;
+
+    // 📌 确保车辆已经几乎停止
+    if (vehicle->m_state.currentSpeed > 5e-2f) return false;
+
+    // ✅ 满足放货条件
+    if (vehicle->is_loaded &&
+        vehicle->towards_device == task->end_device_id &&
+        !vehicle->has_triggered_putdown) {
+
+        vehicle->has_triggered_putdown = true;
+
+        std::cout << "[Event Trigger] Vehicle #" << vehicle->id
+                  << " puts down goods at device #" << task->end_device_id << "\n";
+
+        return true;
+    }
+
+    return false;
+}
+
+
+void VehicleManager::printVehicleDebugInfo(Vehicle* vehicle, float current_time) {
+float dist_to_target = fmod(vehicle->target_position - vehicle->position_m, 99.47787445225672f);
+if (dist_to_target < 0){
+    dist_to_target += 99.47787445225672f;}
     if (current_time >= vehicle->last_debug_time + PRINT_INTERVAL - EPSILON) {
         std::cout << "[Debug] 车#" << vehicle->id
                   << " 速度: " << vehicle->m_state.currentSpeed
                   << " 加减速状态: " << motionStateToString(vehicle->m_state.motionState)
-                  << " 位置: " << vehicle->position_m << "\n";
+                  << " 位置: " << vehicle->position_m 
+                  << "是否有任务"<< (vehicle->m_state.currentTask!= nullptr)
+                  << "距离目标位置" << dist_to_target
+                  << "\n";
         vehicle->last_debug_time = current_time;
     }
 }
