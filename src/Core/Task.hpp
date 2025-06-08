@@ -56,11 +56,11 @@ public:
 
     std::string taskTypeToString(TaskType type); // 任务类型转换为字符串
     std::vector<std::string> split(const std::string& s, char delimiter);
+    std::unordered_map<int, int> next_task_id; // 起始设备 → 当前待调度任务编号
 
 private:
     std::vector<Task> tasks;
     float last_debug_time = 0;
-    std::unordered_map<int, int> next_task_id; // 起始设备 → 当前待调度任务编号
     friend void testTasks(TaskManager& taskmanager);//用于调试的友元函数
 };
 

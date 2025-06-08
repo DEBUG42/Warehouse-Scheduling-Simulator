@@ -225,11 +225,11 @@ void TaskManager::markTaskAssigned(int task_id, int vehicle_id, double assign_ti
             task.assigned_vehicle_id = vehicle_id;
             task.assign_time = assign_time;
 
-            // 更新起始设备的 next_task_id
-            int& cur = next_task_id[task.start_device_id];
-            if (task.id == cur) {
-                ++cur;
-            }
+            // // 更新起始设备的 next_task_id
+            // int& cur = next_task_id[task.start_device_id];
+            // if (task.id == cur) {
+            //     ++cur;
+            // }
             return;
         }
     }

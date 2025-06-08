@@ -195,7 +195,7 @@ VehicleManager::VehicleUpdateResult VehicleManager::updateVehicle(float current_
 
     float stopping_dist = (vehicle->m_state.currentSpeed * vehicle->m_state.currentSpeed) / (2.0f * vehicle->m_acceleration);
 
-    if (dist_to_target <= stopping_dist + safe_margin) {
+    if (!(vehicle->m_state.currentTask == nullptr) &&(dist_to_target <= stopping_dist + safe_margin)) {
         vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
     }
     else if (shouldDecelerateForCollision(vehicle, leadingVehicle, LOOP_LENGTH)) {
