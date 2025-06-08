@@ -184,7 +184,18 @@ VehicleManager::VehicleUpdateResult VehicleManager::updateVehicle(float current_
     const float LOOP_LENGTH = 99.47787445225672f;
 
     updateKinematics(vehicle, deltaTime, LOOP_LENGTH);
-    if(checkArrival(vehicle, current_time)){
+
+    float pos = std::fmod(vehicle->m_state.position, LOOP_LENGTH);
+    vehicle->target_position = getDevicePosition(vehicle->towards_device);
+    float target = vehicle->target_position;
+
+    float dist_to_target = target - pos;
+    const float safe_margin = 0.2f;
+    if (dist_to_target < 0) dist_to_target += LOOP_LENGTH;
+
+    float stopping_dist = (vehicle->m_state.currentSpeed * vehicle->m_state.currentSpeed) / (2.0f * vehicle->m_acceleration);
+
+    if (dist_to_target <= stopping_dist + safe_margin) {
         vehicle->m_state.motionState = Vehicle::MotionState::Decelerating;
     }
     else if (shouldDecelerateForCollision(vehicle, leadingVehicle, LOOP_LENGTH)) {
@@ -198,11 +209,11 @@ VehicleManager::VehicleUpdateResult VehicleManager::updateVehicle(float current_
     }
 
     limitSpeed(vehicle);
-    if (checkArrival(vehicle, current_time) && checkPickUp(vehicle, current_time)) {
+    if (checkPickUp(vehicle, current_time)) {
         return {VehicleEventTrigger::PickUpArrived, vehicle->m_state.currentTask->id, vehicle->m_state.currentTask->start_device_id};
     }
 
-    if (checkArrival(vehicle, current_time) && checkPutDown(vehicle, current_time)) {
+    if (checkPutDown(vehicle, current_time)) {
         return {VehicleEventTrigger::PutDownArrived, vehicle->m_state.currentTask->id, vehicle->m_state.currentTask->end_device_id};
     }
     printVehicleDebugInfo(vehicle, current_time);
@@ -268,26 +279,25 @@ void VehicleManager::limitSpeed(Vehicle* vehicle) {
             v = vehicle->m_maxCurveSpeed;
     }
 }
-bool VehicleManager::checkArrival(Vehicle* vehicle, float current_time) {
+
+
+bool VehicleManager::checkPickUp(Vehicle* vehicle, float current_time) {
     Task* task = vehicle->m_state.currentTask;
-    if (!task) return;
+    if (!task) return false;
 
     float pos = vehicle->position_m;
-    float device_pos = getDevicePosition(vehicle->target_position);
-    float dist = fabs(pos - device_pos);
-    if (dist > 0.5f) return;
-    if (vehicle->m_state.currentSpeed > 1e-2f) return;
+    float device_pos = getDevicePosition(task->start_device_id);
+    const float LOOP_LENGTH = 99.477874f;
 
-    if (vehicle->m_state.motionState == Vehicle::MotionState::Stopped) {
-       return true;
-    }
-}
-bool VehicleManager::checkPickUp(Vehicle* vehicle, float current_time) {
-    if (!vehicle->m_state.currentTask) return;
-    Task* task = vehicle->m_state.currentTask;
+    // 📌 计算环形距离
+    float dist = fmod(device_pos - pos + LOOP_LENGTH, LOOP_LENGTH);
+    if (dist > 0.5f && (LOOP_LENGTH - dist) > 0.5f) return false;
 
+    // 🚩确保完全停下
+    if (vehicle->m_state.currentSpeed > 5e-2f) return false;
+
+    // ✅ 满足取货条件
     if (!vehicle->is_loaded &&
-        vehicle->m_state.motionState == Vehicle::MotionState::Stopped &&
         vehicle->towards_device == task->start_device_id &&
         !vehicle->has_triggered_pickup) {
 
@@ -296,36 +306,53 @@ bool VehicleManager::checkPickUp(Vehicle* vehicle, float current_time) {
         std::cout << "[Event Trigger] Vehicle #" << vehicle->id << " picks up goods at device #" 
                   << task->start_device_id << "\n";
         return true;
-        
     }
+
+    return false;  // 🔁 补上默认返回
 }
 bool VehicleManager::checkPutDown(Vehicle* vehicle, float current_time) {
-    if (!vehicle->m_state.currentTask) return;
     Task* task = vehicle->m_state.currentTask;
+    if (!task) return false;
 
+    float pos = vehicle->position_m;
+    float device_pos = getDevicePosition(task->end_device_id);
+    const float LOOP_LENGTH = 99.477874f;
+
+    // 📌 环形距离计算，考虑fmod处理
+    float dist = fmod(device_pos - pos + LOOP_LENGTH, LOOP_LENGTH);
+    if (dist > 0.5f && (LOOP_LENGTH - dist) > 0.5f) return false;
+
+    // 📌 确保车辆已经几乎停止
+    if (vehicle->m_state.currentSpeed > 5e-2f) return false;
+
+    // ✅ 满足放货条件
     if (vehicle->is_loaded &&
-        vehicle->m_state.motionState == Vehicle::MotionState::Stopped &&
         vehicle->towards_device == task->end_device_id &&
         !vehicle->has_triggered_putdown) {
 
         vehicle->has_triggered_putdown = true;
 
-        std::cout << "[Event Trigger] Vehicle #" << vehicle->id << " puts down goods at device #"
-                  << task->end_device_id << "\n";
+        std::cout << "[Event Trigger] Vehicle #" << vehicle->id
+                  << " puts down goods at device #" << task->end_device_id << "\n";
 
         return true;
     }
+
+    return false;
 }
 
 
 void VehicleManager::printVehicleDebugInfo(Vehicle* vehicle, float current_time) {
-
+float dist_to_target = fmod(vehicle->target_position - vehicle->position_m, 99.47787445225672f);
+if (dist_to_target < 0){
+    dist_to_target += 99.47787445225672f;}
     if (current_time >= vehicle->last_debug_time + PRINT_INTERVAL - EPSILON) {
         std::cout << "[Debug] 车#" << vehicle->id
                   << " 速度: " << vehicle->m_state.currentSpeed
                   << " 加减速状态: " << motionStateToString(vehicle->m_state.motionState)
                   << " 位置: " << vehicle->position_m 
                   << "是否有任务"<< (vehicle->m_state.currentTask!= nullptr)
+                  << "距离目标位置" << dist_to_target
                   << "\n";
         vehicle->last_debug_time = current_time;
     }

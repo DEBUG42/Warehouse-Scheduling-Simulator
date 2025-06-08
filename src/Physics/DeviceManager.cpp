@@ -13,6 +13,15 @@ DeviceState& DeviceManager::getDeviceState(int id) {
         return dummy;
     }
 }
+DeviceType& DeviceManager::getDeviceType(int id) {
+    auto it = deviceType.find(id);
+    if (it != deviceType.end()) {
+        return it->second;
+    } else {
+        static DeviceType dummy;  // 防止越界，返回默认状态
+        return dummy;
+    }
+}
 
 
 //初始化设备
@@ -71,18 +80,54 @@ void DeviceManager::release(int device_id, int task_id) {
 // 更新所有设备的状态
 // 输入: 当前时间 (double current_time)
 // 输出: 无
-void DeviceManager::update(double current_time) {
-    // 遍历所有设备
+std::vector<DeviceManager::DeviceUpdateResult> DeviceManager::update(double current_time) {
+    std::vector<DeviceManager::DeviceUpdateResult> results;
+
     for (auto& [id, state] : deviceStates) {
-        // 如果设备已预约且当前时间超过预约结束时间，则自动释放设备
         if (state.is_reserved && current_time >= state.reserved_until) {
             state.is_reserved = false;
             state.reserved_by = -1;
             state.reserved_until = 0.0;
 
-            // 输出自动释放信息到控制台
-            std::cout << "[Auto-Release] Device " << id << " released at " << current_time << "s\n";
+            std::cout << "[Auto-Release] Device #" << id << " released at " << current_time << "s\n";
+        }
+
+        // 入库口设备 空闲 → 可以触发叉车放货
+        if (deviceType[id] == DeviceType::StorageIn && !state.has_goods && !state.is_reserved) {
+            results.push_back({
+                DeviceManager::DeviceEventTrigger::ForkliftPutToInPort,
+                id,
+                -1
+            });
+        }
+
+        // 出库作业口 有货 → 可以触发人工卸货
+        if (deviceType[id] == DeviceType::WorkstationOut && state.has_goods && !state.is_transferring) {
+            results.push_back({
+                DeviceManager::DeviceEventTrigger::HumanUnloadAtOutPort,
+                id,
+                -1
+            });
+        }
+
+        // 入库接口设备有货 → 可触发堆垛机取货
+        if (deviceType[id] == DeviceType::StorageIn && state.has_goods && !state.is_transferring) {
+            results.push_back({
+                DeviceManager::DeviceEventTrigger::StackerPickFromInInterface,
+                id,
+                -1
+            });
+        }
+
+        // 出库接口设备为空 → 可触发堆垛机放货
+        if (deviceType[id] == DeviceType::StorageOut && !state.has_goods && !state.is_reserved) {
+            results.push_back({
+                DeviceManager::DeviceEventTrigger::StackerPutToOutInterface,
+                id,
+                -1
+            });
         }
     }
-}
 
+    return results;
+}
