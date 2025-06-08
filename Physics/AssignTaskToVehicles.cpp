@@ -294,7 +294,7 @@ bool VehicleManager::checkPickUp(Vehicle* vehicle, float current_time) {
     if (dist > 0.5f && (LOOP_LENGTH - dist) > 0.5f) return false;
 
     // 🚩确保完全停下
-    if (vehicle->m_state.currentSpeed > 1e-2f) return false;
+    if (vehicle->m_state.currentSpeed > 5e-2f) return false;
 
     // ✅ 满足取货条件
     if (!vehicle->is_loaded &&
@@ -323,7 +323,7 @@ bool VehicleManager::checkPutDown(Vehicle* vehicle, float current_time) {
     if (dist > 0.5f && (LOOP_LENGTH - dist) > 0.5f) return false;
 
     // 📌 确保车辆已经几乎停止
-    if (vehicle->m_state.currentSpeed > 1e-2f) return false;
+    if (vehicle->m_state.currentSpeed > 5e-2f) return false;
 
     // ✅ 满足放货条件
     if (vehicle->is_loaded &&

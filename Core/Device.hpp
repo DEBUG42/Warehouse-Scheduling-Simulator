@@ -70,17 +70,32 @@ public:
 // 设备管理类
 class DeviceManager {
 public:
+ enum class DeviceEventTrigger {
+        None,
+        ForkliftPutToInPort,
+        HumanUnloadAtOutPort,
+        StackerPickFromInInterface,
+        StackerPutToOutInterface
+    };
+
+    struct DeviceUpdateResult {
+        DeviceEventTrigger trigger;
+        int device_id;
+        int task_id;
+    };
+
+    std::vector<DeviceUpdateResult> update(double current_time);
     void initializeDevices();
 
     // 更新设备状态
     // 输入: double current_time - 当前时间
     // 输出: 无
-    void update(double current_time);
 
     // 获取设备状态
     // 输入: int device_id - 设备唯一标识
     // 输出: DeviceState& - 设备状态的引用
     DeviceState& getDeviceState(int id);
+    DeviceType& getDeviceType(int id);
 
     // 预约设备
     // 输入: int device_id - 设备唯一标识, int task_id - 任务唯一标识, double until_time - 设备预计释放时间
@@ -99,4 +114,6 @@ public:
 
 private:
     std::map<int, DeviceState> deviceStates;
+    std::map<int, DeviceType> deviceType;
+
 };
