@@ -44,6 +44,8 @@ struct DeviceState {
     int reserved_by = -1;         // 被哪个任务锁定
     double reserved_until = 0.0;  // 预计释放时间
     bool is_transferring = false; // 是否在搬运中（堆垛机或人工）
+    bool is_event_pending = false;
+
 };
 
 // 设备基类

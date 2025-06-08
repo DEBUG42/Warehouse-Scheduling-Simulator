@@ -51,3 +51,6 @@ void EventQueue::initializeInitialEvents() {
         std::cout << "[InitEvent] Scheduled FORKLIFT_PUT_TO_IN_PORT at device " << device_id << " @ 30s\n";
     }
 }
+    size_t EventQueue::size(){
+        return queue.size();
+    }

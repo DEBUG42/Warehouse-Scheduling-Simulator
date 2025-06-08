@@ -52,23 +52,27 @@ void Scheduler::handleEvent(const Event& e) {
         case EventType::HUMAN_UNLOAD_AT_OUT_PORT:
             // 出库口货物被人工搬空 → 标记为空
             this->device_manager_ptr->getDeviceState(e.device_id).has_goods = false;
+            device_manager_ptr->getDeviceState(e.device_id).is_event_pending = false;
 
             break;
 
         case EventType::STACKER_PUT_TO_OUT_INTERFACE:
-            // 堆垛机已把货物放到接口设备上
+            // 堆垛机已把货物放到出库接口设备上
             this->device_manager_ptr->getDeviceState(e.device_id).has_goods = true;
+            device_manager_ptr->getDeviceState(e.device_id).is_event_pending = false;
 
             break;
 
         case EventType::FORKLIFT_PUT_TO_IN_PORT:
             // 入库口叉车放货完成
             this->device_manager_ptr->getDeviceState(e.device_id).has_goods = true;
+            device_manager_ptr->getDeviceState(e.device_id).is_event_pending = false;
 
             break;
 
         case EventType::STACKER_PICK_FROM_IN_INTERFACE:
             this->device_manager_ptr->getDeviceState(e.device_id).has_goods = false;
+            device_manager_ptr->getDeviceState(e.device_id).is_event_pending = false;
 
             break;
 
@@ -137,24 +141,26 @@ void Scheduler::updateSystemStates(float dt) {
 
     auto device_events = device_manager_ptr->update(current_time);
     for (const auto& result : device_events) {
-        switch (result.trigger) {
-            case DeviceManager::DeviceEventTrigger::ForkliftPutToInPort:
-                addEventForForkliftPut(result.device_id, result.task_id, current_time);
-                // std::cout <<"叉车在入库口放货"<<std::endl;
-                break;
-            case DeviceManager::DeviceEventTrigger::HumanUnloadAtOutPort:
-                addEventForHumanUnload(result.device_id, result.task_id, current_time);
-                // std::cout <<"人工在出库口取货"<<std::endl;
-                break;
-                addEventForStackerPick(result.device_id, result.task_id, current_time);
-                // std::cout <<"堆垛机从入库接口取货"<<std::endl;
-                break;
-                addEventForStackerPut(result.device_id, result.task_id, current_time);
-                // std::cout <<"堆垛机在出库接口放货"<<std::endl;
-                break;
-            default:
-                break;
-        }
+    switch (result.trigger) {
+        case DeviceManager::DeviceEventTrigger::ForkliftPutToInPort:
+            addEventForForkliftPut(result.device_id, result.task_id, current_time);
+            break;
+
+        case DeviceManager::DeviceEventTrigger::HumanUnloadAtOutPort:
+            addEventForHumanUnload(result.device_id, result.task_id, current_time);
+            break;
+
+        case DeviceManager::DeviceEventTrigger::StackerPickFromInInterface:
+            addEventForStackerPick(result.device_id, result.task_id, current_time);
+            break;
+
+        case DeviceManager::DeviceEventTrigger::StackerPutToOutInterface:
+            addEventForStackerPut(result.device_id, result.task_id, current_time);
+            break;
+
+        default:
+            break;
+    }
 }
 
 }
@@ -187,6 +193,7 @@ void Scheduler::addEventForForkliftPut(int device_id, int task_id, double curren
     e.device_id = device_id;
     e.task_id = task_id;
     event_queue_ptr->addEvent(e);
+    // std::cout <<"叉车在入库口放货!"<<std::endl;
 }
 
 // 添加：堆垛机从入库接口取货（入库接口）
@@ -284,7 +291,7 @@ void Scheduler::run(float deltatime) {
                  // 判断是否到了新的秒刻点，并且需要进行输出
     if (current_time >= this->last_debug_time + PRINT_INTERVAL - EPSILON) {
                 std::cout << "[SimTime] " << std::fixed << std::setprecision(2) << current_time << "s" << std::endl;
-
+                std::cout << "[Debug] 当前事件队列长度：" << event_queue_ptr->size() << std::endl;
         // 更新这辆车上一次输出调试信息的时间
         this->last_debug_time = current_time;
     }

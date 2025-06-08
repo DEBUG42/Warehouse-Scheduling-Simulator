@@ -93,39 +93,43 @@ std::vector<DeviceManager::DeviceUpdateResult> DeviceManager::update(double curr
         }
 
         // 入库口设备 空闲 → 可以触发叉车放货
-        if (deviceType[id] == DeviceType::StorageIn && !state.has_goods && !state.is_reserved) {
+        if (deviceType[id] == DeviceType::StorageIn && !state.has_goods && !state.is_reserved && !state.is_event_pending) {
             results.push_back({
                 DeviceManager::DeviceEventTrigger::ForkliftPutToInPort,
                 id,
                 -1
             });
+        state.is_event_pending = true; // 标记为已触发
         }
 
         // 出库作业口 有货 → 可以触发人工卸货
-        if (deviceType[id] == DeviceType::WorkstationOut && state.has_goods && !state.is_transferring) {
+        if (deviceType[id] == DeviceType::WorkstationOut && state.has_goods && !state.is_transferring && !state.is_event_pending) {
             results.push_back({
                 DeviceManager::DeviceEventTrigger::HumanUnloadAtOutPort,
                 id,
                 -1
             });
+            state.is_event_pending = true; // 标记为已触发
         }
 
         // 入库接口设备有货 → 可触发堆垛机取货
-        if (deviceType[id] == DeviceType::StorageIn && state.has_goods && !state.is_transferring) {
+        if (deviceType[id] == DeviceType::StorageIn && state.has_goods && !state.is_transferring && !state.is_event_pending) {
             results.push_back({
                 DeviceManager::DeviceEventTrigger::StackerPickFromInInterface,
                 id,
                 -1
             });
+            state.is_event_pending = true; // 标记为已触发
         }
 
         // 出库接口设备为空 → 可触发堆垛机放货
-        if (deviceType[id] == DeviceType::StorageOut && !state.has_goods && !state.is_reserved) {
+        if (deviceType[id] == DeviceType::StorageOut && !state.has_goods && !state.is_reserved && !state.is_event_pending) {
             results.push_back({
                 DeviceManager::DeviceEventTrigger::StackerPutToOutInterface,
                 id,
                 -1
             });
+            state.is_event_pending = true; // 标记为已触发
         }
     }
 
