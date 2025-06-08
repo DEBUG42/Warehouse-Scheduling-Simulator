@@ -3,8 +3,8 @@ chcp 65001 > nul
 
 :: Configuration for main.cpp compilation
 set "COMPILER=g++"
-set "SFML_INC=D:\SFML\include"
-set "SFML_LIB=D:\SFML\lib"
+set "SFML_INC=G:\SFML\SFML-2.6.2\include"
+set "SFML_LIB=G:\SFML\SFML-2.6.2\lib"
 set "OUTPUT=bin\main.exe"
 
 :: Verify SFML paths

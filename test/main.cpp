@@ -65,17 +65,17 @@ public:
     static constexpr float VEHICLE_INFO_PANEL_HEIGHT = 415.0f; // 车辆信息面板高度
 
     // 后端核心组件（从main函数移动过来）
-    int count =3; 
+    int count = 3;
     EventQueue event_queue;         // 事件队列
     TaskManager task_manager;       // 任务管理器
     VehicleManager vehicle_manager; // 车辆管理器
     DeviceManager device_manager;   // 设备管理器
     Logger logger;                  // 日志记录器
-	Scheduler scheduler;
-public:
+    Scheduler scheduler;
 
-	SimulationMode m_mode;
-	std::unique_ptr<Toolbar> toolbar;
+public:
+    SimulationMode m_mode;
+    std::unique_ptr<Toolbar> toolbar;
 
     SimpleDemoApp() : window(sf::VideoMode(1800, 800), "Warehouse-Scheduling-Simulator")
     {
@@ -113,7 +113,6 @@ public:
         std::cerr << "Cannot load any font! UI text may not display correctly." << std::endl;
         return false;
     }
-
 
     void initializeComponents()
     {
@@ -154,7 +153,7 @@ public:
         // 初始化依赖scheduler的组件
         updateSchedulerDependentComponents();
     }
-	    void updateSchedulerDependentComponents()
+    void updateSchedulerDependentComponents()
     {
         // 使用内部的vehicle_manager而不是指针
         auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
@@ -163,9 +162,8 @@ public:
         {
             vehiclePtrs.push_back(&vehicle);
         }
-        simulationView->updateVehicles(vehiclePtrs);
-
-        // 更新设备数据（当前为空）
+        simulationView->updateVehicles(vehiclePtrs); // 更新设备数据
+        auto devices = scheduler.device_manager_ptr->getAllDevices();
         std::vector<DeviceBase *> devicePtrs;
 		// for (auto &device : scheduler->device_manager.getAllDevices())
         // {
@@ -181,7 +179,7 @@ public:
 
         std::cout << "前端工作已做好: 收到" << vehicles.size() << " 后端小车" << std::endl;
     }
-        void handleEvents()
+    void handleEvents()
     {
         sf::Event event;
         while (window.pollEvent(event))
@@ -332,8 +330,6 @@ public:
             {
                 simulationView->updateViewTransforms(deltaTime * timeScale);
             }
-
-
         }
     }
 
@@ -451,39 +447,42 @@ public:
         instructions.setFillColor(sf::Color::Black);
         instructions.setPosition(10, window.getSize().y - 52.0f);
         std::string text = "Developed by :\n DEBUG42 & EpochHIT & PrachEwigkeit\n";
-                        //    "=== Simulation Control ===\n"
-                        //    "Space: Start/Pause simulation\n"
-                        //    "R: Reset simulation\n"
-                        //    "ESC: Exit program\n"
-                        //    "\n=== Display Control ===\n"
-                        //    "T: Toggle coordinate grid display\n"
-                        //    "G: Toggle warehouse display\n"
-                        //    "V: Toggle vehicle display\n"
-                        //    "C: Toggle debug info display\n"
-                        //    "\n=== GUI Components ===\n"
-                        //    "• Toolbar: Time display (HH:MM:SS.mmm)\n"
-                        //    "• Status Panel: Simulation statistics\n"
-                        //    "• Vehicle Info Panel: Acceleration/Deceleration events\n"
-                        //    "• Simulation View: Track & multi-vehicle rendering";
+        //    "=== Simulation Control ===\n"
+        //    "Space: Start/Pause simulation\n"
+        //    "R: Reset simulation\n"
+        //    "ESC: Exit program\n"
+        //    "\n=== Display Control ===\n"
+        //    "T: Toggle coordinate grid display\n"
+        //    "G: Toggle warehouse display\n"
+        //    "V: Toggle vehicle display\n"
+        //    "C: Toggle debug info display\n"
+        //    "\n=== GUI Components ===\n"
+        //    "• Toolbar: Time display (HH:MM:SS.mmm)\n"
+        //    "• Status Panel: Simulation statistics\n"
+        //    "• Vehicle Info Panel: Acceleration/Deceleration events\n"
+        //    "• Simulation View: Track & multi-vehicle rendering";
         instructions.setString(text);
 
         window.draw(instructions);
     }
     void run()
-	{
+    {
         sf::Clock clock;
-		auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
-		scheduler.device_manager_ptr->initializeDevices();
-		// Try both possible paths (running from root or test directory)
-		std::ifstream test_file("../tasks.csv");
-		if (test_file.good()) {
-			scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
-		} else {
-			scheduler.task_manager_ptr->loadFromFile("tasks.csv");
-		}
-		scheduler.task_manager_ptr->initializeNextTaskID(); 
-		std::vector<Task>& tasks = task_manager.getAllTasks();
-		scheduler.event_queue_ptr->initializeInitialEvents();
+        auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
+        scheduler.device_manager_ptr->initializeDevices();
+        // Try both possible paths (running from root or test directory)
+        std::ifstream test_file("../tasks.csv");
+        if (test_file.good())
+        {
+            scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
+        }
+        else
+        {
+            scheduler.task_manager_ptr->loadFromFile("tasks.csv");
+        }
+        scheduler.task_manager_ptr->initializeNextTaskID();
+        std::vector<Task> &tasks = task_manager.getAllTasks();
+        scheduler.event_queue_ptr->initializeInitialEvents();
         std::cout << "GUI Phase 1 Enhanced Demo - Track & 3 Vehicles Started" << std::endl;
         std::cout << "Features:" << std::endl;
         std::cout << "1. Toolbar - Time format display (HH:MM:SS.mmm)" << std::endl;
@@ -496,226 +495,311 @@ public:
         std::cout << "• Vehicle 2: Empty, Cruising (Blue, moving)" << std::endl;
         std::cout << "• Vehicle 3: Loaded, Accelerating (Orange, moving)" << std::endl;
         std::cout << "\nInstructions: Press Space to start simulation, 1/2/3 to select vehicles, WASD to move" << std::endl;
-		
 
-		float current_time = 0.0f;
-		int recording[7]= {0};
-		int working[7]={0};
-		float start_time[7] = {0.0f};
-		float end_time[7] = {0.0f};
-		float startspeed[7] = {0.0f};
-		float endspeed[7] = {0.0f};
-		float sumRunningTime[7] = {0.0f};
-		int stopcount[7] = {0};
+        float current_time = 0.0f;
+        int recording[7] = {0};
+        int working[7] = {0};
+        float start_time[7] = {0.0f};
+        float end_time[7] = {0.0f};
+        float startspeed[7] = {0.0f};
+        float endspeed[7] = {0.0f};
+        float sumRunningTime[7] = {0.0f};
+        int stopcount[7] = {0};
 
-		Vehicle::MotionState laststate[7] = {
-			Vehicle::MotionState::Stopped,
-			Vehicle::MotionState::Stopped,
-			Vehicle::MotionState::Stopped,
-			Vehicle::MotionState::Stopped,
-			Vehicle::MotionState::Stopped,
-			Vehicle::MotionState::Stopped,
-			Vehicle::MotionState::Stopped
-		};
-		while (window.isOpen())
+        Vehicle::MotionState laststate[7] = {
+            Vehicle::MotionState::Stopped,
+            Vehicle::MotionState::Stopped,
+            Vehicle::MotionState::Stopped,
+            Vehicle::MotionState::Stopped,
+            Vehicle::MotionState::Stopped,
+            Vehicle::MotionState::Stopped,
+            Vehicle::MotionState::Stopped};
+        while (window.isOpen())
         {
             float deltaTime = clock.restart().asSeconds();
             // printf("Delta Time: %.3f seconds\n", deltaTime); // 输出每帧的时间间隔
             handleEvents();
             update(deltaTime);
             render();
-			float timeScale = toolbar->getCurrentSpeed();
+            float timeScale = toolbar->getCurrentSpeed();
 
-            if (isRunning&&m_mode==SimulationMode::TASK1)
-			{
+            if (isRunning && m_mode == SimulationMode::TASK1)
+            {
 
+                float intPart, fractionalPart;
+                fractionalPart = std::modf(timeScale, &intPart);
 
+                // 整数部分 - 完整循环
+                for (int i = 0; i < static_cast<int>(intPart); i++)
+                {
+                    updateVehicle1(scheduler.current_time, deltaTime, &vehicles[0], &vehicles[2]);
+                    updateVehicle1(scheduler.current_time, deltaTime, &vehicles[1], &vehicles[0]);
+                    updateVehicle1(scheduler.current_time, deltaTime, &vehicles[2], &vehicles[1]);
+                }
 
+                // 小数部分 - 通过deltaTime实现
+                if (fractionalPart > 0.001f)
+                {
+                    float adjustedDeltaTime = deltaTime * fractionalPart;
+                    updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[0], &vehicles[2]);
+                    updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[1], &vehicles[0]);
+                    updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[2], &vehicles[1]);
+                }
 
-				float intPart, fractionalPart;
-				fractionalPart = std::modf(timeScale, &intPart);
-				
-				// 整数部分 - 完整循环
-				for(int i=0; i<static_cast<int>(intPart); i++){
-					updateVehicle1(scheduler.current_time, deltaTime, &vehicles[0], &vehicles[2]);
-					updateVehicle1(scheduler.current_time, deltaTime, &vehicles[1], &vehicles[0]);
-					updateVehicle1(scheduler.current_time, deltaTime, &vehicles[2], &vehicles[1]);
-				}
-				
-				// 小数部分 - 通过deltaTime实现
-				if(fractionalPart > 0.001f) {
-					float adjustedDeltaTime = deltaTime * fractionalPart;
-					updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[0], &vehicles[2]);
-					updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[1], &vehicles[0]);
-					updateVehicle1(scheduler.current_time, adjustedDeltaTime, &vehicles[2], &vehicles[1]);
-				}
+                // Vehicle 0 recording
+                if (recording[0] == 0 && vehicles[0].m_state.motionState != laststate_0 && (vehicles[0].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[0].m_state.motionState == Vehicle::MotionState::Decelerating))
+                {
+                    start_time[0] = current_time;
+                    startspeed[0] = vehicles[0].m_state.currentSpeed;
+                    recording[0] = 1;
+                }
+                else if (recording[0] == 1 && vehicles[0].m_state.motionState != laststate_0)
+                {
+                    end_time[0] = current_time;
+                    endspeed[0] = vehicles[0].m_state.currentSpeed;
+                    recording[0] = 0;
+                    working[0] = 1;
+                }
+                if (recording[0] == 0 && working[0] == 1)
+                {
+                    working[0] = 0;
+                    std::string eventType0 = (endspeed[0] > startspeed[0]) ? "Acc" : "Dec";
+                    vehicleInfoPanel->recordAccelerationEvent(
+                        0, start_time[0], end_time[0], startspeed[0], endspeed[0], 0.5, eventType0);
+                    std::cout << "0 " << eventType0 << "time" << start_time[0] << " endtime" << end_time[0] << "startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
+                }
 
+                // Vehicle 1 recording
+                if (recording[1] == 0 && vehicles[1].m_state.motionState != laststate_1 && (vehicles[1].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[1].m_state.motionState == Vehicle::MotionState::Decelerating))
+                {
+                    start_time[1] = current_time;
+                    startspeed[1] = vehicles[1].m_state.currentSpeed;
+                    recording[1] = 1;
+                }
+                else if (recording[1] == 1 && vehicles[1].m_state.motionState != laststate_1)
+                {
+                    end_time[1] = current_time;
+                    endspeed[1] = vehicles[1].m_state.currentSpeed;
+                    recording[1] = 0;
+                    working[1] = 1;
+                }
+                if (recording[1] == 0 && working[1] == 1)
+                {
+                    working[1] = 0;
+                    std::string eventType1 = (endspeed[1] > startspeed[1]) ? "Acc" : "Dec";
+                    vehicleInfoPanel->recordAccelerationEvent(
+                        1, start_time[1], end_time[1], startspeed[1], endspeed[1], 0.5, eventType1);
+                    std::cout << "1 " << eventType1 << "time" << start_time[1] << " endtime" << end_time[1] << "startspeed" << startspeed[1] << "m/s -> " << endspeed[1] << "m/s" << std::endl;
+                }
 
-			for(int i=0; i<3; i++){							// Vehicle 0 recording
-			if(recording[i]==0&&vehicles[i].m_state.motionState!= laststate[i]&&(vehicles[i].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[i].m_state.motionState == Vehicle::MotionState::Decelerating)){
-				start_time[i] = current_time;
-				startspeed[i] = vehicles[i].m_state.currentSpeed;
-				recording[i] = 1;
-			}
-			else if(recording[i]==1&&vehicles[i].m_state.motionState!= laststate[i]){
-				end_time[i] = current_time;
-				endspeed[i] = vehicles[i].m_state.currentSpeed;
-				recording[i] = 0;
-				working[i]=1;
-			}
-			if(recording[i]==0&&working[i]==1){
-				working[i]=0;
-				std::string eventType = (endspeed[i]>startspeed[i]) ? "Acc" : "Dec";
-				vehicleInfoPanel->recordAccelerationEvent(
-					i,start_time[0], end_time[0], startspeed[0], endspeed[0], 0.5, eventType);
-				std::cout << "0 " << eventType <<"time"<< start_time[0] << " endtime"<< end_time[0] <<"startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
-			}
-		}
+                for (int i = 0; i < 3; i++)
+                { // Vehicle 0 recording
+                    if (recording[i] == 0 && vehicles[i].m_state.motionState != laststate[i] && (vehicles[i].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[i].m_state.motionState == Vehicle::MotionState::Decelerating))
+                    {
+                        start_time[i] = current_time;
+                        startspeed[i] = vehicles[i].m_state.currentSpeed;
+                        recording[i] = 1;
+                    }
+                    else if (recording[i] == 1 && vehicles[i].m_state.motionState != laststate[i])
+                    {
+                        end_time[i] = current_time;
+                        endspeed[i] = vehicles[i].m_state.currentSpeed;
+                        recording[i] = 0;
+                        working[i] = 1;
+                    }
+                    if (recording[i] == 0 && working[i] == 1)
+                    {
+                        working[i] = 0;
+                        std::string eventType = (endspeed[i] > startspeed[i]) ? "Acc" : "Dec";
+                        vehicleInfoPanel->recordAccelerationEvent(
+                            i, start_time[0], end_time[0], startspeed[0], endspeed[0], 0.5, eventType);
+                        std::cout << "0 " << eventType << "time" << start_time[0] << " endtime" << end_time[0] << "startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
+                    }
+                }
 
+                // 记录每辆车运行时间和停车次数
+                if (vehicles[0].m_state.motionState == Vehicle::MotionState::Stopped && laststate_0 != Vehicle::MotionState::Stopped)
+                {
+                    stopcount[0]++;
+                }
+                if (vehicles[1].m_state.motionState == Vehicle::MotionState::Stopped && laststate_1 != Vehicle::MotionState::Stopped)
+                {
+                    stopcount[1]++;
+                }
+                if (vehicles[2].m_state.motionState == Vehicle::MotionState::Stopped && laststate_2 != Vehicle::MotionState::Stopped)
+                {
+                    stopcount[2]++;
+                }
+                std::cout << "Vehicle 0 stop count: " << stopcount[0] << std::endl;
+                std::cout << "Vehicle 1 stop count: " << stopcount[1] << std::endl;
+                std::cout << "Vehicle 2 stop count: " << stopcount[2] << std::endl;
 
-			// if(vehicles[2].m_state.motionState == Vehicle::MotionState::Decelerating){
-			// 	std::cout <<"DECELERATING "<<current_time<<"  "<<vehicles[2].m_state.currentSpeed<<"  "<<std::endl;
-			// }
-			// if(vehicles[2].m_state.motionState == Vehicle::MotionState::Accelerating){
-			// 	std::cout <<"ACCELERATING "<<current_time<<"  "<<vehicles[2].m_state.currentSpeed<<"  "<<std::endl;
-			// }
-			
-			
-//记录每辆车运行时间和停车次数
-			if(vehicles[0].m_state.motionState == Vehicle::MotionState::Stopped&&laststate[0]!= Vehicle::MotionState::Stopped){
-				stopcount[0]++;
-			}
-			if(vehicles[1].m_state.motionState == Vehicle::MotionState::Stopped&&laststate[1]!= Vehicle::MotionState::Stopped){
-				stopcount[1]++;
-			}
-			if(vehicles[2].m_state.motionState == Vehicle::MotionState::Stopped&&laststate[2]!= Vehicle::MotionState::Stopped){
-				stopcount[2]++;
-			}
-			std::cout << "Vehicle 0 stop count: " << stopcount[0] << std::endl;
-			std::cout << "Vehicle 1 stop count: " << stopcount[1] << std::endl;
-			std::cout << "Vehicle 2 stop count: " << stopcount[2] << std::endl;
-			
-			if(!(vehicles[0].m_state.motionState == Vehicle::MotionState::Stopped&&(fabs(vehicles[0].position_m-26.0f)<0.55))){
-				sumRunningTime[0] += deltaTime*timeScale;
-			}
-			if(!(vehicles[1].m_state.motionState == Vehicle::MotionState::Stopped&&(fabs(vehicles[1].position_m-26.0f)<0.55))){
-				sumRunningTime[1] += deltaTime*timeScale;
-			}
-			if(!(vehicles[2].m_state.motionState == Vehicle::MotionState::Stopped&&(fabs(vehicles[2].position_m-26.0f)<0.55))){
-				sumRunningTime[2] += deltaTime*timeScale;
-			}
-			std::cout << "Vehicle 0 running time: " << sumRunningTime[0] << std::endl;
-			std::cout << "Vehicle 1 running time: " << sumRunningTime[1] << std::endl;
-			std::cout << "Vehicle 2 running time: " << sumRunningTime[2] << std::endl;
+                // if(vehicles[2].m_state.motionState == Vehicle::MotionState::Decelerating){
+                // 	std::cout <<"DECELERATING "<<current_time<<"  "<<vehicles[2].m_state.currentSpeed<<"  "<<std::endl;
+                // }
+                // if(vehicles[2].m_state.motionState == Vehicle::MotionState::Accelerating){
+                // 	std::cout <<"ACCELERATING "<<current_time<<"  "<<vehicles[2].m_state.currentSpeed<<"  "<<std::endl;
+                // }
 
-				laststate[0] = vehicles[0].m_state.motionState;
-				laststate[1] = vehicles[1].m_state.motionState;
-				laststate[2] = vehicles[2].m_state.motionState;
-				current_time += deltaTime * timeScale;
-			}
-			if(isRunning&&(m_mode==SimulationMode::TASK2_1||m_mode==SimulationMode::TASK2_2||m_mode==SimulationMode::TASK2_3)){
-				float intPart, fractionalPart;
-				fractionalPart = std::modf(timeScale, &intPart);
+                // 记录每辆车运行时间和停车次数
+                if (vehicles[0].m_state.motionState == Vehicle::MotionState::Stopped && laststate[0] != Vehicle::MotionState::Stopped)
+                {
+                    stopcount[0]++;
+                }
+                if (vehicles[1].m_state.motionState == Vehicle::MotionState::Stopped && laststate[1] != Vehicle::MotionState::Stopped)
+                {
+                    stopcount[1]++;
+                }
+                if (vehicles[2].m_state.motionState == Vehicle::MotionState::Stopped && laststate[2] != Vehicle::MotionState::Stopped)
+                {
+                    stopcount[2]++;
+                }
+                std::cout << "Vehicle 0 stop count: " << stopcount[0] << std::endl;
+                std::cout << "Vehicle 1 stop count: " << stopcount[1] << std::endl;
+                std::cout << "Vehicle 2 stop count: " << stopcount[2] << std::endl;
 
-				for(int i=0; i<static_cast<int>(intPart); i++){
-				auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
-				scheduler.run(deltaTime);
-				updateSchedulerDependentComponents();
-				}
-				
-				// 小数部分 - 通过deltaTime实现
-				if(fractionalPart > 0.001f) {
-				float adjustedDeltaTime = deltaTime * fractionalPart;
-				auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
-				scheduler.run(adjustedDeltaTime);
-				updateSchedulerDependentComponents();
-				}
+                if (!(vehicles[0].m_state.motionState == Vehicle::MotionState::Stopped && (fabs(vehicles[0].position_m - 26.0f) < 0.55)))
+                {
+                    sumRunningTime[0] += deltaTime * timeScale;
+                }
+                if (!(vehicles[1].m_state.motionState == Vehicle::MotionState::Stopped && (fabs(vehicles[1].position_m - 26.0f) < 0.55)))
+                {
+                    sumRunningTime[1] += deltaTime * timeScale;
+                }
+                if (!(vehicles[2].m_state.motionState == Vehicle::MotionState::Stopped && (fabs(vehicles[2].position_m - 26.0f) < 0.55)))
+                {
+                    sumRunningTime[2] += deltaTime * timeScale;
+                }
+                std::cout << "Vehicle 0 running time: " << sumRunningTime[0] << std::endl;
+                std::cout << "Vehicle 1 running time: " << sumRunningTime[1] << std::endl;
+                std::cout << "Vehicle 2 running time: " << sumRunningTime[2] << std::endl;
 
-				if(count==3){
-				for(int i=0; i<3; i++){							// Vehicle 0 recording
-						if(recording[i]==0&&vehicles[i].m_state.motionState!= laststate[i]&&(vehicles[i].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[i].m_state.motionState == Vehicle::MotionState::Decelerating)){
-							start_time[i] = current_time;
-							startspeed[i] = vehicles[i].m_state.currentSpeed;
-							recording[i] = 1;
-						}
-						else if(recording[i]==1&&vehicles[i].m_state.motionState!= laststate[i]){
-							end_time[i] = current_time;
-							endspeed[i] = vehicles[i].m_state.currentSpeed;
-							recording[i] = 0;
-							working[i]=1;
-						}
-						if(recording[i]==0&&working[i]==1){
-							working[i]=0;
-							std::string eventType = (endspeed[i]>startspeed[i]) ? "Acc" : "Dec";
-							vehicleInfoPanel->recordAccelerationEvent(
-								i,start_time[i], end_time[i], startspeed[i], endspeed[i], 0.5, eventType);
-							std::cout << "0 " << eventType <<"time"<< start_time[0] << " endtime"<< end_time[0] <<"startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
-						}
-					}
-						laststate[0] = vehicles[0].m_state.motionState;
-						laststate[1] = vehicles[1].m_state.motionState;
-						laststate[2] = vehicles[2].m_state.motionState;
-						current_time += deltaTime * timeScale;
-				}
-				if(count==5){
-				for(int i=0; i<5; i++){							// Vehicle 0 recording
-						if(recording[i]==0&&vehicles[i].m_state.motionState!= laststate[i]&&(vehicles[i].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[i].m_state.motionState == Vehicle::MotionState::Decelerating)){
-							start_time[i] = current_time;
-							startspeed[i] = vehicles[i].m_state.currentSpeed;
-							recording[i] = 1;
-						}
-						else if(recording[i]==1&&vehicles[i].m_state.motionState!= laststate[i]){
-							end_time[i] = current_time;
-							endspeed[i] = vehicles[i].m_state.currentSpeed;
-							recording[i] = 0;
-							working[i]=1;
-						}
-						if(recording[i]==0&&working[i]==1){
-							working[i]=0;
-							std::string eventType = (endspeed[i]>startspeed[i]) ? "Acc" : "Dec";
-							vehicleInfoPanel->recordAccelerationEvent(
-								i,start_time[i], end_time[i], startspeed[i], endspeed[i], 0.5, eventType);
-							std::cout << "0 " << eventType <<"time"<< start_time[0] << " endtime"<< end_time[0] <<"startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
-						}
-					}					
-						laststate[0] = vehicles[0].m_state.motionState;
-						laststate[1] = vehicles[1].m_state.motionState;
-						laststate[2] = vehicles[2].m_state.motionState;
-						laststate[3] = vehicles[3].m_state.motionState;
-						laststate[4] = vehicles[4].m_state.motionState;
-						current_time += deltaTime * timeScale;
-				}
-				if(count==7){
-				for(int i=0; i<7; i++){							// Vehicle 0 recording
-						if(recording[i]==0&&vehicles[i].m_state.motionState!= laststate[i]&&(vehicles[i].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[i].m_state.motionState == Vehicle::MotionState::Decelerating)){
-							start_time[i] = current_time;
-							startspeed[i] = vehicles[i].m_state.currentSpeed;
-							recording[i] = 1;
-						}
-						else if(recording[i]==1&&vehicles[i].m_state.motionState!= laststate[i]){
-							end_time[i] = current_time;
-							endspeed[i] = vehicles[i].m_state.currentSpeed;
-							recording[i] = 0;
-							working[i]=1;
-						}
-						if(recording[i]==0&&working[i]==1){
-							working[i]=0;
-							std::string eventType = (endspeed[i]>startspeed[i]) ? "Acc" : "Dec";
-							vehicleInfoPanel->recordAccelerationEvent(
-								i,start_time[i], end_time[i], startspeed[i], endspeed[i], 0.5, eventType);
-							std::cout << "0 " << eventType <<"time"<< start_time[0] << " endtime"<< end_time[0] <<"startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
-						}
-					}					
-						laststate[0] = vehicles[0].m_state.motionState;
-						laststate[1] = vehicles[1].m_state.motionState;
-						laststate[2] = vehicles[2].m_state.motionState;
-						laststate[3] = vehicles[3].m_state.motionState;
-						laststate[4] = vehicles[4].m_state.motionState;
-						laststate[5] = vehicles[5].m_state.motionState;
-						laststate[6] = vehicles[6].m_state.motionState;
-						current_time += deltaTime * timeScale;
-				}
-			}
+                laststate[0] = vehicles[0].m_state.motionState;
+                laststate[1] = vehicles[1].m_state.motionState;
+                laststate[2] = vehicles[2].m_state.motionState;
+                current_time += deltaTime * timeScale;
+            }
+            if (isRunning && (m_mode == SimulationMode::TASK2_1 || m_mode == SimulationMode::TASK2_2 || m_mode == SimulationMode::TASK2_3))
+            {
+                float intPart, fractionalPart;
+                fractionalPart = std::modf(timeScale, &intPart);
+
+                for (int i = 0; i < static_cast<int>(intPart); i++)
+                {
+                    auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
+                    scheduler.run(deltaTime);
+                    updateSchedulerDependentComponents();
+                }
+
+                // 小数部分 - 通过deltaTime实现
+                if (fractionalPart > 0.001f)
+                {
+                    float adjustedDeltaTime = deltaTime * fractionalPart;
+                    auto &vehicles = scheduler.vehicle_manager_ptr->getAllVehicles();
+                    scheduler.run(adjustedDeltaTime);
+                    updateSchedulerDependentComponents();
+                }
+
+                if (count == 3)
+                {
+                    for (int i = 0; i < 3; i++)
+                    { // Vehicle 0 recording
+                        if (recording[i] == 0 && vehicles[i].m_state.motionState != laststate[i] && (vehicles[i].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[i].m_state.motionState == Vehicle::MotionState::Decelerating))
+                        {
+                            start_time[i] = current_time;
+                            startspeed[i] = vehicles[i].m_state.currentSpeed;
+                            recording[i] = 1;
+                        }
+                        else if (recording[i] == 1 && vehicles[i].m_state.motionState != laststate[i])
+                        {
+                            end_time[i] = current_time;
+                            endspeed[i] = vehicles[i].m_state.currentSpeed;
+                            recording[i] = 0;
+                            working[i] = 1;
+                        }
+                        if (recording[i] == 0 && working[i] == 1)
+                        {
+                            working[i] = 0;
+                            std::string eventType = (endspeed[i] > startspeed[i]) ? "Acc" : "Dec";
+                            vehicleInfoPanel->recordAccelerationEvent(
+                                i, start_time[i], end_time[i], startspeed[i], endspeed[i], 0.5, eventType);
+                            std::cout << "0 " << eventType << "time" << start_time[0] << " endtime" << end_time[0] << "startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
+                        }
+                    }
+                    laststate[0] = vehicles[0].m_state.motionState;
+                    laststate[1] = vehicles[1].m_state.motionState;
+                    laststate[2] = vehicles[2].m_state.motionState;
+                    current_time += deltaTime * timeScale;
+                }
+                if (count == 5)
+                {
+                    for (int i = 0; i < 5; i++)
+                    { // Vehicle 0 recording
+                        if (recording[i] == 0 && vehicles[i].m_state.motionState != laststate[i] && (vehicles[i].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[i].m_state.motionState == Vehicle::MotionState::Decelerating))
+                        {
+                            start_time[i] = current_time;
+                            startspeed[i] = vehicles[i].m_state.currentSpeed;
+                            recording[i] = 1;
+                        }
+                        else if (recording[i] == 1 && vehicles[i].m_state.motionState != laststate[i])
+                        {
+                            end_time[i] = current_time;
+                            endspeed[i] = vehicles[i].m_state.currentSpeed;
+                            recording[i] = 0;
+                            working[i] = 1;
+                        }
+                        if (recording[i] == 0 && working[i] == 1)
+                        {
+                            working[i] = 0;
+                            std::string eventType = (endspeed[i] > startspeed[i]) ? "Acc" : "Dec";
+                            vehicleInfoPanel->recordAccelerationEvent(
+                                i, start_time[i], end_time[i], startspeed[i], endspeed[i], 0.5, eventType);
+                            std::cout << "0 " << eventType << "time" << start_time[0] << " endtime" << end_time[0] << "startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
+                        }
+                    }
+                    laststate[0] = vehicles[0].m_state.motionState;
+                    laststate[1] = vehicles[1].m_state.motionState;
+                    laststate[2] = vehicles[2].m_state.motionState;
+                    laststate[3] = vehicles[3].m_state.motionState;
+                    laststate[4] = vehicles[4].m_state.motionState;
+                    current_time += deltaTime * timeScale;
+                }
+                if (count == 7)
+                {
+                    for (int i = 0; i < 7; i++)
+                    { // Vehicle 0 recording
+                        if (recording[i] == 0 && vehicles[i].m_state.motionState != laststate[i] && (vehicles[i].m_state.motionState == Vehicle::MotionState::Accelerating || vehicles[i].m_state.motionState == Vehicle::MotionState::Decelerating))
+                        {
+                            start_time[i] = current_time;
+                            startspeed[i] = vehicles[i].m_state.currentSpeed;
+                            recording[i] = 1;
+                        }
+                        else if (recording[i] == 1 && vehicles[i].m_state.motionState != laststate[i])
+                        {
+                            end_time[i] = current_time;
+                            endspeed[i] = vehicles[i].m_state.currentSpeed;
+                            recording[i] = 0;
+                            working[i] = 1;
+                        }
+                        if (recording[i] == 0 && working[i] == 1)
+                        {
+                            working[i] = 0;
+                            std::string eventType = (endspeed[i] > startspeed[i]) ? "Acc" : "Dec";
+                            vehicleInfoPanel->recordAccelerationEvent(
+                                i, start_time[i], end_time[i], startspeed[i], endspeed[i], 0.5, eventType);
+                            std::cout << "0 " << eventType << "time" << start_time[0] << " endtime" << end_time[0] << "startspeed" << startspeed[0] << "m/s -> " << endspeed[0] << "m/s" << std::endl;
+                        }
+                    }
+                    laststate[0] = vehicles[0].m_state.motionState;
+                    laststate[1] = vehicles[1].m_state.motionState;
+                    laststate[2] = vehicles[2].m_state.motionState;
+                    laststate[3] = vehicles[3].m_state.motionState;
+                    laststate[4] = vehicles[4].m_state.motionState;
+                    laststate[5] = vehicles[5].m_state.motionState;
+                    laststate[6] = vehicles[6].m_state.motionState;
+                    current_time += deltaTime * timeScale;
+                }
+            }
         }
     }
 };
@@ -723,89 +807,87 @@ public:
 int main()
 {
 
-	SimpleDemoApp app;
-	// app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
-	app.scheduler.device_manager_ptr->initializeDevices();
-	app.updateSchedulerDependentComponents();
-	auto &vehicles = app.scheduler.vehicle_manager_ptr->getAllVehicles();
-	
-	app.toolbar->setOnModeChanged([&app](SimulationMode mode)
-    {        
-        app.simulationTime = 0.0f;
-        app.isRunning = false;
-		app.scheduler.current_time=0.0f;
-        switch (mode) {
-            case SimulationMode::TASK1: 
-				{
-					app.m_mode = SimulationMode::TASK1;
-					app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
-					app.updateSchedulerDependentComponents();
-					auto &vehicles = app.scheduler.vehicle_manager_ptr->getAllVehicles();
-					{
-					srand(time(NULL));
-                    int random0 = 1 + rand() % 18;
-                    int random1 = 1 + rand() % 18;
-                    int random2 = 1 + rand() % 18;
-                    // 确保不选择设备15
-                    while (random0 == 15)
-                        random0 = 1 + rand() % 18;
-                    while (random1 == 15)
-                        random1 = 1 + rand() % 18;
-                    while (random2 == 15)
-                        random2 = 1 + rand() % 18;
-                    vehicles[0].towards_device = random0;
-                    vehicles[1].towards_device = random1;
-                    vehicles[2].towards_device = random2;
-	
-					}
-				}
-				break;
-            case SimulationMode::TASK2_1: 
-				{
-				app.m_mode = SimulationMode::TASK2_1;
-				app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
-				// Try both possible paths (running from root or test directory)
-				app.scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
-				app.scheduler.task_manager_ptr->initializeNextTaskID();
-				app.scheduler.event_queue_ptr->initializeInitialEvents(); 
-				std::vector<Task>& tasks = app.task_manager.getAllTasks();
-				app.updateSchedulerDependentComponents();
-				}
-				break;
-            case SimulationMode::TASK2_2:
-				{
-				app.m_mode = SimulationMode::TASK2_2;
-				app.scheduler.vehicle_manager_ptr->initializeVehicles(5);
-				app.scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
-				app.scheduler.task_manager_ptr->initializeNextTaskID();
-				app.scheduler.event_queue_ptr->initializeInitialEvents(); 
-				std::vector<Task>& tasks = app.task_manager.getAllTasks();
-				app.updateSchedulerDependentComponents();
-				}
-				break;
-            case SimulationMode::TASK2_3:
-				{
-				app.m_mode = SimulationMode::TASK2_3; 
-				app.scheduler.vehicle_manager_ptr->initializeVehicles(7);
-				app.scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
-				app.scheduler.task_manager_ptr->initializeNextTaskID();
-				app.scheduler.event_queue_ptr->initializeInitialEvents(); 
-				std::vector<Task>& tasks = app.task_manager.getAllTasks();
-				app.updateSchedulerDependentComponents();
-				}
-				break;
-        }
+    SimpleDemoApp app;
+    // app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
+    app.scheduler.device_manager_ptr->initializeDevices();
+    app.updateSchedulerDependentComponents();
+    auto &vehicles = app.scheduler.vehicle_manager_ptr->getAllVehicles();
 
-	});	
+    app.toolbar->setOnModeChanged([&app](SimulationMode mode)
+                                  {
+                                      app.simulationTime = 0.0f;
+                                      app.isRunning = false;
+                                      app.scheduler.current_time = 0.0f;
+                                      switch (mode)
+                                      {
+                                      case SimulationMode::TASK1:
+                                      {
+                                          app.m_mode = SimulationMode::TASK1;
+                                          app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
+                                          app.updateSchedulerDependentComponents();
+                                          auto &vehicles = app.scheduler.vehicle_manager_ptr->getAllVehicles();
+                                          {
+                                              srand(time(NULL));
+                                              int random0 = 1 + rand() % 18;
+                                              int random1 = 1 + rand() % 18;
+                                              int random2 = 1 + rand() % 18;
+                                              // 确保不选择设备15
+                                              while (random0 == 15)
+                                                  random0 = 1 + rand() % 18;
+                                              while (random1 == 15)
+                                                  random1 = 1 + rand() % 18;
+                                              while (random2 == 15)
+                                                  random2 = 1 + rand() % 18;
+                                              vehicles[0].towards_device = random0;
+                                              vehicles[1].towards_device = random1;
+                                              vehicles[2].towards_device = random2;
+                                          }
+                                      }
+                                      break;
+                                      case SimulationMode::TASK2_1:
+                                      {
+                                          app.m_mode = SimulationMode::TASK2_1;
+                                          app.scheduler.vehicle_manager_ptr->initializeVehicles(3);
+                                          // Try both possible paths (running from root or test directory)
+                                          app.scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
+                                          app.scheduler.task_manager_ptr->initializeNextTaskID();
+                                          app.scheduler.event_queue_ptr->initializeInitialEvents();
+                                          std::vector<Task> &tasks = app.task_manager.getAllTasks();
+                                          app.updateSchedulerDependentComponents();
+                                      }
+                                      break;
+                                      case SimulationMode::TASK2_2:
+                                      {
+                                          app.m_mode = SimulationMode::TASK2_2;
+                                          app.scheduler.vehicle_manager_ptr->initializeVehicles(5);
+                                          app.scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
+                                          app.scheduler.task_manager_ptr->initializeNextTaskID();
+                                          app.scheduler.event_queue_ptr->initializeInitialEvents();
+                                          std::vector<Task> &tasks = app.task_manager.getAllTasks();
+                                          app.updateSchedulerDependentComponents();
+                                      }
+                                      break;
+                                      case SimulationMode::TASK2_3:
+                                      {
+                                          app.m_mode = SimulationMode::TASK2_3;
+                                          app.scheduler.vehicle_manager_ptr->initializeVehicles(7);
+                                          app.scheduler.task_manager_ptr->loadFromFile("../tasks.csv");
+                                          app.scheduler.task_manager_ptr->initializeNextTaskID();
+                                          app.scheduler.event_queue_ptr->initializeInitialEvents();
+                                          std::vector<Task> &tasks = app.task_manager.getAllTasks();
+                                          app.updateSchedulerDependentComponents();
+                                      }
+                                      break;
+                                      } });
 
-// if(app.m_mode == SimulationMode::TASK1){
-	app.run();
-// }
+    // if(app.m_mode == SimulationMode::TASK1){
+    app.run();
+    // }
     return 0;
 }
 void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehicle *leadingVehicle)
 {
-  // 前车与后车相对距离
+    // 前车与后车相对距离
     float distance;
     float epsilon = 0.05f; // 防止浮点数误差
     float device_position[19] = {
@@ -830,7 +912,7 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehic
         8.000,
     };
     float VehiclePosition = std::fmod(vehicle->m_state.position, 99.47787445225672);
-	vehicle->position_m = VehiclePosition;
+    vehicle->position_m = VehiclePosition;
     float LeadingVehiclePosition = std::fmod(leadingVehicle->m_state.position, 99.47787445225672);
     float distancetodevice = device_position[vehicle->towards_device] - VehiclePosition;
     if (fabs(distancetodevice) > epsilon && distancetodevice < 0.f)
@@ -871,7 +953,7 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehic
         {
             vehicle->m_state.motionState = Vehicle::MotionState::Accelerating;
             vehicle->m_state.operationTimer = 0.0f;
-			vehicle->towards_device=15;
+            vehicle->towards_device = 15;
         }
         else
         {
@@ -956,5 +1038,4 @@ void updateVehicle1(float current_time, float deltaTime, Vehicle *vehicle, Vehic
     }
     // 位置的更新
     vehicle->m_state.position += vehicle->m_state.currentSpeed * deltaTime;
-
 }
