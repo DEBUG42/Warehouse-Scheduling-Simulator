@@ -183,7 +183,7 @@ void SimulationView::renderWorld(sf::RenderTarget &target)
         }
     }
 
-    // 5. 渲染路径原点标记（与测试文件一致）
+    // 5. 渲染中心原点标记（与测试文件一致）
     renderPathOriginMarker(target);
 
     // 6. 渲染调试信息（如果启用）
@@ -604,14 +604,18 @@ void SimulationView::renderUIOverlay(sf::RenderTarget &target)
 void SimulationView::renderDebugInfo(sf::RenderTarget &target)
 {
     // 创建调试文本
+    sf::Font Debug_font; // 使用车辆渲染器的字体
+    Debug_font.loadFromFile("C:/Windows/Fonts/arial.ttf");
     static sf::Text debugText;
     static bool textInitialized = false;
-
-    if (!textInitialized)
+    debugText.setFont(Debug_font); // 使用车辆渲染器的字体
+    debugText.setStyle(sf::Text::Regular);
+    debugText.setOutlineColor(sf::Color::Black);
+    debugText.setOutlineThickness(1.0f);    if (!textInitialized)
     {
         // 注意：这里需要字体支持，但为了避免依赖问题，我们先创建文本对象
-        debugText.setCharacterSize(12);
-        debugText.setFillColor(sf::Color::White);
+        debugText.setCharacterSize(11); // 稍小的字体
+        debugText.setFillColor(sf::Color(220, 220, 220)); // 浅灰色文字，更清晰
         textInitialized = true;
     }
 
@@ -623,15 +627,14 @@ void SimulationView::renderDebugInfo(sf::RenderTarget &target)
     // 获取轨道信息
     float trackLength = m_trackRenderer.getTrackLength();
     float curveRadius = m_trackRenderer.getCurveRadius();
-    float totalPathLength = m_trackRenderer.getTotalCenterLineLengthMm();
-
-    // 构建调试信息字符串
+    float totalPathLength = m_trackRenderer.getTotalCenterLineLengthMm();    // 构建调试信息字符串
     char debugBuffer[512];
     snprintf(debugBuffer, sizeof(debugBuffer),
              "=== SimulationView Debug Info ===\n"
              "View Center: (%.1f, %.1f)\n"
              "View Size: (%.1f, %.1f)\n"
              "Zoom Level: %.2f (Factor: %.2fx)\n"
+             "World Origin: (%.1f, %.1f)\n"
              "Track Length: %.0fmm\n"
              "Curve Radius: %.0fmm\n"
              "Total Path: %.0fmm\n"
@@ -641,28 +644,41 @@ void SimulationView::renderDebugInfo(sf::RenderTarget &target)
              viewCenter.x, viewCenter.y,
              viewSize.x, viewSize.y,
              m_zoomLevel, zoomFactor,
+             m_worldOriginOffsetPx.x, m_worldOriginOffsetPx.y,
              trackLength, curveRadius, totalPathLength,
              (int)m_vehicles.size(),
              m_showGrid ? "ON" : "OFF",
              m_showWarehouses ? "ON" : "OFF",
              m_showVehicles ? "ON" : "OFF",
              m_trackRenderer.getScaleFactor(),
-             m_trackRenderer.getMmToPxRatio());
-
-    // 设置调试文本位置（世界坐标系中的固定位置）
-    sf::Vector2f debugPos = viewCenter - viewSize * 0.4f; // 左上角区域
-    debugText.setPosition(debugPos);
-    debugText.setString(debugBuffer);
-
-    // 绘制半透明背景
+             m_trackRenderer.getMmToPxRatio());    // 设置调试文本位置（左上角顶点与红色圆圈中心重合）
+    sf::Vector2f debugBoxSize(350, 180); // 优化尺寸，更加紧凑
+    // 调试框左上角直接与红色圆圈中心重合
+    sf::Vector2f debugPos = m_worldOriginOffsetPx;
+    
+    debugText.setString(debugBuffer);    // 绘制半透明背景（左上角与红色圆圈中心重合）
     sf::RectangleShape debugBackground;
-    debugBackground.setSize(sf::Vector2f(400, 200));
-    debugBackground.setPosition(debugPos - sf::Vector2f(5, 5));
-    debugBackground.setFillColor(sf::Color(0, 0, 0, 128));
+    debugBackground.setSize(debugBoxSize);
+    debugBackground.setPosition(debugPos);
+    debugBackground.setFillColor(sf::Color(25, 25, 25, 200)); // 更深的半透明背景
+    debugBackground.setOutlineColor(sf::Color(100, 150, 255, 220)); // 蓝色边框
+    debugBackground.setOutlineThickness(2.0f); // 稍粗的边框
     target.draw(debugBackground);
 
-    // 绘制调试文本（如果有字体支持）
+    // 绘制调试文本（居中在半透明方形框中）
+    sf::FloatRect textBounds = debugText.getLocalBounds();
+    sf::Vector2f textCenterPos = debugPos + sf::Vector2f(
+        (debugBoxSize.x - textBounds.width) / 2.0f,
+        (debugBoxSize.y - textBounds.height) / 2.0f
+    );
+    debugText.setPosition(textCenterPos);
     target.draw(debugText);
+
+    // 新的定位逻辑确保调试框：
+    // 1. 始终相对于当前视图定位，而不是世界坐标原点
+    // 2. 始终停留在视图的右下角区域
+    // 3. 跟随视图的平移和缩放操作移动
+    // 4. 保持固定的物理尺寸，不受缩放影响
 
     // 绘制坐标系原点标记
     sf::CircleShape originMarker(8.0f);
