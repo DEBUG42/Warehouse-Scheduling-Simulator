@@ -30,15 +30,17 @@ pi=3.14159265358979323846
 // 设备类型枚举
 class Task;
 class Event;
-enum class DeviceType {
-    StorageIn,      // 入库接口设备（1,3,5,7,9,11）
-    StorageOut,     // 出库接口设备（2,4,6,8,10,12）
-    WorkstationIn,  // 入库作业口（16,17,18）
-    WorkstationOut  // 出库作业口（13,14,15）
+enum class DeviceType
+{
+    StorageIn,     // 入库接口设备（1,3,5,7,9,11）
+    StorageOut,    // 出库接口设备（2,4,6,8,10,12）
+    WorkstationIn, // 入库作业口（16,17,18）
+    WorkstationOut // 出库作业口（13,14,15）
 };
 
 // 设备状态结构体
-struct DeviceState {
+struct DeviceState
+{
     bool has_goods = false;       // 当前设备是否有货
     bool is_reserved = false;     // 是否被任务锁定（调度后锁定）
     int reserved_by = -1;         // 被哪个任务锁定
@@ -49,7 +51,8 @@ struct DeviceState {
 };
 
 // 设备基类
-class DeviceBase {
+class DeviceBase
+{
 public:
     // 构造函数
     // 输入: int id - 设备唯一标识, DeviceType type - 设备类型
@@ -59,20 +62,23 @@ public:
           m_taskQueue(),
           m_storageIn(30.0),
           m_storageOut(25.0),
-          m_status() {
+          m_status()
+    {
     }
 
-    int m_id;                   // 设备唯一标识
-    std::queue<Task> m_taskQueue;     // 任务等待队列
-    float m_storageIn;                // 入库时间（秒）
-    float m_storageOut;               // 出库时间（秒）
+    int m_id;                     // 设备唯一标识
+    std::queue<Task> m_taskQueue; // 任务等待队列
+    float m_storageIn;            // 入库时间（秒）
+    float m_storageOut;           // 出库时间（秒）
     DeviceState m_status;
 };
 
 // 设备管理类
-class DeviceManager {
+class DeviceManager
+{
 public:
- enum class DeviceEventTrigger {
+    enum class DeviceEventTrigger
+    {
         None,
         ForkliftPutToInPort,
         HumanUnloadAtOutPort,
@@ -80,7 +86,8 @@ public:
         StackerPutToOutInterface
     };
 
-    struct DeviceUpdateResult {
+    struct DeviceUpdateResult
+    {
         DeviceEventTrigger trigger;
         int device_id;
         int task_id;
@@ -96,13 +103,17 @@ public:
     // 获取设备状态
     // 输入: int device_id - 设备唯一标识
     // 输出: DeviceState& - 设备状态的引用
-    DeviceState& getDeviceState(int id);
-    DeviceType& getDeviceType(int id);
+    DeviceState &getDeviceState(int id);
+    DeviceType &getDeviceType(int id);
+
+    // 获取所有设备
+    // 输出: std::vector<DeviceBase> - 所有设备的副本集合
+    std::vector<DeviceBase> getAllDevices();
 
     // 预约设备
     // 输入: int device_id - 设备唯一标识, int task_id - 任务唯一标识, double until_time - 设备预计释放时间
     // 输出: 无
-    void reserve(const Task& task, double current_time);
+    void reserve(const Task &task, double current_time);
 
     // 释放设备
     // 输入: int device_id - 设备唯一标识, int task_id - 任务唯一标识
@@ -112,10 +123,9 @@ public:
     // 处理由 EventQueue 触发的事件
     // 输入: Event& e - 事件
     // 输出: 无
-    void handleEvent(const Event& e);
+    void handleEvent(const Event &e);
 
 private:
     std::map<int, DeviceState> deviceStates;
     std::map<int, DeviceType> deviceType;
-
 };

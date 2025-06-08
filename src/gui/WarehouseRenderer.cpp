@@ -341,10 +341,16 @@ void WarehouseRenderer::updateDeviceStates(const std::vector<DeviceBase *> &core
         {
             if (core_device_ptr && core_device_ptr->m_id == gui_device.id)
             {
-                // Since DeviceBase doesn't directly expose state, we need to get it from DeviceManager
-                // For now, we'll assume the caller provides the correct state through a different mechanism
-                // This method signature should be updated to accept DeviceManager or states directly
+                // Update the GUI device state with the core device's status
+                gui_device.coreState = core_device_ptr->m_status;
                 found = true;
+
+                // Debug output to verify state updates
+                std::cout << "[WarehouseRenderer] Updated Device " << gui_device.id
+                          << " - has_goods: " << (gui_device.coreState.has_goods ? "true" : "false")
+                          << ", is_reserved: " << (gui_device.coreState.is_reserved ? "true" : "false")
+                          << ", is_transferring: " << (gui_device.coreState.is_transferring ? "true" : "false")
+                          << std::endl;
                 break;
             }
         }
