@@ -165,10 +165,10 @@ public:
         simulationView->updateVehicles(vehiclePtrs); // 更新设备数据
         auto devices = scheduler.device_manager_ptr->getAllDevices();
         std::vector<DeviceBase *> devicePtrs;
-		// for (auto &device : scheduler->device_manager.getAllDevices())
-        // {
-        //     devicePtrs.push_back(&device);
-        // }
+		for (auto &device : scheduler.device_manager_ptr->getAllDevices())
+        {
+            devicePtrs.push_back(&device);
+        }
         simulationView->updateDevices(devicePtrs);
 
         // 设置初始状态

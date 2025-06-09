@@ -278,12 +278,12 @@ void Scheduler::tryDispatchTasks() {
         // ✅ 6. 锁定设备，防止设备被重复分配
         device_manager_ptr->reserve(*task, current_time);
 
-        // // ✅ 7. 写入日志
-        // logger_manager->logTaskExecution(const Task& task, const Vehicle& vehicle);
+        // ✅ 7. 写入日志
+        this->logger_ptr->logTaskExecution(*task,*best_vehicle);
 
-        // std::cout << "[Dispatch] Assigned Task #" << task->id 
-        //           << " to Vehicle #" << best_vehicle->id 
-        //           << " at time " << current_time << "\n";
+        std::cout << "[Dispatch] Assigned Task #" << task->id 
+                  << " to Vehicle #" << best_vehicle->id 
+                  << " at time " << current_time << "\n";
     }
 }
 

@@ -26,7 +26,7 @@ public:
     // void logTaskAssignment(const Task& task, const Vehicle& vehicle);
 
     // ✅ 记录任务调度日志
-    void logTaskExecution(const Task& task, const Vehicle& vehicle);
+    void logTaskExecution(Task& task, Vehicle& vehicle);
 
     // ✅ 记录设备状态变化日志（有无货变化）
     void logDeviceChange(double time, int device_id, const std::string& material_id, bool before, bool after);

@@ -30,7 +30,7 @@ void Logger::logEvent(const Event& e) {
 }
 
 // ✅ 记录任务完成日志
-void Logger::logTaskExecution(const Task& task, const Vehicle& vehicle) {
+void Logger::logTaskExecution(Task& task, Vehicle& vehicle) {
     log_file_task << task.id << "\t"
                   << task.material_id << "\t"
                   << (task.type == TaskType::INBOUND ? "INBOUND" : "OUTBOUND") << "\t"

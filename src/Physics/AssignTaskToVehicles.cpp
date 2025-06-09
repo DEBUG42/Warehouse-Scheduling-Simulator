@@ -177,7 +177,8 @@ void VehicleManager::applyTaskToVehicle(Vehicle& vehicle, Task& task, double cur
     vehicle.velocity_mps = 0.0;
     vehicle.m_state.motionState = Vehicle::MotionState::Accelerating;
     vehicle.is_loaded = false;
-
+    vehicle.has_triggered_pickup=false;
+    vehicle.has_triggered_putdown=false;
     std::cout << "[Assign] Vehicle #" << vehicle.id << " → Task #" << task.id << "\n";
 }
 VehicleManager::VehicleUpdateResult VehicleManager::updateVehicle(float current_time, float deltaTime, Vehicle* vehicle, Vehicle* leadingVehicle) {
@@ -353,6 +354,8 @@ if (dist_to_target < 0){
                   << " 位置: " << vehicle->position_m 
                   << "是否有任务"<< (vehicle->m_state.currentTask!= nullptr)
                   << "距离目标位置" << dist_to_target
+                  << "是否触发取货" << vehicle->has_triggered_pickup
+                  << "是否触发放货" << vehicle->has_triggered_putdown
                   << "\n";
         vehicle->last_debug_time = current_time;
     }
