@@ -71,7 +71,8 @@
     "stop_token": "cpp",
     "thread": "cpp",
     "typeindex": "cpp",
-    "*.tcc": "cpp"
+    "*.tcc": "cpp",
+    "queue": "cpp"
   },
   "C_Cpp.errorSquiggles": "disabled",
   "cmake.sourceDirectory": "D:/CodeMaster/GitHub/C++SFML/Warehouse-sch"
